@@ -121,6 +121,10 @@
                 </executions>
                 <configuration>
                     <failBuildOnCVSS>7.0</failBuildOnCVSS>
+                    <nvdApiKey>${nvdApiKey}</nvdApiKey>
+                    <suppressionFiles>
+                        <suppressionFile>config/owasp-suppressions.xml</suppressionFile>
+                    </suppressionFiles>
                 </configuration>
             </plugin>
             <plugin>

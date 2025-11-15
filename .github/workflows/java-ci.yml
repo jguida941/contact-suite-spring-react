@@ -49,7 +49,8 @@ jobs:
             echo "NVD_API_KEY not set; skipping Dependency-Check"
             mvn -B -Ddependency-check.skip=true verify
           else
-            mvn -B verify
+            echo "Running with NVD API Key"
+            mvn -B -DnvdApiKey="${NVD_API_KEY}" verify
           fi
 
       - name: Upload surefire reports
