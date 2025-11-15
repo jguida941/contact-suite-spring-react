@@ -20,6 +20,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | `src/main/java/contactapp/Main.java`               | Optional `main` entry point for quick manual checks or demos.  |
 | `src/test/java/contactapp/ContactTest.java`        | JUnit tests covering the `Contact` validation requirements.    |
 | `src/test/java/contactapp/ContactServiceTest.java` | JUnit tests covering add, delete, and update behavior.         |
+| `pom.xml`                                          | Maven project file defining dependencies and plugins.          |
 
 ## Requirements & Notes
 

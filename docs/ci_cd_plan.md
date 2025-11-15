@@ -7,12 +7,12 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 2. ✅ Run all JUnit tests through the JUnit Platform ConsoleLauncher.
 3. ✅ Upload console output so we can inspect failures.
 4. ✅ Fail the workflow immediately when compilation or tests fail (no `|| true` or swallowed exits).
-5. ☐ Add a build-status badge to `README.md` once the workflow is live.
+5. ✅ Add a build-status badge to `README.md` once the workflow is live.
 
 ## Phase 2 – Developer Productivity
-1. ☐ Introduce Maven (preferred) or Gradle so commands become `mvn test` or `./gradlew test`.
-2. ☐ Cache the build tool’s dependency directory with `actions/cache` to speed up runs.
-3. ☐ Add workflow dispatch support so CI can be triggered manually when needed.
+1. ✅ Introduce Maven (preferred) or Gradle so commands become `mvn test` or `./gradlew test`.
+2. ✅ Cache the build tool’s dependency directory with `actions/cache` to speed up runs.
+3. ✅ Add workflow dispatch support so CI can be triggered manually when needed.
 
 ## Phase 3 – Quality Gates
 1. ☐ Add static analysis (Checkstyle and SpotBugs via Maven plugins). Fail the build on violations.

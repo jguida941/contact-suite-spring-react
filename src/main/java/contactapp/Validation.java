@@ -23,9 +23,12 @@ public final class Validation {
         }
     }
 
-    // Checks that input is exactly 10 numeric digits
+    // Checks that input is numeric and exactly 10 digits
     public static void validateNumeric10(String input, String label) {
-        if (!input.matches("\\d{10}")) {
+        if (!input.matches("\\d+")) {
+            throw new IllegalArgumentException(label + " must only contain digits 0-9");
+        }
+        if (input.length() != 10) {
             throw new IllegalArgumentException(label + " must be exactly 10 digits");
         }
     }

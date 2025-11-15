@@ -88,9 +88,9 @@ public class ContactTest {
                     , "1, firstName, lastName, null, '7622 Main Street', 'phone must not be null or blank'"
                     , "1, firstName, lastName, 123456789, '7622 Main Street', 'phone must be exactly 10 digits'"
                     , "1, firstName, lastName, 12345678901, '7622 Main Street', 'phone must be exactly 10 digits'"
-                    , "1, firstName, lastName, 12345abcde, '7622 Main Street', 'phone must be exactly 10 digits'"
-                    , "1, firstName, lastName, 123-456-7890, '7622 Main Street', 'phone must be exactly 10 digits'"
-                    , "1, firstName, lastName, 123 555 7855, '7622 Main Street', 'phone must be exactly 10 digits'"
+                    , "1, firstName, lastName, 12345abcde, '7622 Main Street', 'phone must only contain digits 0-9'"
+                    , "1, firstName, lastName, 123-456-7890, '7622 Main Street', 'phone must only contain digits 0-9'"
+                    , "1, firstName, lastName, 123 555 7855, '7622 Main Street', 'phone must only contain digits 0-9'"
 
                     // address validation
                     , "1, firstName, lastName, 1234567890, ' ', 'address must not be null or blank'"
