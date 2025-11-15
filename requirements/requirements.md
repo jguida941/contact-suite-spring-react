@@ -1,7 +1,7 @@
 
 # CS230 - Contact Service Milestone 1 Requirements
 
-# Contact Class Requirements
+## Contact Class Requirements
 
 - The contact object shall have a required unique `contactId` String field
   that cannot be longer than 10 characters. The `contactId` field shall not
@@ -20,7 +20,7 @@
   be no longer than 30 characters. The `address` field shall not be null.
 
 
-# Contact Service Requirements
+## Contact Service Requirements
 
 - The contact service shall be able to add contacts with a unique `contactId`.
   Adding a contact with a duplicate `contactId` shall fail.
