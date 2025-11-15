@@ -1,0 +1,51 @@
+name: Java CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Compile main sources
+        run: |
+          mkdir -p build/classes
+          javac -cp "lib/*" -d build/classes $(find src/main/java -name "*.java")
+
+      - name: Compile test sources
+        run: |
+          mkdir -p build/test-classes
+          javac -cp "lib/*:build/classes" -d build/test-classes $(find src/test/java -name "*.java")
+
+      - name: Run JUnit tests
+        run: |
+          set -o pipefail
+          mkdir -p build/test-results
+          java -cp "lib/*:build/classes:build/test-classes" \
+            org.junit.platform.console.ConsoleLauncher \
+            --scan-classpath \
+            --details tree \
+            --reports-dir build/test-results \
+            | tee build/test-results/console.log
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/test-results

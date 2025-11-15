@@ -23,4 +23,5 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - Keep the `package contactapp;` declaration at the top of every Java file so the folder layout and compiler stay in sync.
 - `Validation.java` centralizes the not-blank, length, and 10-digit checks; the unit tests assert on those messages via AssertJ.
 - Every requirement from `requirements/requirements.md` has at least one test case to demonstrate full coverage.
+- GitHub Actions (`.github/workflows/java-ci.yml`) compiles the project with JDK 17 and runs all JUnit tests on every push/PR to `main`.
 - `docs/index.md` shows all the key files and folders for easy navigation.
