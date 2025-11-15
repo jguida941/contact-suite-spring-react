@@ -75,16 +75,21 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 
 ### Validation Pipeline
 ```mermaid
-graph LR
-    A[input] --> B[validateNotBlank]
-    B --> X[IllegalArgumentException]
-    B --> C[validateLength]
+graph TD
+    A[input]
+    B[validateNotBlank]
+    C[validateLength]
+    D{phone field?}
+    E[validateNumeric10]
+    F[field assignment]
+    X[IllegalArgumentException]
+
+    A --> B --> C --> D
+    B --> X
     C --> X
-    C --> D{phone field?}
-    D --> F[field assignment]
-    D --> E[validateNumeric10]
+    D -->|no| F
+    D -->|yes| E --> F
     E --> X
-    E --> F
 ```
 - IDs and names take the first two steps, addresses stop after `validateLength` (1-30 chars), and phones add the numeric guard so they remain digits-only at ten characters.
 - Because the constructor routes through the setters, the exact same pipeline applies whether the object is being created or updated.
@@ -202,10 +207,11 @@ graph TD
     F[Artifacts + release]
     G[Self-hosted mutation job]
     H[Release notes / publish]
+    I[Release notes]
 
     A --> B --> C --> D
-    D -->|yes| E --> C
-    D -->|no| F --> G --> H
+    D -->|yes| E --> B
+    D -->|no| F --> G --> H --> I
 ```
 
 ## Self-Hosted Mutation Runner Setup
