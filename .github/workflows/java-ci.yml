@@ -22,6 +22,12 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Download JUnit ConsoleLauncher
+        run: |
+          mkdir -p build/tools
+          curl -sSL -o build/tools/junit-platform-console-standalone.jar \
+            https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.2/junit-platform-console-standalone-1.10.2.jar
+
       - name: Compile main sources
         run: |
           mkdir -p build/classes
@@ -36,7 +42,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/test-results
-          java -cp "lib/*:build/classes:build/test-classes" \
+          java -cp "lib/*:build/tools/junit-platform-console-standalone.jar:build/classes:build/test-classes" \
             org.junit.platform.console.ConsoleLauncher \
             --scan-classpath \
             --details tree \
