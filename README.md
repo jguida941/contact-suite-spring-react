@@ -25,18 +25,18 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 3. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
 
 ## Folder Highlights
-| Path                                           | Description                                                         |
-|------------------------------------------------|---------------------------------------------------------------------|
-| `src/main/java/contactapp/Contact.java`        | Contact entity enforcing the ID/name/phone/address constraints.     |
-| `src/main/java/contactapp/ContactService.java` | Service shell for add/update/delete logic (to be implemented).      |
-| `src/main/java/contactapp/Validation.java`     | Centralized validation helpers (not blank, length, numeric checks). |
-| `src/test/java/contactapp/ContactTest.java`    | Unit tests for the `Contact` class (valid + invalid scenarios).     |
-| `requirements/`                                | Assignment write-up and checklist from the instructor.              |
-| `docs/index.md`                                | Quick reference guide for the repo layout.                          |
-| `pom.xml`                                      | Maven build file (dependencies, plugins, compiler config).          |
-| `config/checkstyle/...`                        | Checkstyle configuration used by Maven/CI quality gates.            |
-| `config/owasp-suppressions.xml`                | Placeholder suppression list for OWASP Dependency-Check.            |
-| `.github/workflows/*.yml`                      | CI/CD pipelines (tests, quality gates, release packaging, CodeQL).  |
+| Path                                                                                           | Description                                                         |
+|------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| [`src/main/java/contactapp/Contact.java`](src/main/java/contactapp/Contact.java)               | Contact entity enforcing the ID/name/phone/address constraints.     |
+| [`src/main/java/contactapp/ContactService.java`](src/main/java/contactapp/ContactService.java) | Service shell for add/update/delete logic (to be implemented).      |
+| [`src/main/java/contactapp/Validation.java`](src/main/java/contactapp/Validation.java)         | Centralized validation helpers (not blank, length, numeric checks). |
+| [`src/test/java/contactapp/ContactTest.java`](src/test/java/contactapp/ContactTest.java)       | Unit tests for the `Contact` class (valid + invalid scenarios).     |
+| [`requirements/`](requirements/)                                                               | Assignment write-up and checklist from the instructor.              |
+| [`docs/index.md`](docs/index.md)                                                               | Quick reference guide for the repo layout.                          |
+| [`pom.xml`](pom.xml)                                                                           | Maven build file (dependencies, plugins, compiler config).          |
+| [`config/checkstyle`](config/checkstyle)                                                       | Checkstyle configuration used by Maven/CI quality gates.            |
+| [`config/owasp-suppressions.xml`](config/owasp-suppressions.xml)                               | Placeholder suppression list for OWASP Dependency-Check.            |
+| [`.github/workflows`](.github/workflows)                                                       | CI/CD pipelines (tests, quality gates, release packaging, CodeQL).  |
 
 ## Design Decisions & Highlights
 - **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps HashMap keys stable and mirrors real-world record identifiers.
@@ -63,15 +63,12 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - By keeping this layer separate from the domain model, we can slot in persistence or caching without rewriting the entity/tests.
 
 ### Storage & Extension Points
-```
-HashMap<String, Contact>  (planned backing store)
-
+**HashMap<String, Contact> (planned backing store)**
 | Operation | Average | Worst | Space |
 |-----------|---------|-------|-------|
 | add/get   | O(1)    | O(n)  | O(1)  |
 | update    | O(1)    | O(n)  | O(1)  |
 | delete    | O(1)    | O(n)  | O(1)  |
-```
 - This strategy meets the course requirements while documenting the upgrade path (DAO, repository pattern, etc.).
 
 ## Validation & Error Handling
@@ -80,13 +77,13 @@ HashMap<String, Contact>  (planned backing store)
 ```mermaid
 graph LR
     A[input] --> B[validateNotBlank]
-    B -->|blank| X[IllegalArgumentException]
+    B --> X[IllegalArgumentException]
     B --> C[validateLength]
-    C -->|out of bounds| X
+    C --> X
     C --> D{phone field?}
-    D -->|no| F[field assignment]
-    D -->|yes| E[validateNumeric10]
-    E -->|non-digit or wrong length| X
+    D --> F[field assignment]
+    D --> E[validateNumeric10]
+    E --> X
     E --> F
 ```
 - IDs and names take the first two steps, addresses stop after `validateLength` (1-30 chars), and phones add the numeric guard so they remain digits-only at ten characters.
@@ -246,19 +243,21 @@ If you're working through CS320 (or just exploring the project), the recommended
 4. Experiment by breaking a rule on purpose, rerunning the build, and seeing which tests/gates fail, then fix the tests or code as needed.
 
 ## Resources & References
-- [Project Requirements](requirements/) - Instructor brief and acceptance criteria.
-- [Docs Index](docs/index.md) - Repo structure reference (future `docs/design.md` will hold deep dives).
-- [GitHub Actions Workflows](.github/workflows) - CI/CD definitions described above.
-- [config/checkstyle](config/checkstyle) - Static analysis rules enforced in CI.
-- [Java 17 Download](https://adoptium.net/temurin/releases/) - Eclipse Temurin builds used locally and in CI.
-- [Apache Maven](https://maven.apache.org/) - Build tool powering the project.
-- [JUnit 5](https://junit.org/junit5/) - Test framework leveraged in `ContactTest`.
-- [AssertJ](https://assertj.github.io/doc/) - Fluent assertion library.
-- [PITest](https://pitest.org/) - Mutation testing engine enforced in CI.
-- [OWASP Dependency-Check](https://jeremylong.github.io/DependencyCheck/) - CVE scanning tool wired into Maven/CI.
-- [Checkstyle](https://checkstyle.sourceforge.io/) - Static code analysis configuration referenced above.
-- [SpotBugs](https://spotbugs.github.io/) - Bug pattern detector.
-- [CodeQL](https://codeql.github.com/docs/) - Semantic security analysis.
+| Item | Purpose |
+|------|---------|
+| [requirements/](requirements/) | Instructor brief and acceptance criteria. |
+| [docs/index.md](docs/index.md) | Repo structure reference (future `docs/design.md` will hold deep dives). |
+| [GitHub Actions workflows](.github/workflows) | CI/CD definitions described above. |
+| [config/checkstyle](config/checkstyle) | Checkstyle rules enforced in CI. |
+| [Java 17 (Temurin)](https://adoptium.net/temurin/releases/) | JDK used locally and in CI. |
+| [Apache Maven](https://maven.apache.org/) | Build tool powering the project. |
+| [JUnit 5](https://junit.org/junit5/) | Test framework leveraged in `ContactTest`. |
+| [AssertJ](https://assertj.github.io/doc/) | Fluent assertion library. |
+| [PITest](https://pitest.org/) | Mutation testing engine enforced in CI. |
+| [OWASP Dependency-Check](https://jeremylong.github.io/DependencyCheck/) | CVE scanning tool wired into Maven/CI. |
+| [Checkstyle](https://checkstyle.sourceforge.io/) | Style/complexity checks. |
+| [SpotBugs](https://spotbugs.github.io/) | Bug pattern detector. |
+| [CodeQL](https://codeql.github.com/docs/) | Semantic security analysis. |
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for details.
