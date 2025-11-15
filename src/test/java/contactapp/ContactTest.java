@@ -7,16 +7,17 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 // AssertJ for object field checks
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 // JUnit 5 assertions for exceptions, etc.
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests the Contact class.
  * Verifies:
  * - successful creation with valid data,
  * - updates via setters with valid data,
- * - and that invalid inputs cause the constructor to throw an exception.
+ * - and that invalid inputs cause the constructor/setters to throw IllegalArgumentException
+ *   with the specific validation messages emitted by the Validation helper.
  */
 public class ContactTest {
 
@@ -63,34 +64,39 @@ public class ContactTest {
     // Each line is one test case (contactId, firstName, lastName, phone, address)
     @CsvSource(
             value = {
-                    "' ', firstName, lastName, 1234567890, '7622 Main Street'"  // empty id with space to check for trim
-                    , "'', firstName, lastName, 1234567890, '7622 Main Street'" // empty id
-                    , "null, firstName, lastName, 1234567890, '7622 Main Street'" // null id
-                    , "12345678901, firstName, lastName, 1234567890, '7622 Main Street'" // id too long
+                    // contactId validation
+                    "' ', firstName, lastName, 1234567890, '7622 Main Street', 'contactId must not be null or blank'"
+                    , "'', firstName, lastName, 1234567890, '7622 Main Street', 'contactId must not be null or blank'"
+                    , "null, firstName, lastName, 1234567890, '7622 Main Street', 'contactId must not be null or blank'"
+                    , "12345678901, firstName, lastName, 1234567890, '7622 Main Street', 'contactId length must be between 1 and 10'"
 
-                    , "1, ' ', lastName, 1234567890, '7622 Main Street'" // empty first name with space
-                    , "1, '', lastName, 1234567890, '7622 Main Street'" // empty first name
-                    , "1, null, lastName, 1234567890, '7622 Main Street'" // null first name
-                    , "1, 'TooLongFirstName', lastName, 1234567890, '7622 Main Street'" // first name too long
+                    // firstName validation
+                    , "1, ' ', lastName, 1234567890, '7622 Main Street', 'firstName must not be null or blank'"
+                    , "1, '', lastName, 1234567890, '7622 Main Street', 'firstName must not be null or blank'"
+                    , "1, null, lastName, 1234567890, '7622 Main Street', 'firstName must not be null or blank'"
+                    , "1, 'TooLongFirstName', lastName, 1234567890, '7622 Main Street', 'firstName length must be between 1 and 10'"
 
-                    , "1, firstName, ' ' , 1234567890, '7622 Main Street'" // empty last name with space
-                    , "1, firstName, '', 1234567890, '7622 Main Street'" // empty last name
-                    , "1, firstName, null, 1234567890, '7622 Main Street'" // null last name
-                    , "1, firstName, 'TooLongLastName', 1234567890, '7622 Main Street'" // last name too long
+                    // lastName validation
+                    , "1, firstName, ' ' , 1234567890, '7622 Main Street', 'lastName must not be null or blank'"
+                    , "1, firstName, '', 1234567890, '7622 Main Street', 'lastName must not be null or blank'"
+                    , "1, firstName, null, 1234567890, '7622 Main Street', 'lastName must not be null or blank'"
+                    , "1, firstName, 'TooLongLastName', 1234567890, '7622 Main Street', 'lastName length must be between 1 and 10'"
 
-                    , "1, firstName, lastName, ' ' , '7622 Main Street'," // empty phone with space
-                    , "1, firstName, lastName, '', '7622 Main Street'" // empty phone
-                    , "1, firstName, lastName, null, '7622 Main Street'" // null phone
-                    , "1, firstName, lastName, 123456789, '7622 Main Street'" // phone too short
-                    , "1, firstName, lastName, 12345678901, '7622 Main Street'" // phone too long
-                    , "1, firstName, lastName, 12345abcde, '7622 Main Street'" // phone with letters
-                    , "1, firstName, lastName, 123-456-7890, '7622 Main Street'" // phone with special chars
-                    , "1, firstName, lastName, 123 555 7855, '7622 Main Street'" // phone with spaces
+                    // phone validation
+                    , "1, firstName, lastName, ' ' , '7622 Main Street', 'phone must not be null or blank'"
+                    , "1, firstName, lastName, '', '7622 Main Street', 'phone must not be null or blank'"
+                    , "1, firstName, lastName, null, '7622 Main Street', 'phone must not be null or blank'"
+                    , "1, firstName, lastName, 123456789, '7622 Main Street', 'phone must be exactly 10 digits'"
+                    , "1, firstName, lastName, 12345678901, '7622 Main Street', 'phone must be exactly 10 digits'"
+                    , "1, firstName, lastName, 12345abcde, '7622 Main Street', 'phone must be exactly 10 digits'"
+                    , "1, firstName, lastName, 123-456-7890, '7622 Main Street', 'phone must be exactly 10 digits'"
+                    , "1, firstName, lastName, 123 555 7855, '7622 Main Street', 'phone must be exactly 10 digits'"
 
-                    , "1, firstName, lastName, 1234567890, ' '" // empty address with space
-                    , "1, firstName, lastName, 1234567890, ''" // empty address
-                    , "1, firstName, lastName, 1234567890, null" // null address
-                    , "1, firstName, lastName, 1234567890, 'This address is way too long to be valid'" // address too long
+                    // address validation
+                    , "1, firstName, lastName, 1234567890, ' ', 'address must not be null or blank'"
+                    , "1, firstName, lastName, 1234567890, '', 'address must not be null or blank'"
+                    , "1, firstName, lastName, 1234567890, null, 'address must not be null or blank'"
+                    , "1, firstName, lastName, 1234567890, 'This address is way too long to be valid', 'address length must be between 1 and 30'"
             },
 
             // Specify that the string "null" should be treated as a null value
@@ -105,30 +111,33 @@ public class ContactTest {
             String firstName,
             String lastName,
             String phone,
-            String address
+            String address,
+            String expectedMessage // expected exception message
     ) {
-        // Check that creating a Contact with invalid inputs throws an exception
-        assertThrows(IllegalArgumentException.class, () -> {
-            new Contact(contactId, firstName, lastName, phone, address);
-        });
+
+        // Check that creating a Contact with invalid inputs throws an exception with the expected message
+        assertThatThrownBy(() -> new Contact(contactId, firstName, lastName, phone, address))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(expectedMessage);
     }
 
     @CsvSource(
             value = {
-                    "' '",             // space-only first name
-                    "''",              // empty first name
-                    "null",            // null first name
-                    "TooLongFirstName" // first name too long
+                    "' ', 'firstName must not be null or blank'"
+                    , "'', 'firstName must not be null or blank'"
+                    , "null, 'firstName must not be null or blank'"
+                    , "TooLongFirstName, 'firstName length must be between 1 and 10'"
             },
             nullValues = "null"
     )
 
     @ParameterizedTest
-    void testFailedSetFirstName(String invalidFirstName) {
+    void testFailedSetFirstName(String invalidFirstName, String expectedMessage) {
         Contact contact = new Contact("1", "firstName", "lastName", "1234567890", "7622 Main Street");
-        assertThrows(IllegalArgumentException.class, () -> {
-            contact.setFirstName(invalidFirstName);
-        });
+
+        // Check that invalid firstName updates throw the proper exception message
+        assertThatThrownBy(() -> contact.setFirstName(invalidFirstName))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(expectedMessage);
     }
 }
-
