@@ -7,6 +7,7 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 2. ✅ Run all JUnit tests through the JUnit Platform ConsoleLauncher.
 3. ✅ Upload console output so we can inspect failures.
 4. ✅ Fail the workflow immediately when compilation or tests fail (no `|| true` or swallowed exits).
+5. ☐ Add a build-status badge to `README.md` once the workflow is live.
 
 ## Phase 2 – Developer Productivity
 1. ☐ Introduce Maven (preferred) or Gradle so commands become `mvn test` or `./gradlew test`.
@@ -28,7 +29,14 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 
 ## Phase 6 – Security & Maintenance
 1. ☐ Enable Dependabot for Maven dependency updates once Maven is in place.
-2. ☐ Add CodeQL analysis for Java to scan for security issues.
+2. ☐ Add CodeQL analysis for Java to scan for security issues (workflow provided by GitHub).
 3. ☐ Configure branch protection so `main` requires the CI workflow to pass before merging.
+
+## Phase 7 – Advanced Enhancements
+1. ☐ Integrate OWASP Dependency Check (or similar) to scan third-party jars for CVEs.
+2. ☐ Experiment with parallel test execution (split suites across multiple runners and merge results).
+3. ☐ Add container-based testing (build a Docker image and run tests inside it to mirror prod environments).
+4. ☐ Introduce mutation testing (e.g., PITest) to prove the unit tests detect injected defects.
+5. ☐ Revisit workflow documentation in `README.md` once enhancements land and include the build badge.
 
 Keep this plan updated as each phase lands. When a task completes, replace the checkbox with ✅ and add links to PRs or workflow runs for traceability. Once all phases are complete, summarize the final workflow in `README.md`.
