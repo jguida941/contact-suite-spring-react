@@ -48,6 +48,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-depcheck-
 
+      - name: Debug NVD API key presence
+        shell: bash
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+          if [ -z "${NVD_API_KEY:-}" ]; then
+            echo "::warning::NVD_API_KEY secret is empty or not configured."
+          else
+            echo "::notice::NVD_API_KEY secret length=${#NVD_API_KEY}"
+          fi
+
       - name: Build, test, and verify quality gates
         shell: bash
         env:

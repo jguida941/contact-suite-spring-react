@@ -167,7 +167,6 @@
                     <threads>2</threads>
                     <timeoutConst>8000</timeoutConst>
                     <timeoutFactor>1.5</timeoutFactor>
-                    <maxMutationsPerClass>1000</maxMutationsPerClass>
                     <timestampedReports>false</timestampedReports>
                     <failWhenNoMutations>false</failWhenNoMutations>
                     <failWhenNoCoverage>false</failWhenNoCoverage>
@@ -179,6 +178,7 @@
                         <feature>+classloader:pooled</feature>
                         <feature>+java17</feature>
                         <feature>+junit5</feature>
+                        <feature>+CLASSLIMIT(limit[1000])</feature>
                     </features>
                     <jvmArgs>
                         <jvmArg>--enable-native-access=ALL-UNNAMED</jvmArg>
