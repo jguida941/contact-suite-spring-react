@@ -191,22 +191,22 @@ Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pi
 ### CI/CD Flow Diagram
 ```mermaid
 graph LR
-    A[Push / PR] --> B[Matrix build (Ubuntu & Windows x JDK 17 & 21)]
-    B --> C[Quality gates (tests + JaCoCo + Checkstyle + SpotBugs + Dep Check + PITest)]
-    C --> D{Dependency-Check or PITest failure?}
-    D -->|yes| E[Retry with skips (-Ddependency-check.skip or -Dpit.skip)]
-    D -->|no| F[Artifacts + release packaging]
+    A[Push or PR] --> B[Matrix build]
+    B --> C[Quality gates]
+    C --> D{Dep Check or PITest fail?}
+    D -->|yes| E[Retry with skips]
+    D -->|no| F[Artifacts + release]
     F --> G[Self-hosted mutation job]
     G --> H[Release notes / publish]
 ```
 
 ## Self-Hosted Mutation Runner Setup
-- Register a runner per GitHub’s instructions (Settings -> Actions -> Runners -> New self-hosted runner). Choose macOS/Linux + architecture.
+- Register a runner per GitHub's instructions (Settings -> Actions -> Runners -> New self-hosted runner). Choose macOS/Linux + architecture.
 - Install + configure:
-  1. Go to your repository on GitHub
-  2. Navigate to Settings -> Actions -> Runners -> New self-hosted runner
-  3. Select your OS (macOS for Mac, Linux for Linux) and architecture (x64 for Intel, arm64 for Apple Silicon)
-  4. Follow GitHub's provided commands to download and configure the runner. 
+  - Go to your repository on GitHub
+  - Navigate to Settings -> Actions -> Runners -> New self-hosted runner
+  - Select your OS (macOS for Mac, Linux for Linux) and architecture (x64 for Intel, arm64 for Apple Silicon)
+  - Follow GitHub's provided commands to download and configure the runner. 
   
   For macOS:
   ```bash

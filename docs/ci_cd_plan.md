@@ -1,4 +1,4 @@
-# CI/CD Plan – CS320 Contact Service
+# CI/CD Plan - CS320 Contact Service
 
 This document tracks how we will harden the GitHub Actions workflow from a simple compile/test run into a production-grade pipeline. Follow the phases below; check items off as they land.
 

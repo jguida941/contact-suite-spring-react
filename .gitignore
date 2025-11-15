@@ -1,4 +1,6 @@
 ### IntelliJ IDEA ###
+.idea/
+*.iml
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
@@ -29,3 +31,5 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+# OWASP Dependency Check cache
+.owasp-cache/

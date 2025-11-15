@@ -1,4 +1,4 @@
-# CS320 Milestone 1 – Repository Index
+# CS320 Milestone 1 - Repository Index
 
 Index for easy navigation of the CS320 Milestone 1 codebase.
 

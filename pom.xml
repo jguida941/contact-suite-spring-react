@@ -19,7 +19,7 @@
         <spotbugs.maven.plugin.version>4.7.3.5</spotbugs.maven.plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
         <dependency.check.version>10.0.4</dependency.check.version>
-        <dependency.check.skip>true</dependency.check.skip>
+        <dependency.check.skip>false</dependency.check.skip>
         <nvd.api.delay>5000</nvd.api.delay>
         <pitest.version>1.15.6</pitest.version>
         <pit.skip>false</pit.skip>
@@ -124,8 +124,10 @@
                 </executions>
                 <configuration>
                     <failBuildOnCVSS>7.0</failBuildOnCVSS>
-                    <nvdApiKey>${nvdApiKey}</nvdApiKey>
-                    <nvdApiDelay>${nvd.api.delay}</nvdApiDelay>
+                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+                    <nvdApiDelay>8000</nvdApiDelay>
+                    <dataDirectory>${project.basedir}/.owasp-cache</dataDirectory>
+                    <nvdValidForHours>168</nvdValidForHours>
                     <suppressionFiles>
                         <suppressionFile>config/owasp-suppressions.xml</suppressionFile>
                     </suppressionFiles>
@@ -135,6 +137,7 @@
                     <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
                     <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
                     <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                    <retryFailedRequestsCount>3</retryFailedRequestsCount>
                 </configuration>
             </plugin>
             <plugin>
