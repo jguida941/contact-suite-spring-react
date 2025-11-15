@@ -19,9 +19,10 @@
         <spotbugs.maven.plugin.version>4.7.3.5</spotbugs.maven.plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
         <dependency.check.version>9.1.0</dependency.check.version>
-        <dependency.check.skip>true</dependency.check.skip>
-        <nvd.api.delay>0</nvd.api.delay>
+        <dependency.check.skip>false</dependency.check.skip>
+        <nvd.api.delay>5000</nvd.api.delay>
         <pitest.version>1.15.6</pitest.version>
+        <pit.skip>false</pit.skip>
     </properties>
 
     <dependencies>
@@ -183,6 +184,7 @@
                         <jvmArg>--enable-native-access=ALL-UNNAMED</jvmArg>
                         <jvmArg>-Djdk.attach.allowAttachSelf=true</jvmArg>
                     </jvmArgs>
+                    <skip>${pit.skip}</skip>
                 </configuration>
             </plugin>
         </plugins>
