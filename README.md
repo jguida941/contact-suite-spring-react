@@ -243,21 +243,21 @@ If you're working through CS320 (or just exploring the project), the recommended
 4. Experiment by breaking a rule on purpose, rerunning the build, and seeing which tests/gates fail, then fix the tests or code as needed.
 
 ## Resources & References
-| Item | Purpose |
-|------|---------|
-| [requirements/](requirements/) | Instructor brief and acceptance criteria. |
-| [docs/index.md](docs/index.md) | Repo structure reference (future `docs/design.md` will hold deep dives). |
-| [GitHub Actions workflows](.github/workflows) | CI/CD definitions described above. |
-| [config/checkstyle](config/checkstyle) | Checkstyle rules enforced in CI. |
-| [Java 17 (Temurin)](https://adoptium.net/temurin/releases/) | JDK used locally and in CI. |
-| [Apache Maven](https://maven.apache.org/) | Build tool powering the project. |
-| [JUnit 5](https://junit.org/junit5/) | Test framework leveraged in `ContactTest`. |
-| [AssertJ](https://assertj.github.io/doc/) | Fluent assertion library. |
-| [PITest](https://pitest.org/) | Mutation testing engine enforced in CI. |
-| [OWASP Dependency-Check](https://jeremylong.github.io/DependencyCheck/) | CVE scanning tool wired into Maven/CI. |
-| [Checkstyle](https://checkstyle.sourceforge.io/) | Style/complexity checks. |
-| [SpotBugs](https://spotbugs.github.io/) | Bug pattern detector. |
-| [CodeQL](https://codeql.github.com/docs/) | Semantic security analysis. |
+| Item                                                                    | Purpose                                                                  |
+|-------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [requirements/](requirements/)                                          | Instructor brief and acceptance criteria.                                |
+| [docs/index.md](docs/index.md)                                          | Repo structure reference (future `docs/design.md` will hold deep dives). |
+| [GitHub Actions workflows](.github/workflows)                           | CI/CD definitions described above.                                       |
+| [config/checkstyle](config/checkstyle)                                  | Checkstyle rules enforced in CI.                                         |
+| [Java 17 (Temurin)](https://adoptium.net/temurin/releases/)             | JDK used locally and in CI.                                              |
+| [Apache Maven](https://maven.apache.org/)                               | Build tool powering the project.                                         |
+| [JUnit 5](https://junit.org/junit5/)                                    | Test framework leveraged in `ContactTest`.                               |
+| [AssertJ](https://assertj.github.io/doc/)                               | Fluent assertion library.                                                |
+| [PITest](https://pitest.org/)                                           | Mutation testing engine enforced in CI.                                  |
+| [OWASP Dependency-Check](https://jeremylong.github.io/DependencyCheck/) | CVE scanning tool wired into Maven/CI.                                   |
+| [Checkstyle](https://checkstyle.sourceforge.io/)                        | Style/complexity checks.                                                 |
+| [SpotBugs](https://spotbugs.github.io/)                                 | Bug pattern detector.                                                    |
+| [CodeQL](https://codeql.github.com/docs/)                               | Semantic security analysis.                                              |
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for details.
