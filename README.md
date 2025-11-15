@@ -1,5 +1,6 @@
 # CS320 Milestone 1 – Contact Service
 [![Java CI](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/java-ci.yml/badge.svg)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/java-ci.yml)
+[![CodeQL](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/codeql.yml/badge.svg)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/codeql.yml)
 
 Small Java project for the CS320 Contact Service milestone. The work breaks down into two pieces:
 1. Build the `Contact` and `ContactService` classes exactly as described in the requirements.
