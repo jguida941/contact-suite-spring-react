@@ -249,7 +249,12 @@ graph TD
   # Start the runner
   ./run.sh
   ```
-  Leave `./run.sh` running so the `mutation-test` job can execute on your machine. When you're done, press Ctrl+C to stop the runner.
+Leave `./run.sh` running so the `mutation-test` job can execute on your machine. When you're done, press Ctrl+C to stop the runner.
+
+> **Workflow toggle:** the `mutation-test` job only runs when the repository variable `RUN_SELF_HOSTED` is set to `true`.  
+> - Default (variable unset/false): the job is skipped so GitHub-hosted runners finish cleanly even if your machine is offline.  
+> - When you want to run mutation tests: start the runner and set `Settings → Secrets and variables → Actions → Variables → RUN_SELF_HOSTED = true`, then re-run the workflow.  
+> - Turn the variable back to `false` (or delete it) when you shut down the runner, so future workflows don’t wait for a machine that isn’t listening.
 
 ## How to Use This Repository
 If you're working through CS320 (or just exploring the project), the recommended flow is:
