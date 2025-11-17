@@ -51,6 +51,17 @@ jobs:
             echo "No cached Dependency-Check database found"
           fi
 
+      - name: Clean workspace Dependency-Check cache
+        shell: bash
+        run: |
+          CACHE_DIR="${{ github.workspace }}/.owasp-cache"
+          if [ -d "$CACHE_DIR" ]; then
+            echo "Removing workspace Dependency-Check cache at $CACHE_DIR"
+            rm -rf "$CACHE_DIR"
+          else
+            echo "No workspace Dependency-Check cache found"
+          fi
+
       - name: Debug NVD API key presence
         shell: bash
         env:
