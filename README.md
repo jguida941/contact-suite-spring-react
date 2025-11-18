@@ -17,7 +17,9 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - [Validation & Error Handling](#validation--error-handling)
 - [Testing Strategy](#testing-strategy)
 - [Static Analysis & Quality Gates](#static-analysis--quality-gates)
+- [Backlog](#backlog)
 - [CI/CD Pipeline](#cicd-pipeline)
+- [Sample QA Summary](#sample-qa-summary)
 - [Self-Hosted Mutation Runner Setup](#self-hosted-mutation-runner-setup)
 
 ## Getting Started
@@ -198,6 +200,9 @@ Dependency-Check also pings the Sonatype OSS Index service. When requests are an
 
 If you skip these steps, the OSS Index analyzer simply logs warnings while the rest of Dependency-Check continues to rely on the NVD feed.
 
+## Backlog
+- Full backlog lives in [`docs/backlog.md`](docs/backlog.md) so the README stays concise. It includes future reporting ideas (charts, dashboards) and domain enhancements (e.g., richer JavaDoc/toString/equals/hashCode on `Contact`).
+
 ## CI/CD Pipeline
 
 ### Matrix Verification
@@ -228,6 +233,9 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
   2. Generate a repository token in Codecov and save it as the GitHub secret `CODECOV_TOKEN`.
   3. Re-run the workflow; each matrix job uploads coverage with a `flags` label (`os-jdk`).
 - The badge at the top of this README pulls from the default `master` branch; adjust the URL if you maintain long-lived release branches.
+
+## Sample QA Summary
+The GitHub Actions “Summary” tab shows a QA metrics table for each matrix job. Use this section as a placeholder for the screenshot you plan to add; the raw table lives in [`docs/qa-summary.md`](docs/qa-summary.md) for reference.
 
 ### CI/CD Flow Diagram
 ```mermaid
@@ -315,22 +323,3 @@ If you're working through CS320 (or just exploring the project), the recommended
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for details.
-
-## Reporting Backlog
-- Attach richer visual artifacts (HTML dashboards or charts) that combine the JaCoCo/PITest/Dependency-Check data already posted in the run summary.
-- Track progress for these items in `docs/CI-CD/ci_cd_plan.md` as they land so improvements to observability stay visible.
-- Consider enhanced `Contact` ergonomics (constructor JavaDoc describing validation exceptions, plus `toString/equals/hashCode` for better logging and collection handling once `ContactService` stores contacts in maps/sets).
-
-## Sample QA Summary
-Every matrix job now renders a GitHub Actions summary similar to the snippet below so you can review health without opening each artifact:
-
-```
-| Metric | Result | Details |
-| --- | --- | --- |
-| Tests | 30 passing | Total runtime 0.11s |
-| Line coverage (JaCoCo) | 100.0% ████████████████████ | 44 / 44 lines covered |
-| Mutation score (PITest) | 72.4% ██████████████░░░░░░ | 21 killed, 8 survived out of 29 mutations |
-| Dependency-Check | _not run_ | Report missing (probably skipped when `NVD_API_KEY` was not provided). |
-```
-
-Check the Run Summary panel in any workflow run to see the latest numbers, including when a gate is skipped (e.g., Dependency-Check when the NVD API key is absent).

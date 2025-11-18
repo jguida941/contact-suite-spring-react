@@ -11,6 +11,8 @@ All notable changes to this project will be documented here. Follow the
   so each matrix run publishes tests/coverage/mutation/dependency metrics.
 - Added a "Sample QA Summary" section to `README.md` showing what the Actions
   summary table looks like for a representative run.
+- Created `docs/backlog.md` and `docs/qa-summary.md`, moving the detailed
+  backlog/sample content out of the README to keep it focused.
 
 ### Changed
 - Updated `README.md` and `docs/index.md` to match the new `docs/requirements`
