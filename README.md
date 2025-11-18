@@ -76,7 +76,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | delete    | O(1)    | O(n)  | O(1)  |
 - This strategy meets the course requirements while documenting the upgrade path (DAO, repository pattern, etc.).
 
-# [Contact.java](src/main/java/contactapp/Contact.java) / [ContactTest.java](src/test/java/contactapp/ContactTest.java)
+## [Contact.java](src/main/java/contactapp/Contact.java) / [ContactTest.java](src/test/java/contactapp/ContactTest.java)
 
 ## Validation & Error Handling
 
@@ -306,7 +306,9 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. Open any workflow’s “Summary” tab and look for the “QA Metrics” table for the latest numbers.
 
-<img width="901" height="696" alt="Screenshot 2025-11-17 at 10 16 00 PM" src="https://github.com/user-attachments/assets/67c780e2-c3b7-4011-b18c-1b713a14b573" />
+<img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
+
+
 
 ### CI/CD Flow Diagram
 ```mermaid
