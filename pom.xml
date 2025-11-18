@@ -21,7 +21,7 @@
         <dependency.check.version>12.1.0</dependency.check.version>
         <dependency.check.skip>false</dependency.check.skip>
         <nvd.api.delay>5000</nvd.api.delay>
-        <pitest.version>1.15.6</pitest.version>
+        <pitest.version>1.21.1</pitest.version>
         <pit.skip>false</pit.skip>
     </properties>
 
