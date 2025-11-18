@@ -32,6 +32,8 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 
 | Path                                                                                                                         | Description                                  |
 |------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
-| [`requirements/contact-requirements/requirements.md`](requirements/contact-requirements/requirements.md)                     | Full assignment requirements.                |
-| [`requirements/contact-requirements/requirements_checklist.md`](requirements/contact-requirements/requirements_checklist.md) | Checklist view of requirements for tracking. |
+| [`requirements/contact-requirements/requirements.md`](requirements/contact-requirements/requirements.md)                     | Contact assignment requirements.             |
+| [`requirements/contact-requirements/requirements_checklist.md`](requirements/contact-requirements/requirements_checklist.md) | Contact requirements checklist.              |
+| [`requirements/task-requirements/requirements.md`](requirements/task-requirements/requirements.md)                           | Task assignment requirements (task object/service). |
+| [`requirements/task-requirements/requirements_checklist.md`](requirements/task-requirements/requirements_checklist.md)       | Task requirements checklist.                 |
 | [`index.md`](index.md)                                                                                                       | Documentation index and navigation entry.    |
