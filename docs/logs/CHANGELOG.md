@@ -65,6 +65,8 @@ All notable changes to this project will be documented here. Follow the
 - Clarified README sections describing the `ConcurrentHashMap<String, Contact>`
   storage, the `Map.copyOf(...)` snapshot, and the atomic update helper managed
   by `ContactService`.
+- Corrected README documentation to state that SpotBugs currently runs on all
+  supported JDKs (17/21/25) instead of implying it auto-skips on newer runtimes.
 - Added a README note explaining why the service methods return `boolean`
   (simple success/failure signaling for this milestone).
 - Updated README caching section to explain that Dependency-Check caches are
