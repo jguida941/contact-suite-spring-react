@@ -67,6 +67,9 @@ All notable changes to this project will be documented here. Follow the
   by `ContactService`.
 - Corrected README documentation to state that SpotBugs currently runs on all
   supported JDKs (17/21/25) instead of implying it auto-skips on newer runtimes.
+- Enhanced `scripts/ci_metrics_summary.py` to show colored icons/bars, severity
+  breakdowns, and generate a dark-mode `target/site/qa-dashboard/index.html`
+  page with quick links to JaCoCo/SpotBugs/Dependency-Check/PITest reports.
 - Added a README note explaining why the service methods return `boolean`
   (simple success/failure signaling for this milestone).
 - Updated README caching section to explain that Dependency-Check caches are

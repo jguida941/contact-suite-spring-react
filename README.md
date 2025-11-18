@@ -77,6 +77,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | update    | O(1)    | O(n)  | O(1)  |
 | delete    | O(1)    | O(n)  | O(1)  |
 - This strategy meets the course requirements while documenting the upgrade path (DAO, repository pattern, etc.).
+
   <br>
 
 ## [Contact.java](src/main/java/contactapp/Contact.java) / [ContactTest.java](src/test/java/contactapp/ContactTest.java)
@@ -174,7 +175,8 @@ void testInvalidContactId(String id, String expectedMessage) {
 - `ValidationTest.validateLengthAcceptsBoundaryValues` proves 1/10-char names and 30-char addresses remain valid.
 - `ValidationTest.validateLengthRejectsBlankStrings` and `ValidationTest.validateLengthRejectsNull` ensure blanks/nulls fail before length math is evaluated.
 - `ValidationTest.validateNumeric10RejectsBlankStrings` and `ValidationTest.validateNumeric10RejectsNull` ensure the phone validator raises the expected messages before regex/length checks.
-  <br>
+
+<br>
 
 ## [ContactService.java](src/main/java/contactapp/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/ContactServiceTest.java)
 
@@ -245,7 +247,8 @@ graph TD
 - `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard “contactId must not be null or blank” message.
 - `testUpdateContact` verifies every mutable field changes via setter delegation.
 - `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
-  <br>
+
+<br>
 
 ## [Task.java](src/main/java/taskapp/Task.java) / [TaskTest.java](src/test/java/taskapp/TaskTest.java)
 
@@ -284,6 +287,7 @@ graph TD
 
 ### Scenario Coverage
 - _Placeholder: TODO
+
   <br>
 
 ## [TaskService.java](src/main/java/taskapp/TaskService.java) / [TaskServiceTest.java](src/test/java/taskapp/TaskServiceTest.java)
@@ -328,6 +332,7 @@ graph TD
 
 ### Scenario Coverage
 - _PlaceHolder:TODO
+
   <br>
 
 ## Static Analysis & Quality Gates
@@ -423,11 +428,12 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ### Quality Gate Behavior
 - Each matrix job executes the full suite (tests, JaCoCo, Checkstyle, SpotBugs, Dependency-Check, PITest).
 - Checkstyle enforces formatting/import/indentation rules while SpotBugs scans bytecode for bug patterns and fails the build on findings.
-- SpotBugs runs as part of every `mvn verify` run on the supported JDKs (currently 17, 21, and 25 in CI) and fails the build on findings
+- SpotBugs runs as part of every `mvn verify` run on the supported JDKs (currently 17, 21, and 25 in CI) and fails the build on findings.
 - If Dependency-Check or PITest flakes because of environment constraints, the workflow retries with `-Ddependency-check.skip=true` or `-Dpit.skip=true` so contributors stay unblocked but warnings remain visible.
 - Python 3.12 is provisioned via `actions/setup-python@v5` so `scripts/ci_metrics_summary.py` runs consistently on both Ubuntu and Windows runners.
 - Mutation coverage now relies on GitHub-hosted runners by default; the self-hosted lane is opt-in and only fires when the repository variable `RUN_SELF_HOSTED` is set.
 - After every matrix job, `scripts/ci_metrics_summary.py` posts a table to the GitHub Actions run summary showing tests, JaCoCo coverage, PITest mutation score, and Dependency-Check counts (with ASCII bars for quick scanning).
+- The same summary script emits a dark-mode HTML dashboard (`target/site/qa-dashboard/index.html`) with quick stats and links to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports (packaged inside the `quality-reports-*` artifact for download).
 
 ### Caching Strategy
 - Maven artifacts are cached via `actions/cache@v4` (`~/.m2/repository`) to keep builds fast.
@@ -476,7 +482,9 @@ graph TD
 ```
 
 ## QA Summary
-Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. Open any workflow’s “Summary” tab and look for the “QA Metrics” table for the latest numbers.
+Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow’s “Summary” tab and look for the “QA Metrics” section for the latest numbers.
+
+Need richer visuals? Download the `quality-reports-<os>-jdk<ver>` artifact from the workflow run and open `target/site/qa-dashboard/index.html`. The dashboard is a single dark-mode page with the same KPIs, inline progress bars, and quick links over to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports.
 
 <img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
 
