@@ -5,10 +5,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service responsible for managing {@link Contact} instances.
- * <p>
+ *
  * For this milestone it owns the in-memory storage for contacts
  * and will expose operations to add, update, and delete them.
- * <p>
+ *
  * Implemented as a singleton so the application uses a single shared
  * instance, obtained through {@link #getInstance()}.
  */
@@ -54,7 +54,7 @@ public final class ContactService {
 
     /**
      * Adds a contact if the contactId is not already present.
-     * <br>
+     *
      * Using {@link java.util.concurrent.ConcurrentHashMap#putIfAbsent(Object, Object)}
      * makes the uniqueness check and insert a single atomic operation on the
      * underlying ConcurrentHashMap. This avoids the race condition you would get
@@ -116,11 +116,11 @@ public final class ContactService {
 
     /**
      * Returns the internal contact store (contacts keyed by contactId).
-     * <p>
-     * This exists so the CS320 tests can directly verify that
+     *
+     * This exists so the unit tests can directly verify that
      * addContact, deleteContact, and updateContact change the
      * in-memory state as expected.
-     * <p>
+     *
      * In a real application we would normally keep this map private
      * and only expose behavior through service methods, not through
      * a raw Map getter.

@@ -1,6 +1,7 @@
 package contactapp;
 
 // JUnit 5 core test annotations
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -15,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * - successful creation with valid data,
  * - updates via setters with valid data,
  * - and that invalid inputs cause the constructor/setters to throw IllegalArgumentException
- *   with the specific validation messages emitted by the Validation helper.
+ * with the specific validation messages emitted by the Validation helper.
  */
 public class ContactTest {
 

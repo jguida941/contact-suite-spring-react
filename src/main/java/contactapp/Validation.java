@@ -2,7 +2,7 @@ package contactapp;
 
 /**
  * Utility methods for validating contact fields.
- * <p>
+ *
  * All methods throw {@link IllegalArgumentException} when a value
  * violates the contact requirements. This keeps validation logic
  * in one place so both the constructor and setters can reuse it.
@@ -30,10 +30,10 @@ public final class Validation {
      * Validates that a String has a length within the given bounds.
      * Also ensures the value is not null or blank.
      *
-     * @param input      the value to check
-     * @param label      logical name of the field, used in exception messages
-     * @param minLength  inclusive minimum length
-     * @param maxLength  inclusive maximum length
+     * @param input     the value to check
+     * @param label     logical name of the field, used in exception messages
+     * @param minLength inclusive minimum length
+     * @param maxLength inclusive maximum length
      * @throws IllegalArgumentException if input is null/blank or outside [minLength, maxLength]
      */
     public static void validateLength(String input, String label, int minLength, int maxLength) {
@@ -51,8 +51,7 @@ public final class Validation {
      *
      * @param input the value to check
      * @param label logical name of the field, used in exception messages
-     * @throws IllegalArgumentException if input is null/blank,
-     *                                  contains non digits, or is not length 10
+     * @throws IllegalArgumentException if input is null/blank, contains non-digits, or is not length 10
      */
     public static void validateNumeric10(String input, String label) {
         validateNotBlank(input, label);

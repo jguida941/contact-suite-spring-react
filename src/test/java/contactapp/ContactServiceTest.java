@@ -6,6 +6,15 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * Tests the ContactService behavior.
+ *
+ * Verifies:
+ * - getInstance() returns a non-null singleton
+ * - addContact() adds a new contact and rejects duplicate IDs
+ * - deleteContact() removes existing contacts and throws for blank IDs
+ * - updateContact() updates existing contacts and returns false if the ID is missing
+ */
 public class ContactServiceTest {
 
     // @BeforeEach method to clear the ContactService database before each test
@@ -36,7 +45,7 @@ public class ContactServiceTest {
         boolean added = contactService.addContact(contact);
 
         // addContact(...) should return true for a new contactId
-        // the internal map should now contain the entry: "1" -> contact
+        // the internal map should now contain the entry: "100" -> contact
         assertThat(added).isTrue();
         assertThat(contactService.getDatabase())
                 .containsEntry("100", contact);
@@ -102,8 +111,8 @@ public class ContactServiceTest {
                 .hasFieldOrPropertyWithValue("firstName", "Sebastian")
                 .hasFieldOrPropertyWithValue("lastName", "Guida")
                 .hasFieldOrPropertyWithValue("phone", "0987654321")
-                   .hasFieldOrPropertyWithValue("address", "1234 Test Street");
-        }
+                .hasFieldOrPropertyWithValue("address", "1234 Test Street");
+    }
 
     // Test for Duplicate Contact IDs
     @Test
@@ -136,7 +145,8 @@ public class ContactServiceTest {
 
         assertThat(updated).isFalse();
     }
-    // Test deleteContact throws IllegalArgumentException for null contactId
+
+    // Test deleteContact throws IllegalArgumentException for blank contactId
     @Test
     void testDeleteContactBlankIdThrows() {
         ContactService service = ContactService.getInstance();
@@ -144,5 +154,14 @@ public class ContactServiceTest {
         assertThatThrownBy(() -> service.deleteContact(" "))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("contactId must not be null or blank");
+    }
+    // Test addContact throws IllegalArgumentException for null contact
+    @Test
+    void testAddContactNullThrows() {
+        ContactService service = ContactService.getInstance();
+
+        assertThatThrownBy(() -> service.addContact(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("contact must not be null");
     }
 }

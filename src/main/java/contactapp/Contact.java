@@ -1,11 +1,15 @@
 package contactapp;
 /**
  * Contact domain object.
+ *
  * Enforces all field constraints from the requirements:
- * - contactId: non-null, <= 10 chars, not updatable
- * - firstName/lastName: non-null, <= 10 chars
- * - phone: non-null, exactly 10 digits
- * - address: non-null, <= 30 chars
+ * - contactId: non-null, length 1–10, not updatable
+ * - firstName/lastName: non-null, length 1–10
+ * - phone: non-null, exactly 10 numeric digits
+ * - address: non-null, length 1–30
+ *
+ * All violations result in {@link IllegalArgumentException} being thrown
+ * by the underlying {@link Validation} helper.
  */
 
 public class Contact {
@@ -15,6 +19,11 @@ public class Contact {
     private String phone;
     private String address;
 
+    /**
+     * Creates a new Contact with the given values.
+     *
+     * @throws IllegalArgumentException if any field violates the Contact constraints
+     */
     public Contact(
             String contactId,
             String firstName,
@@ -22,6 +31,7 @@ public class Contact {
             String phone,
             String address) {
 
+        // Use Validation utility for constructor field checks
         Validation.validateNotBlank(contactId, "contactId");
         Validation.validateLength(contactId, "contactId", 1, 10);
         this.contactId = contactId;
