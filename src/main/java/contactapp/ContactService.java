@@ -1,5 +1,8 @@
 package contactapp;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,6 +47,9 @@ public final class ContactService {
      *
      * @return the singleton {@code ContactService} instance
      */
+    @SuppressFBWarnings(
+            value = "MS_EXPOSE_REP",
+            justification = "Singleton intentionally exposes shared instance for application use")
     public static synchronized ContactService getInstance() {
         if (instance == null) {
             instance = new ContactService();
@@ -126,6 +132,17 @@ public final class ContactService {
      * a raw Map getter.
      */
     public Map<String, Contact> getDatabase() {
-        return database;
+        // Return a defensive, read-only snapshot so tests/callers can inspect state
+        // without mutating the internal ConcurrentHashMap
+        return Collections.unmodifiableMap(new HashMap<>(database));
+    }
+
+    /**
+     * Clears all contacts from the in-memory store.
+     * Primarily used by tests to reset state between cases.
+     */
+    public void clearAllContacts() {
+        // Tests invoke this instead of mutating the unmodifiable snapshot returned by getDatabase()
+        database.clear();
     }
 }

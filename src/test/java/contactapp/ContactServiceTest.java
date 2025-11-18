@@ -20,7 +20,7 @@ public class ContactServiceTest {
     // @BeforeEach method to clear the ContactService database before each test
     @BeforeEach
     void clearBeforeTest() {
-        ContactService.getInstance().getDatabase().clear();
+        ContactService.getInstance().clearAllContacts();
     }
 
     // Check that ContactService singleton instance is not null

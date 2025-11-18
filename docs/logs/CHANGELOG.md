@@ -41,6 +41,9 @@ All notable changes to this project will be documented here. Follow the
 - Expanded Checkstyle configuration (imports, indentation, line length, braces, etc.)
   and wired `spotbugs-maven-plugin` (auto-skipped on JDK 23+) so bug patterns fail
   `mvn verify`.
+- `ContactService#getDatabase()` now returns an unmodifiable snapshot and a new
+  `clearAllContacts()` helper was added for tests, eliminating SpotBugs exposure
+  warnings for the service internals.
 - Expanded service tests to cover singleton reuse, missing delete branch, and a
   last-name change during updates so mutation testing can kill the remaining
   ContactService mutants.
