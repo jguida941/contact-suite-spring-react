@@ -45,12 +45,11 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | [`.github/workflows`](.github/workflows)                                                       | CI/CD pipelines (tests, quality gates, release packaging, CodeQL).  |
 
 ## Design Decisions & Highlights
-- **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps map keys stable and mirrors real-world record identifiers.
-- **Centralized validation** - Constructors, setters, and service methods all delegate to the shared `Validation` helpers (`validateLength` wraps `validateNotBlank`, and phones go through `validateNumeric10`), so every field uses the same rules whether it’s being created or updated.
+- **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps HashMap keys stable and mirrors real-world record identifiers.
+- **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, and (for phones) `validateNumeric10`, so IDs, names, phones, and addresses all share one enforcement pipeline.
 - **Fail-fast IllegalArgumentException** - Invalid input is a caller bug, so we throw standard JDK exceptions with precise messages and assert on them in tests.
-- **ConcurrentHashMap storage strategy** - Milestone 1 sticks to an in-memory, thread-safe `ConcurrentHashMap<String, Contact>` (owned by the singleton `ContactService`) for predictable O(1) CRUD while leaving that service class as the seam for future persistence layers.
-- **Boolean service API** - The service’s `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). 
-    That keeps the milestone interface lightweight while still letting JUnit assertions check the outcome without extra exception types.
+- **HashMap-first storage strategy** - Milestone 1 sticks to an in-memory `HashMap<String, Contact>` (living inside the singleton `ContactService`) for predictable O(1) CRUD while leaving that service class as the seam for future persistence layers.
+- **Boolean service API** - The service’s `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). That keeps the milestone interface lightweight while still letting JUnit assertions check the outcome without extra exception types.
 - **Security posture** - Input validation acts as the first defense layer; nothing touches storage/logs unless it passes the guards.
 - **Testing depth** - Parameterized JUnit 5 tests, AssertJ assertions, JaCoCo coverage, and PITest mutation scores combine to prove the validation logic rather than just executing it.
 
@@ -63,21 +62,22 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 ### Validation Layer (`Validation.java`)
 - `validateNotBlank(input, label)` - rejects null, empty, and whitespace-only fields with label-specific messages.
 - `validateLength(input, label, min, max)` - enforces 1-10 char IDs/names and 1-30 char addresses (bounds are parameters, so future changes touch one file).
-- `validateNumeric10(input, label, requiredLength)` - requires digits-only phone numbers with the specified exact length (10 for this project).
+- `validateNumeric10(input, label)` - requires digits-only phone numbers with exact length.
 - These helpers double as both correctness logic and security filtering.
 
 ### Service Layer (`ContactService`)
-- Provides in-memory storage via a `ConcurrentHashMap<String, Contact>`, add/update/delete orchestration, and uniqueness checks.
+- Currently a scaffold to keep milestone scope manageable. It will host in-memory storage via a `HashMap<String, Contact>`, add/update/delete orchestration, and uniqueness checks.
 - By keeping this layer separate from the domain model, we can slot in persistence or caching without rewriting the entity/tests. The singleton wrapper ensures every caller sees the same map instance.
 
 ### Storage & Extension Points
-**ConcurrentHashMap<String, Contact> (backing store)**
+**HashMap<String, Contact> (planned backing store)**
 | Operation | Average | Worst | Space |
 |-----------|---------|-------|-------|
 | add/get   | O(1)    | O(n)  | O(1)  |
 | update    | O(1)    | O(n)  | O(1)  |
 | delete    | O(1)    | O(n)  | O(1)  |
 - This strategy meets the course requirements while documenting the upgrade path (DAO, repository pattern, etc.).
+  <br>
 
 ## [Contact.java](src/main/java/contactapp/Contact.java) / [ContactTest.java](src/test/java/contactapp/ContactTest.java)
 
@@ -85,7 +85,6 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - `Contact` acts as the immutable ID holder with mutable first/last name, phone, and address fields.
 - Constructor delegates to setters so validation stays centralized and consistent for both creation and updates.
 - Validation trims IDs/names/addresses before storing them, guaranteeing normalized state once objects are created.
-- The dedicated `update(...)` helper validates all four mutable fields first, then applies them together so callers never observe partially updated contacts.
 
 ## Validation & Error Handling
 
@@ -96,7 +95,7 @@ graph TD
     B[validateNotBlank]
     C[validateLength]
     D{phone field?}
-    E[validateNumeric10 (with required length)]
+    E[validateNumeric10]
     F[field assignment]
     X[IllegalArgumentException]
 
@@ -175,15 +174,15 @@ void testInvalidContactId(String id, String expectedMessage) {
 - `ValidationTest.validateLengthAcceptsBoundaryValues` proves 1/10-char names and 30-char addresses remain valid.
 - `ValidationTest.validateLengthRejectsBlankStrings` and `ValidationTest.validateLengthRejectsNull` ensure blanks/nulls fail before length math is evaluated.
 - `ValidationTest.validateNumeric10RejectsBlankStrings` and `ValidationTest.validateNumeric10RejectsNull` ensure the phone validator raises the expected messages before regex/length checks.
-
+  <br>
 
 ## [ContactService.java](src/main/java/contactapp/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/ContactServiceTest.java)
 
 ### Service Snapshot
 - **Singleton access** – `getInstance()` exposes one shared service so every caller sees the same `ConcurrentHashMap` backing store.
 - **Atomic uniqueness guard** – `addContact` rejects null inputs up front and calls `ConcurrentHashMap.putIfAbsent(...)` directly so duplicate IDs never overwrite state even under concurrent access.
-- **Shared validation** – `deleteContact` uses `Validation.validateNotBlank` for IDs and `updateContact` delegates to `Contact.update(...)`, guaranteeing every field is validated before any state changes.
-- **Defensive views** – `getDatabase()` returns a `Map.copyOf(...)` snapshot (tests call `clearAllContacts()` to reset state) so callers can’t mutate the internal map accidentally.
+- **Shared validation** – `deleteContact` uses `Validation.validateNotBlank` for IDs and `updateContact` delegates to the `Contact` setters, guaranteeing the constructor’s length/null/phone rules apply to updates too.
+- **Defensive views** – `getDatabase()` returns an unmodifiable snapshot (tests now use `clearAllContacts()` to reset state) so callers can’t mutate the internal map accidentally.
 
 ## Validation & Error Handling
 
@@ -200,16 +199,16 @@ graph TD
     C -->|delete| H["remove(contactId)"]
     C -->|update| I[fetch existing]
     I -->|missing| F
-    I -->|found| J[Contact.update validates inputs]
+    I -->|found| J[Contact setters reuse Validation]
     J --> K[updated contact]
 ```
 - All entry points validate the `contactId` before touching the map so we never store blank keys.
-- Delegation to `Contact.update(...)` ensures all fields are validated up front and reuse the same messages as the constructor (e.g., “phone must be exactly 10 digits”).
+- Setter delegation ensures errors surface with the same messages as the constructor (e.g., “phone must be exactly 10 digits”).
 
 ### Error Message Philosophy
 - Null service inputs raise `IllegalArgumentException` with explicit labels (e.g., “contact must not be null”).
 - ID validation errors come from the shared `Validation` helper so delete/update use the exact strings already asserted in `ContactTest`.
-- Field-level issues rely on `Contact.update(...)` (and the underlying setters), so callers receive consistent messaging whether the data was supplied in the constructor or during an update.
+- Field-level issues rely on the `Contact` setters, so callers receive consistent messaging whether the data was supplied in the constructor or during an update.
 
 ### Propagation Flow
 ```mermaid
@@ -234,6 +233,7 @@ graph TD
 - Field assertions after update reuse `hasFieldOrPropertyWithValue` so the tests read like a change log.
 - Boolean outcomes are asserted explicitly (`isTrue()/isFalse()`) so duplicate and missing-ID branches stay verified.
 
+
 ### Scenario Coverage
 - `testGetInstance` ensures the singleton accessor always returns a concrete service before any CRUD logic runs.
 - `testGetInstanceReturnsSameReference` proves repeated invocations return the same singleton instance.
@@ -243,8 +243,9 @@ graph TD
 - `testDeleteContact` exercises removal plus assertion that the key disappears.
 - `testDeleteMissingContactReturnsFalse` covers the branch where no contact exists for the given id.
 - `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard “contactId must not be null or blank” message.
-- `testUpdateContact` verifies every mutable field changes in one call through the atomic `Contact.update(...)` helper.
+- `testUpdateContact` verifies every mutable field changes via setter delegation.
 - `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
+  <br>
 
 ## [Task.java](src/main/java/taskapp/Task.java) / [TaskTest.java](src/test/java/taskapp/TaskTest.java)
 
@@ -265,7 +266,7 @@ graph TD
 - _Placeholder: describe how task IDs, names, and descriptions flow through validation helpers._
 
 ### Error Message Philosophy
-- _Placeholder: capture the exact wording strategy for task validation errors (e.g., label + reason)._ 
+- _Placeholder: capture the exact wording strategy for task validation errors (e.g., label + reason)._
 
 ### Propagation Flow
 ```mermaid
@@ -283,11 +284,12 @@ graph TD
 
 ### Scenario Coverage
 - _Placeholder: TODO
+  <br>
 
 ## [TaskService.java](src/main/java/taskapp/TaskService.java) / [TaskServiceTest.java](src/test/java/taskapp/TaskServiceTest.java)
 
 ### Service Snapshot
-- _Placeholder: summarize task service responsibilities (add/delete/update, in-memory map, uniqueness guard)._ 
+- _Placeholder: summarize task service responsibilities (add/delete/update, in-memory map, uniqueness guard)._
 
 ## Validation & Error Handling
 
@@ -303,7 +305,7 @@ graph TD
 - _Placeholder: describe how the service coordinates Validation helpers and task setters._
 
 ### Error Message Philosophy
-- _Placeholder: call out how service-level errors mirror the domain (e.g., null contact, missing task ID)._ 
+- _Placeholder: call out how service-level errors mirror the domain (e.g., null contact, missing task ID)._
 
 ### Propagation Flow
 ```mermaid
@@ -326,21 +328,7 @@ graph TD
 
 ### Scenario Coverage
 - _PlaceHolder:TODO
-
-### Testing Pyramid
-```mermaid
-graph TD
-    A[Static analysis] --> B[Unit tests]
-    B --> C[Service tests]
-    C --> D[Integration tests]
-    D --> E[Mutation tests]
-```
-### Mutation Testing & Quality Gates
-- PITest runs inside `mvn verify`, so the new service tests contribute directly to the enforced mutation score.
-- The GitHub Actions matrix uses the same suite, ensuring duplicate/add/delete/update scenarios stay green across OS/JDK combinations.
-- GitHub Actions still executes `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` with `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`, so mutation coverage is enforced everywhere.
-- The optional self-hosted lane remains available for long mutation sessions or extra capacity; see the dedicated section below.
-
+  <br>
 
 ## Static Analysis & Quality Gates
 
@@ -355,7 +343,22 @@ graph TD
 
 Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pipelines.
 
-### Checkstyle Rule Set
+## Mutation Testing & Quality Gates
+- PITest runs inside `mvn verify`, so the new service tests contribute directly to the enforced mutation score.
+- The GitHub Actions matrix uses the same suite, ensuring duplicate/add/delete/update scenarios stay green across OS/JDK combinations.
+- GitHub Actions still executes `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` with `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`, so mutation coverage is enforced everywhere.
+- The optional self-hosted lane remains available for long mutation sessions or extra capacity; see the dedicated section below.
+
+## Testing Pyramid
+```mermaid
+graph TD
+    A[Static analysis] --> B[Unit tests]
+    B --> C[Service tests]
+    C --> D[Integration tests]
+    D --> E[Mutation tests]
+```
+
+## Checkstyle Rule Set
 | Check Group | Focus |
 |-------------|-------|
 | `ImportOrder`, `AvoidStarImport`, `RedundantImport` | Enforce ordered/separated imports, no wildcards, and no duplicates. |
@@ -369,7 +372,12 @@ Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pi
 | `SimplifyBooleanExpression`, `SimplifyBooleanReturn`, `OneStatementPerLine` | Reduce complex boolean logic and keep one statement per line. |
 | `FinalParameters`, `FinalLocalVariable` | Encourage immutability for parameters and locals when possible. |
 
-### SpotBugs Commands
+
+## SpotBugs
+<img width="1037" height="767" alt="Screenshot 2025-11-18 at 4 16 06 PM" src="https://github.com/user-attachments/assets/419bd8e1-9974-4db2-ad3a-0f83a9c014db" />
+
+
+## SpotBugs Commands
 ```bash
 # Run SpotBugs as part of the normal build
 mvn -Ddependency-check.skip=true verify
@@ -385,7 +393,7 @@ mvn spotbugs:gui
 ```
 > CI already runs SpotBugs inside `mvn verify`; these commands help when iterating locally.
 
-### Sonatype OSS Index (optional)
+## Sonatype OSS Index (optional)
 Dependency-Check also pings the Sonatype OSS Index service. When requests are anonymous the analyzer often rate-limits, which is why CI prints warnings like “An error occurred while analyzing … (Sonatype OSS Index Analyzer)”. To receive full results:
 1. Create a free account at [ossindex.sonatype.org](https://ossindex.sonatype.org/) and generate an API token.
 2. Add the credentials to your Maven `settings.xml`:
@@ -448,14 +456,8 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - Concurrency guards prevent overlapping scans on the same ref, and `paths-ignore` ensures doc-only/image-only changes do not queue CodeQL unnecessarily.
 - Triggers: pushes/PRs to `main` or `master` (respecting the filters), a weekly scheduled scan (`cron: 0 3 * * 0`), and optional manual dispatch.
 
-## QA Summary
-Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. Open any workflow’s “Summary” tab and look for the “QA Metrics” table for the latest numbers.
 
-<img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
-
-
-
-### CI/CD Flow Diagram
+## CI/CD Flow Diagram
 ```mermaid
 graph TD
     A[Push or PR]
@@ -472,6 +474,12 @@ graph TD
     D --> E --> B
     D --> F --> G --> H
 ```
+
+## QA Summary
+Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. Open any workflow’s “Summary” tab and look for the “QA Metrics” table for the latest numbers.
+
+<img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
+
 
 ## Self-Hosted Mutation Runner Setup
 - Register a runner per GitHub's instructions (Settings -> Actions -> Runners -> New self-hosted runner). Choose macOS/Linux + architecture.
