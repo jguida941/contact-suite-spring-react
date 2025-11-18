@@ -32,10 +32,12 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 |------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
 | [`src/main/java/contactapp/Contact.java`](src/main/java/contactapp/Contact.java)               | Contact entity enforcing the ID/name/phone/address constraints.     |
 | [`src/main/java/contactapp/ContactService.java`](src/main/java/contactapp/ContactService.java) | Singleton service with in-memory CRUD, uniqueness checks, and validation reuse. |
+| [`src/main/java/taskapp/Task.java`](src/main/java/taskapp/Task.java) *(planned)*               | Task entity (ID/name/description) mirroring the requirements document. |
+| [`src/main/java/taskapp/TaskService.java`](src/main/java/taskapp/TaskService.java) *(planned)* | Task service API (add/delete/update) documented under task requirements. |
 | [`src/main/java/contactapp/Validation.java`](src/main/java/contactapp/Validation.java)         | Centralized validation helpers (not blank, length, numeric checks). |
 | [`src/test/java/contactapp/ContactTest.java`](src/test/java/contactapp/ContactTest.java)       | Unit tests for the `Contact` class (valid + invalid scenarios).     |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)            | Assignment write-up and checklist from the instructor (now under `docs/`). |
-| [`docs/index.md`](docs/index.md)                                                               | Quick reference guide for the repo layout.                          |
+| [`index.md`](index.md)                                                                         | Quick reference guide for the repo layout.                          |
 | [`pom.xml`](pom.xml)                                                                           | Maven build file (dependencies, plugins, compiler config).          |
 | [`config/checkstyle`](config/checkstyle)                                                       | Checkstyle configuration used by Maven/CI quality gates.            |
 | [`config/owasp-suppressions.xml`](config/owasp-suppressions.xml)                               | Placeholder suppression list for OWASP Dependency-Check.            |
@@ -209,6 +211,12 @@ graph TD
 - The service initially shipped as a stub; once CRUD code landed, targeted JUnit tests captured the scenarios before refactoring anything else.
 - `@BeforeEach` clears the singleton’s backing map so tests remain isolated even though the service is shared.
 
+### Assertion Patterns
+- AssertJ collections helpers (`containsEntry`, `doesNotContainEntry`) keep the CRUD expectations concise.
+- Field assertions after update reuse `hasFieldOrPropertyWithValue` so the tests read like a change log.
+- Boolean outcomes are asserted explicitly (`isTrue()/isFalse()`) so duplicate and missing-ID branches stay verified.
+
+
 ### Scenario Coverage
 - `testGetInstance` ensures the singleton accessor always returns a concrete service before any CRUD logic runs.
 - `testGetInstanceReturnsSameReference` proves repeated invocations return the same singleton instance.
@@ -227,9 +235,83 @@ graph TD
 - `ValidationTest.validateNumeric10RejectsBlankStrings` ensures the phone validator refuses whitespace before digit/length checks.
 - `ValidationTest.validateNumeric10RejectsNull` asserts null phone numbers are rejected by the helper before regex checks.
 
+## [Task.java](src/main/java/taskapp/Task.java) / [TaskTest.java](src/test/java/taskapp/TaskTest.java)
+
+### Service Snapshot
+- _TODO: Document task fields, Immutability rules, and storage semantics once Task.java lands._
+
+## Validation & Error Handling
+
+### Validation Pipeline
+```mermaid
+graph TD
+    A[task input] --> B[TODO validateNotBlank]
+    B --> C[TODO length guard]
+    C --> D{TODO field-specific?}
+    D --> E[TODO assign]
+    D --> F[TODO exception]
+```
+- _Placeholder: describe how task IDs, names, and descriptions flow through validation helpers._
+
+### Error Message Philosophy
+- _Placeholder: capture the exact wording strategy for task validation errors (e.g., label + reason)._ 
+
+### Propagation Flow
+```mermaid
+graph TD
+    A[Task ctor/setter] --> B{valid?}
+    B -->|yes| C[State stored]
+    B -->|no| D[IllegalArgumentException]
+```
+- _Placeholder: explain how task validation failures bubble up to callers/tests._
+
+## Testing Strategy
+
+### Approach & TDD
+- _Placeholder: outline the TDD workflow for TaskTest once implemented._
+
 ### Assertion Patterns
-- AssertJ collections helpers (`containsEntry`, `doesNotContainEntry`) keep the CRUD expectations concise.
-- Field assertions after update reuse `hasFieldOrPropertyWithValue` so the tests read like a change log.
+- _Placeholder: list the AssertJ / JUnit idioms that will back TaskTest (field assertions, message checks, etc.)._
+
+## [TaskService.java](src/main/java/taskapp/TaskService.java) / [TaskServiceTest.java](src/test/java/taskapp/TaskServiceTest.java)
+
+### Service Snapshot
+- _Placeholder: summarize task service responsibilities (add/delete/update, in-memory map, uniqueness guard)._ 
+
+## Validation & Error Handling
+
+### Validation Pipeline
+```mermaid
+graph TD
+    A[TaskService call] --> B[TODO validate taskId]
+    B --> C{operation}
+    C -->|add| D[TODO uniqueness check]
+    C -->|delete| E[TODO remove]
+    C -->|update| F[TODO apply setters]
+```
+- _Placeholder: describe how the service coordinates Validation helpers and task setters._
+
+### Error Message Philosophy
+- _Placeholder: call out how service-level errors mirror the domain (e.g., null contact, missing task ID)._ 
+
+### Propagation Flow
+```mermaid
+graph TD
+    A[Client] --> B[TaskService]
+    B --> C{Outcome}
+    C -->|true| D[State updated]
+    C -->|false| E[Duplicate/missing]
+    C -->|exception| F[Validation message]
+```
+- _Placeholder: specify boolean vs exception paths just like the contact service section._
+
+## Testing Strategy
+
+### Approach & TDD
+- _Placeholder: note how TaskServiceTest will isolate the in-memory store and exercise add/delete/update paths._
+
+### Assertion Patterns
+- _Placeholder: describe the assertions that will check task map contents, boolean results, and thrown messages._
 
 ### Testing Pyramid
 ```mermaid
@@ -239,13 +321,12 @@ graph TD
     C --> D[Integration tests]
     D --> E[Mutation tests]
 ```
-- Contact tests anchor the base of the pyramid, and the new service tests plug into the second tier to prove behavior around the shared store.
-
 ### Mutation Testing & Quality Gates
 - PITest runs inside `mvn verify`, so the new service tests contribute directly to the enforced mutation score.
 - The GitHub Actions matrix uses the same suite, ensuring duplicate/add/delete/update scenarios stay green across OS/JDK combinations.
 - GitHub Actions still executes `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` with `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`, so mutation coverage is enforced everywhere.
 - The optional self-hosted lane remains available for long mutation sessions or extra capacity; see the dedicated section below.
+
 
 ## Static Analysis & Quality Gates
 
@@ -280,7 +361,7 @@ Dependency-Check also pings the Sonatype OSS Index service. When requests are an
 If you skip these steps, the OSS Index analyzer simply logs warnings while the rest of Dependency-Check continues to rely on the NVD feed.
 
 ## Backlog
-- Full backlog lives in [`docs/backlog.md`](docs/backlog.md) so the README stays concise, and includes future ideas for reporting, observability, and domain enhancements.
+- Full backlog lives in [`docs/logs/backlog.md`](docs/logs/backlog.md) so the README stays concise, and includes future ideas for reporting, observability, and domain enhancements.
 
 ## CI/CD Pipeline
 
