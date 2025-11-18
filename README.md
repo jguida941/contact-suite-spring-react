@@ -159,6 +159,16 @@ void testInvalidContactId(String id, String expectedMessage) {
 - AssertJ’s `hasFieldOrPropertyWithValue` validates the happy path in one fluent statement.
 - `assertThatThrownBy().isInstanceOf(...).hasMessage(...)` proves exactly which validation rule triggered.
 
+### Scenario Coverage
+- `testSuccessfulCreation` validates the positive constructor path (all fields stored).
+- `testValidSetters` ensures setters update fields when inputs pass validation.
+- `testConstructorTrimsStoredValues` confirms IDs, names, and addresses are normalized via `trim()`.
+- `testFailedCreation` (`@ParameterizedTest`) enumerates every invalid ID/name/phone/address combination and asserts the corresponding message.
+- `testFailedSetFirstName` (`@ParameterizedTest`) exercises the setter’s invalid inputs (blank/long/null).
+- `ValidationTest.validateLengthAcceptsBoundaryValues` proves 1/10-char names and 30-char addresses remain valid.
+- `ValidationTest.validateLengthRejectsBlankStrings` and `ValidationTest.validateLengthRejectsNull` ensure blanks/nulls fail before length math is evaluated.
+- `ValidationTest.validateNumeric10RejectsBlankStrings` and `ValidationTest.validateNumeric10RejectsNull` ensure the phone validator raises the expected messages before regex/length checks.
+
 
 ## [ContactService.java](src/main/java/contactapp/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/ContactServiceTest.java)
 
@@ -223,17 +233,11 @@ graph TD
 - `testAddContact` proves the happy path and that the map contains the stored entry.
 - `testAddDuplicateContactFails` confirms the boolean contract for duplicates and that the original object remains untouched.
 - `testAddContactNullThrows` hits the defensive null guard so callers see a clear `IllegalArgumentException` instead of an NPE.
-- `testConstructorTrimsStoredValues` verifies the constructor strips leading/trailing spaces from ids, names, and addresses before persisting them.
 - `testDeleteContact` exercises removal plus assertion that the key disappears.
 - `testDeleteMissingContactReturnsFalse` covers the branch where no contact exists for the given id.
 - `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard “contactId must not be null or blank” message.
 - `testUpdateContact` verifies every mutable field changes via setter delegation.
 - `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
-- `ValidationTest.validateLengthAcceptsBoundaryValues` proves 1/10-char names and 30-char addresses are accepted so boundary mutations fail.
-- `ValidationTest.validateLengthRejectsBlankStrings` confirms helper-level blank checks fire even when the caller passes valid lengths.
-- `ValidationTest.validateLengthRejectsNull` shows null inputs fail before any length math runs.
-- `ValidationTest.validateNumeric10RejectsBlankStrings` ensures the phone validator refuses whitespace before digit/length checks.
-- `ValidationTest.validateNumeric10RejectsNull` asserts null phone numbers are rejected by the helper before regex checks.
 
 ## [Task.java](src/main/java/taskapp/Task.java) / [TaskTest.java](src/test/java/taskapp/TaskTest.java)
 

@@ -8,7 +8,8 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 |----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | [`src/`](../src)                                                           | Java source tree. <br/>`src/main/java/contactapp` contains application code; <br/>`src/test/java/contactapp` contains tests. |
 | [`CI-CD/`](CI-CD/)                                                         | CI/CD design notes and pipeline planning artifacts.                                                                          |
-| [`requirements/contact-requirements/`](requirements/contact-requirements/) | Assignment requirements (now collocated under `docs/`).                                                                      |
+| [`requirements/contact-requirements/`](requirements/contact-requirements/) | Contact assignment requirements (now collocated under `docs/`).                                                             |
+| [`requirements/task-requirements/`](requirements/task-requirements/)       | Task assignment requirements (task object/service specs + checklist).                                                       |
 
 ## Key Files
 
@@ -33,4 +34,4 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 |------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
 | [`requirements/contact-requirements/requirements.md`](requirements/contact-requirements/requirements.md)                     | Full assignment requirements.                |
 | [`requirements/contact-requirements/requirements_checklist.md`](requirements/contact-requirements/requirements_checklist.md) | Checklist view of requirements for tracking. |
-| [`index.md`](index.md)                                                                                                        | Documentation index and navigation entry.    |
+| [`index.md`](index.md)                                                                                                       | Documentation index and navigation entry.    |
