@@ -92,7 +92,7 @@ jobs:
             CMD="mvn -B -Ddependency-check.skip=true -Dpit.skip=false verify"
           else
             echo "::notice::Running with NVD API Key (with increased delay for CI environment)"
-            CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=5000 -Ddependency-check.skip=false -Dpit.skip=false verify"
+            CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=3500 -Ddependency-check.skip=false -Dpit.skip=false verify"
           fi
 
           if ! eval "$CMD"; then
