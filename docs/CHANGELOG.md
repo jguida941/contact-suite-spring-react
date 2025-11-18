@@ -15,6 +15,14 @@ All notable changes to this project will be documented here. Follow the
   backlog/sample content out of the README to keep it focused.
 
 ### Changed
+- Java CI workflow now installs Python 3.12 for every matrix leg so the QA
+  summary script runs reliably on Windows and Ubuntu runners.
+- CodeQL workflow now pins Temurin JDK 17, caches Maven deps, enforces
+  concurrency/path filters, and runs the `+security-and-quality` query pack via
+  CodeQL autobuild for broader coverage.
+- Fixed the Java CI workflow so `dependency-check.skip` uses the correct
+  hyphenated property, Codecov upload keys off `secrets.CODECOV_TOKEN`, and
+  quality-report artifacts no longer fail the job when reports are absent.
 - Updated `README.md` and `docs/index.md` to match the new `docs/requirements`
   structure and clarify when the optional self-hosted mutation lane is used.
 - Scheduled Dependabot’s weekly Maven check to run Mondays at 04:00 ET so

@@ -3,14 +3,36 @@ name: CodeQL
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+      - '**/*.png'
+      - '**/*.jpg'
+      - '**/*.jpeg'
+      - '**/*.gif'
+      - '**/*.svg'
   pull_request:
     branches: [main, master]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+      - '**/*.png'
+      - '**/*.jpg'
+      - '**/*.jpeg'
+      - '**/*.gif'
+      - '**/*.svg'
   schedule:
     - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       actions: read
       contents: read
@@ -22,16 +44,33 @@ jobs:
         language: [ 'java' ]
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          queries: +security-and-quality
 
-      - name: Build with Maven
-        run: mvn -B compile
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
 
-      - name: Perform CodeQL Analysis
+      # If autobuild fails, comment it out and use an explicit Maven build
+      # - name: Build with Maven
+      #   run: mvn -B -DskipTests package
+
+      - name: Analyze
         uses: github/codeql-action/analyze@v3
+        with:
+          category: ${{ matrix.language }}

@@ -282,6 +282,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ### Quality Gate Behavior
 - Each matrix job executes the full suite (tests, JaCoCo, Checkstyle, SpotBugs, Dependency-Check, PITest).
 - If Dependency-Check or PITest flakes because of environment constraints, the workflow retries with `-Ddependency-check.skip=true` or `-Dpit.skip=true` so contributors stay unblocked but warnings remain visible.
+- Python 3.12 is provisioned via `actions/setup-python@v5` so `scripts/ci_metrics_summary.py` runs consistently on both Ubuntu and Windows runners.
 - Mutation coverage now relies on GitHub-hosted runners by default; the self-hosted lane is opt-in and only fires when the repository variable `RUN_SELF_HOSTED` is set.
 - After every matrix job, `scripts/ci_metrics_summary.py` posts a table to the GitHub Actions run summary showing tests, JaCoCo coverage, PITest mutation score, and Dependency-Check counts (with ASCII bars for quick scanning).
 
@@ -304,6 +305,13 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
   2. Generate a repository token in Codecov and save it as the GitHub secret `CODECOV_TOKEN`.
   3. Re-run the workflow; each matrix job uploads coverage with a `flags` label (`os-jdk`).
 - The badge at the top of this README pulls from the default `master` branch; adjust the URL if you maintain long-lived release branches.
+
+### CodeQL Security Analysis
+- `.github/workflows/codeql.yml` runs independently of the matrix job to keep static analysis focused.
+- The workflow pins Temurin JDK 17 via `actions/setup-java@v4`, caches Maven dependencies, and enables the `+security-and-quality` query pack for broader coverage.
+- GitHub’s CodeQL `autobuild` runs the Maven build automatically; a commented `mvn` fallback is available if the repo ever needs a custom command.
+- Concurrency guards prevent overlapping scans on the same ref, and `paths-ignore` ensures doc-only/image-only changes do not queue CodeQL unnecessarily.
+- Triggers: pushes/PRs to `main` or `master` (respecting the filters), a weekly scheduled scan (`cron: 0 3 * * 0`), and optional manual dispatch.
 
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. Open any workflow’s “Summary” tab and look for the “QA Metrics” table for the latest numbers.

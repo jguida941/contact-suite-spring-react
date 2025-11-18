@@ -32,6 +32,11 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Cache Maven repository
         uses: actions/cache@v4
         with:
@@ -85,7 +90,7 @@ jobs:
             CMD="mvn -B -Ddependency-check.skip=true -Dpit.skip=false verify"
           else
             echo "::notice::Running with NVD API Key (with increased delay for CI environment)"
-            CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=5000 -Ddependency.check.skip=false -Dpit.skip=false verify"
+            CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=5000 -Ddependency-check.skip=false -Dpit.skip=false verify"
           fi
 
           if ! eval "$CMD"; then
@@ -99,6 +104,7 @@ jobs:
         with:
           name: surefire-reports-${{ runner.os }}-jdk${{ matrix.java-version }}
           path: target/surefire-reports
+          if-no-files-found: ignore
 
       - name: Upload quality reports
         if: always()
@@ -109,22 +115,22 @@ jobs:
             target/site
             target/checkstyle-result.xml
             target/dependency-check-report.html
+          if-no-files-found: ignore
 
       - name: Upload coverage to Codecov
-        if: ${{ env.CODECOV_TOKEN != '' }}
+        if: ${{ secrets.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v4
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: target/site/jacoco/jacoco.xml
           flags: ${{ matrix.os }}-jdk${{ matrix.java-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Publish QA summary
         if: always()
         env:
           MATRIX_OS: ${{ matrix.os }}
           MATRIX_JAVA: ${{ matrix.java-version }}
-        run: python3 scripts/ci_metrics_summary.py
+        run: python scripts/ci_metrics_summary.py
 
   release-artifacts:
     needs: build-test
@@ -193,7 +199,7 @@ jobs:
             echo "NVD_API_KEY not set; skipping Dependency-Check in container"
             CONTAINER_CMD="mvn -B -Ddependency-check.skip=true -Dpit.skip=false verify"
           else
-            CONTAINER_CMD="mvn -B -DnvdApiKey=$NVD_API_KEY -DnvdApiDelay=5000 -Ddependency.check.skip=false -Dpit.skip=false verify"
+            CONTAINER_CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=5000 -Ddependency-check.skip=false -Dpit.skip=false verify"
           fi
 
           if ! docker run --rm -e NVD_API_KEY="$NVD_API_KEY" -e MAVEN_OPTS="$MAVEN_OPTS_VALUE" -v "${{ github.workspace }}":/workspace -w /workspace maven:3.9.9-eclipse-temurin-17 bash -c "$CONTAINER_CMD"; then
