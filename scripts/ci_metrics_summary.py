@@ -167,14 +167,6 @@ def load_surefire() -> Optional[Dict[str, float]]:
     }
 
 
-def color_block(pct: float) -> str:
-    if pct >= 90:
-        return "🟢"
-    if pct >= 80:
-        return "🟡"
-    return "🔴"
-
-
 def bar(pct: float, width: int = 20) -> str:
     filled = int(round((pct / 100) * width))
     filled = max(0, min(width, filled))
@@ -197,7 +189,7 @@ def severity_summary(counts: Dict[str, int]) -> str:
     parts = []
     for level in SEVERITY_ORDER:
         parts.append(f"{SEVERITY_LABELS[level]}: {counts.get(level, 0)}")
-    return "<br>".join(parts)
+    return " &nbsp; ".join(parts)
 
 
 def _normalize_tests(tests: Optional[Dict[str, float]]) -> Dict[str, float]:
@@ -343,11 +335,10 @@ def main() -> int:
 
     tests = load_surefire()
     if tests:
-        status_icon = "✅" if tests["failures"] == 0 and tests["errors"] == 0 else "⚠️"
         summary_lines.append(
             format_row(
                 "Tests",
-                f"{status_icon} {tests['tests']} executed",
+                f"{tests['tests']} executed",
                 f"Runtime {tests['time']}s — failures: {tests['failures']}, errors: {tests['errors']}, skipped: {tests['skipped']}",
             )
         )
@@ -356,7 +347,7 @@ def main() -> int:
 
     jacoco = load_jacoco()
     if jacoco:
-        coverage_text = f"{color_block(jacoco['pct'])} {jacoco['pct']}% {bar(jacoco['pct'])}"
+        coverage_text = f"{jacoco['pct']}% {bar(jacoco['pct'])}"
         detail = f"{jacoco['covered']} / {jacoco['total']} lines covered"
         summary_lines.append(format_row("Line coverage (JaCoCo)", coverage_text, detail))
     else:
@@ -366,7 +357,7 @@ def main() -> int:
     if pit:
         detail = f"{pit['killed']} killed, {pit['survived']} survived out of {pit['total']} mutations"
         summary_lines.append(
-            format_row("Mutation score (PITest)", f"{color_block(pit['pct'])} {pit['pct']}% {bar(pit['pct'])}", detail)
+            format_row("Mutation score (PITest)", f"{pit['pct']}% {bar(pit['pct'])}", detail)
         )
     else:
         summary_lines.append(
@@ -378,9 +369,9 @@ def main() -> int:
         detail = (
             f"{dep['vulnerable_dependencies']} dependencies with issues "
             f"({dep['vulnerabilities']} vulnerabilities) out of {dep['dependencies']} scanned. "
-            f"{severity_summary(dep['severity'])}"
+            f"<br>{severity_summary(dep['severity'])}"
         )
-        summary_lines.append(format_row("Dependency-Check", "✅ scan complete", detail))
+        summary_lines.append(format_row("Dependency-Check", "scan complete", detail))
     else:
         summary_lines.append(
             format_row(
