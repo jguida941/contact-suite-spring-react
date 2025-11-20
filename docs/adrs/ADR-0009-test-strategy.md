@@ -15,6 +15,7 @@ Related: src/test/java/contactapp, docs/design-notes/notes/test-design-notes.md,
   - `*Test` for domain objects (constructor/setters/update trimming rules, invalid update atomicity).
   - `ValidationTest` for helper boundaries.
   - `*ServiceTest` for singleton/service behavior (CRUD, trimming, boolean contracts, reset helpers like `clearAll*`).
+- Validation helpers should have both ends of each range covered (min/max length, blank/null, over/under) to keep mutation and coverage tools at 100%.
 - Use AssertJ and JUnit 5 parameterized tests (`@CsvSource`) for expressive assertions and compact invalid-case coverage.
 - Keep singleton state reset helpers (`clearAllContacts`, `clearAllTasks`) and ensure tests explicitly cover them so mutation testing catches missing `Map.clear()` calls.
 - Run the full suite via Maven Surefire during `mvn verify`; enforce test quality with JaCoCo (coverage) and PITest (mutation) thresholds described in ADR-0004.

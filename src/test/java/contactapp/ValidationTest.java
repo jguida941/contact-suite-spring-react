@@ -60,6 +60,15 @@ class ValidationTest {
                 .hasMessage("firstName length must be between 1 and 10");
     }
 
+    // Added to cover the min-length branch (over max was covered separately) to keep JaCoCo/Codecov at 100%.
+    @Test
+    void validateLengthRejectsTooShort() {
+        assertThatThrownBy(() ->
+                Validation.validateLength("A", "middleName", /*minLength*/ 2, /*maxLength*/ 5))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("middleName length must be between 2 and 5");
+    }
+
     // Phone number validator must detect blank string before digit/length checks
     @Test
     void validateNumeric10RejectsBlankStrings() {

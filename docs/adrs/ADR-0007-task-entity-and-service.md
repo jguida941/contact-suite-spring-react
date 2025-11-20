@@ -17,7 +17,7 @@ Implements Task (id, name, description) and TaskService with a singleton store a
 - Adopt the architecture described in `docs/architecture/2025-11-19-task-entity-and-service.md`, using a dedicated `Task` entity with constructor-enforced validation and atomic update helper.
 - Manage tasks via a singleton `TaskService` backed by `ConcurrentHashMap<String, Task>` with add/delete/update operations mirroring `ContactService`.
 - Centralize validation through the shared `Validation` utility without creating task-specific helper classes until requirements demand it.
-- Enforce Definition of Done gates (tests, coverage, mutation, static analysis, security scans, documentation) before merging Task changes.
+- Enforce Definition of Done gates (tests, coverage, mutation, static analysis, security scans, documentation) before merging Task changes, including invalid update cases (blank/empty/null/over-length) via `@MethodSource` to prove atomicity and consistent messaging.
 
 ## Consequences
 - Reusing familiar patterns should minimize implementation risk and keep code style uniform, but we must ensure Task-specific constraints (max lengths) are well-covered by tests.
