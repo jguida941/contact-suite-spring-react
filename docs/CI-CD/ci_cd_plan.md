@@ -30,8 +30,10 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 
 ## Phase 6 - Security & Maintenance
 1. ✅ Enable Dependabot for Maven dependency updates once Maven is in place.
-2. ✅ Add CodeQL analysis for Java to scan for security issues (workflow provided by GitHub). (Note: the SARIF upload requires Code Scanning to be enabled; for a private repo you may need to make it public or enable GitHub Advanced Security for alerts to appear.)
-3. ☐ Configure branch protection so `main` requires the CI workflow to pass before merging. (Manual GitHub setting: Settings → Branches → Add rule, require “Java CI” and “CodeQL” checks.)
+2. ✅ Add CodeQL analysis for Java to scan for security issues (workflow provided by GitHub). 
+   (Note: the SARIF upload requires Code Scanning to be enabled; for a private repo you may need to make it public or enable GitHub Advanced Security for alerts to appear.)
+3. ☐ Configure branch protection so `main` requires the CI workflow to pass before merging.
+   (Manual GitHub setting: Settings → Branches → Add rule, require “Java CI” and “CodeQL” checks.)
 
 ## Phase 7 - Advanced Enhancements
 1. ✅ Integrate OWASP Dependency Check (or similar) to scan third-party jars for CVEs.

@@ -30,11 +30,6 @@ Key points:
 - Public types/methods include Javadoc on Task and TaskService.
 - README, changelog, requirements checklist, and architecture/ADR references updated to include the Task feature.
 
-## AI Collaboration Loop
-- AI drafts designs, implementation steps, and code changes per phase.
-- Developer reviews each phase, requests adjustments, and remains final decision-maker before merging.
-- Testing and tooling feedback is summarized by AI; developer confirms before sign-off.
-
 ## Phase Breakdown
 
 ### Phase 1 - Domain & Validation Foundations
