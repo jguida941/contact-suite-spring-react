@@ -12,6 +12,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)       | Task assignment requirements (task object/service specs + checklist).                                                        |
 | [`docs/architecture/`](docs/architecture/)                                 | Feature design briefs (e.g., Task entity/service plan with Definition of Done).                                              |
 | [`docs/adrs/`](docs/adrs/)                                                 | Architecture Decision Records index plus individual ADR files.                                                              |
+| [`docs/design-notes/`](docs/design-notes/)                                 | Personal design note hub with supporting explanations under `docs/design-notes/notes/`.                                      |
 
 ## Key Files
 
@@ -31,6 +32,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`scripts/serve_quality_dashboard.py`](scripts/serve_quality_dashboard.py)                             | Launches a local server for `target/site/qa-dashboard` when reading downloaded artifacts. |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`docs/adrs/README.md`](docs/adrs/README.md)                                                           | ADR index summarizing ADR-0001 through ADR-0007.                                       |
+| [`docs/design-notes/README.md`](docs/design-notes/README.md)                                           | Landing page for informal design notes (individual topics in `docs/design-notes/notes/`). |
 | [`docs/logs/backlog.md`](docs/logs/backlog.md)                                                         | Backlog for reporting and domain enhancements.                                         |
 | [`.github/workflows`](.github/workflows)                                                               | GitHub Actions pipelines (CI, release packaging, CodeQL).                              |
 
