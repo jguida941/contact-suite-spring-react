@@ -536,8 +536,8 @@ Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation scor
 
 
 ## GitHub Actions QA Metrics Table
-<img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
 
+<img width="1271" height="970" alt="Screenshot 2025-11-20 at 4 41 19 AM" src="https://github.com/user-attachments/assets/69495c27-8e44-4383-8a41-192543384526" />
 
 ## QA Console React Dashboard
 
