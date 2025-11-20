@@ -293,13 +293,14 @@ def _badge_dir() -> Path:
 
 
 def _badge_color(percent: float) -> str:
+    # Custom palette to match the darker CI badge green.
     if percent >= 90:
-        return "green"
+        return "16A34A"  # green-600
     if percent >= 75:
-        return "yellow"
+        return "F59E0B"  # amber
     if percent >= 60:
-        return "orange"
-    return "red"
+        return "EA580C"  # orange-600
+    return "DC2626"      # red-600
 
 
 def _badge_payload(label: str, percent: float) -> Dict[str, object]:
