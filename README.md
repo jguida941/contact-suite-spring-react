@@ -661,7 +661,8 @@ If you're working through CS320 (or just exploring the project), the recommended
 ## Resources & References
 | Item                                                                               | Purpose                                                                  |
 |------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [docs/requirements/contact-requirements/](docs/requirements/contact-requirements/) | Instructor brief and acceptance criteria.                                |
+| [docs/requirements/contact-requirements/](docs/requirements/contact-requirements/) | Contact assignment requirements and acceptance criteria.                 |
+| [docs/requirements/task-requirements/](docs/requirements/task-requirements/)       | Task assignment requirements and acceptance criteria.                    |
 | [docs/index.md](docs/index.md)                                                     | Repo structure reference (future `docs/design.md` will hold deep dives). |
 | [GitHub Actions workflows](.github/workflows)                                      | CI/CD definitions described above.                                       |
 | [config/checkstyle](config/checkstyle)                                             | Checkstyle rules enforced in CI.                                         |
