@@ -1,11 +1,11 @@
 # CS320 Milestone 1 - Contact Service
-[![Java CI](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/java-ci.yml?branch=master&label=Java%20CI&style=for-the-badge&logo=githubactions&logoColor=white&color=16A34A)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/java-ci.yml)
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/codeql.yml?branch=master&label=CodeQL&style=for-the-badge&logo=github&logoColor=white&color=16A34A)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/codeql.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/jguida941/cs320-contact-service-junit/master?label=Codecov&style=for-the-badge&logo=codecov&logoColor=white&color=CA8A04)](https://codecov.io/gh/jguida941/cs320-contact-service-junit)
-[![JaCoCo](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/jacoco.json&style=for-the-badge)](#qa-summary)
-[![PITest](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/mutation.json&style=for-the-badge)](#qa-summary)
-[![SpotBugs](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/spotbugs.json&style=for-the-badge)](#static-analysis--quality-gates)
-[![OWASP Dependency-Check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/dependency.json&style=for-the-badge)](#static-analysis--quality-gates)
+[![Java CI](https://img.shields.io/github/actions/workflow/status/jguida941/contact-service-junit/java-ci.yml?branch=master&label=Java%20CI&style=for-the-badge&logo=githubactions&logoColor=white&color=16A34A)](https://github.com/jguida941/contact-service-junit/actions/workflows/java-ci.yml)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/contact-service-junit/codeql.yml?branch=master&label=CodeQL&style=for-the-badge&logo=github&logoColor=white&color=16A34A)](https://github.com/jguida941/contact-service-junit/actions/workflows/codeql.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/jguida941/contact-service-junit/master?label=Codecov&style=for-the-badge&logo=codecov&logoColor=white&color=CA8A04)](https://codecov.io/gh/jguida941/contact-service-junit)
+[![JaCoCo](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/jacoco.json&style=for-the-badge)](#qa-summary)
+[![PITest](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/mutation.json&style=for-the-badge)](#qa-summary)
+[![SpotBugs](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/spotbugs.json&style=for-the-badge)](#static-analysis--quality-gates)
+[![OWASP Dependency-Check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/dependency.json&style=for-the-badge)](#static-analysis--quality-gates)
 [![License](https://img.shields.io/badge/License-MIT-1D4ED8?style=for-the-badge)](LICENSE)
 
 Small Java project for the CS320 Contact Service milestone. The work breaks down into three pieces:
@@ -560,7 +560,8 @@ graph TD
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow’s “Summary” tab and look for the “QA Metrics” section for the latest numbers.
 
-- Codecov coverage sunburst (hoverable coverage tree): [live graph](https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst.svg?token=WUWITZ797X).
+- Codecov coverage sunburst (hoverable coverage tree):<br>
+  <img alt="Codecov sunburst coverage graph" src="https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst.svg?token=WUWITZ797X" width="600" />
 
 
 ## GitHub Actions QA Metrics Table
