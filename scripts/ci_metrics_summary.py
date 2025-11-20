@@ -23,6 +23,7 @@ import shutil
 # Repo root + Maven `target/` folder.
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "target"
+BADGES_DIR = ROOT / "badges"
 
 
 def percent(part: float, whole: float) -> float:
@@ -265,6 +266,57 @@ def _build_console_lines(
     return lines
 
 
+def _badge_enabled() -> bool:
+    return os.environ.get("UPDATE_BADGES", "").lower() in {"1", "true", "yes"}
+
+
+def _badge_dir() -> Path:
+    custom = os.environ.get("BADGE_OUTPUT_DIR")
+    if custom:
+        return Path(custom)
+    return BADGES_DIR
+
+
+def _badge_color(percent: float) -> str:
+    if percent >= 90:
+        return "green"
+    if percent >= 75:
+        return "yellow"
+    if percent >= 60:
+        return "orange"
+    return "red"
+
+
+def _badge_payload(label: str, percent: float) -> Dict[str, object]:
+    safe = max(0.0, min(100.0, percent))
+    return {
+        "schemaVersion": 1,
+        "label": label,
+        "message": f"{safe:.1f}%",
+        "color": _badge_color(safe),
+    }
+
+
+def maybe_update_badges(
+        jacoco: Optional[Dict[str, float]],
+        pit: Optional[Dict[str, float]]) -> None:
+    if not _badge_enabled():
+        return
+    badge_dir = _badge_dir()
+    try:
+        badge_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        print(f"[WARN] Unable to create badge directory at {badge_dir}")
+        return
+    coverage_pct = jacoco["pct"] if jacoco else 0.0
+    mutation_pct = pit["pct"] if pit else 0.0
+    jacoco_path = badge_dir / "jacoco.json"
+    mutation_path = badge_dir / "mutation.json"
+    jacoco_path.write_text(json.dumps(_badge_payload("coverage", coverage_pct)), encoding="utf-8")
+    mutation_path.write_text(json.dumps(_badge_payload("mutation", mutation_pct)), encoding="utf-8")
+    print(f"[INFO] Updated badge JSON in {badge_dir}")
+
+
 def _timeline(dep: Dict[str, object]) -> List[Dict[str, object]]:
     timeline = [
         {"stage": "Checkout", "duration": 6, "status": "pass", "short": "CK"},
@@ -409,6 +461,7 @@ def main() -> int:
         print(summary_text)
 
     write_dashboard(tests, jacoco, pit, dep)
+    maybe_update_badges(jacoco, pit)
     return 0
 
 
