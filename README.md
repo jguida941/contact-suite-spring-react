@@ -290,6 +290,7 @@ graph TD
     F -->|fail| X
 ```
 - Constructor and setters call the same helper, so trimming + length checks stay in sync.
+- Inputs are trimmed before length checks and before storing, so normalization matches validation.
 - `update(...)` repeats the same validations, caches the trimmed values, then assigns both if they pass.
 
 ### Error Message Philosophy
