@@ -587,20 +587,24 @@ You’ll see the same KPIs, inline progress bars, and quick links over to the Ja
 
 <table>
   <tr>
-    <td width="300">
-      <img
-        src="https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst.svg?token=WUWITZ797X"
-        alt="Codecov coverage sunburst"
-      />
+    <td width="300" valign="middle">
+      <a href="https://app.codecov.io/gh/jguida941/contact-service-junit">
+        <img
+          src="https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst.svg?token=WUWITZ797X"
+          alt="Codecov coverage sunburst"
+        />
+      </a>
     </td>
-    <td>
+    <td valign="middle">
       The sunburst shows which packages and classes are covered by tests.<br/>
-      <a href="https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst.svg?token=WUWITZ797X">
+      <a href="https://app.codecov.io/gh/jguida941/contact-service-junit">
         Open the full-screen interactive sunburst on Codecov »
       </a>
     </td>
   </tr>
 </table>
+
+<br/>
 
 <br>
 
