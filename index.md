@@ -7,7 +7,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | Path                                                                                 | Purpose                                                                                                                      |
 |--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | [`src/`](src/)                                                                       | Java source tree. <br/>`src/main/java/contactapp` contains application code; <br/>`src/test/java/contactapp` contains tests. |
-| [`docs/ci-cd/`](docs/ci-cd/)                                                         | CI/CD design notes and pipeline planning artifacts.                                                                          |
+| [`docs/ci-cd/`](docs/ci-cd/)                                                         | CI/CD design notes (pipeline plan plus `badges.md` for the badge helper).                                                   |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/) | Contact assignment requirements (now collocated under `docs/`).                                                              |
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)       | Task assignment requirements (task object/service specs + checklist).                                                        |
 | [`docs/architecture/`](docs/architecture/)                                           | Feature design briefs (e.g., Task entity/service plan with Definition of Done).                                              |
@@ -38,10 +38,10 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 
 ## Requirements & Notes
 
-| Path                                                                                                                         | Description                                         |
-|------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| Path                                                                                                                                   | Description                                         |
+|----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
 | [`docs/requirements/contact-requirements/requirements.md`](docs/requirements/contact-requirements/requirements.md)                     | Contact assignment requirements.                    |
 | [`docs/requirements/contact-requirements/requirements_checklist.md`](docs/requirements/contact-requirements/requirements_checklist.md) | Contact requirements checklist.                     |
 | [`docs/requirements/task-requirements/requirements.md`](docs/requirements/task-requirements/requirements.md)                           | Task assignment requirements (task object/service). |
 | [`docs/requirements/task-requirements/requirements_checklist.md`](docs/requirements/task-requirements/requirements_checklist.md)       | Task requirements checklist.                        |
-| [`index.md`](index.md)                                                                                                       | Documentation index and navigation entry.           |
+| [`index.md`](index.md)                                                                                                                 | Documentation index and navigation entry.           |

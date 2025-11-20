@@ -16,6 +16,7 @@ Related: scripts/ci_metrics_summary.py, README.md#qa-summary, .github/workflows/
   - Writes a Markdown summary to `GITHUB_STEP_SUMMARY`, including coverage/mutation bar charts and dependency severity breakdowns.
   - Generates `target/site/qa-dashboard/metrics.json` (plus copies the React dashboard build when available) so artifacts contain a self-contained QA report.
   - Operates defensively: missing files or parse errors result in `_no data_` labels rather than build failures.
+  - Optionally writes Shields.io badge JSON (`badges/jacoco.json`, `badges/mutation.json`, `badges/spotbugs.json`, `badges/dependency.json`) when `UPDATE_BADGES=true` so README badges stay in sync with the latest run.
 - Bundle `scripts/serve_quality_dashboard.py` into `target/site/` so anyone who downloads the `quality-reports-*` artifact can run a tiny HTTP server locally and open the dark-mode dashboard without additional tooling.
 - Require every CI matrix leg to run the script after `mvn verify` so the QA summary is always present regardless of platform/JDK.
 
