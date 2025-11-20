@@ -3,7 +3,7 @@
 Status: Accepted
 Date: 2025-11-19
 Owners: Justin Guida
-Related: pom.xml, .github/workflows/java-ci.yml, docs/CI-CD/ci_cd_plan.md, README.md#static-analysis--quality-gates
+Related: pom.xml, .github/workflows/java-ci.yml, docs/ci-cd/ci_cd_plan.md, README.md#static-analysis--quality-gates
 
 ## Context
 - The project must prove correctness with more than unit tests; instructors expect concrete coverage, mutation, static analysis, and security scanning metrics.

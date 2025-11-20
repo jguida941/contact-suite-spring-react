@@ -7,7 +7,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | Path                                                                       | Purpose                                                                                                                      |
 |----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | [`src/`](src/)                                                             | Java source tree. <br/>`src/main/java/contactapp` contains application code; <br/>`src/test/java/contactapp` contains tests. |
-| [`docs/CI-CD/`](docs/CI-CD/)                                               | CI/CD design notes and pipeline planning artifacts.                                                                          |
+| [`docs/ci-cd/`](docs/ci-cd/)                                               | CI/CD design notes and pipeline planning artifacts.                                                                          |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/) | Contact assignment requirements (now collocated under `docs/`).                                                              |
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)       | Task assignment requirements (task object/service specs + checklist).                                                        |
 | [`docs/architecture/`](docs/architecture/)                                 | Feature design briefs (e.g., Task entity/service plan with Definition of Done).                                              |

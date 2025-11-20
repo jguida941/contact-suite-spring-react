@@ -8,4 +8,4 @@ landing page stays focused.
 - Attach richer visual artifacts (HTML dashboards or charts) that combine the
   JaCoCo, PITest, Dependency-Check, and Codecov data already posted in the job
   summary.
-- Continue updating `docs/CI-CD/ci_cd_plan.md` as workflow enhancements land.
+- Continue updating `docs/ci-cd/ci_cd_plan.md` as workflow enhancements land.

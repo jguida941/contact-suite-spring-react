@@ -3,7 +3,7 @@
 Status: Accepted
 Date: 2025-11-19
 Owners: Justin Guida
-Related: pom.xml (spotbugs-maven-plugin), README.md#spotbugs, docs/CI-CD/ci_cd_plan.md
+Related: pom.xml (spotbugs-maven-plugin), README.md#spotbugs, docs/ci-cd/ci_cd_plan.md
 
 ## Context
 - SpotBugs is required for the course rubric, but the upstream launcher historically lagged when new JDK releases arrived (e.g., JDK 23).
