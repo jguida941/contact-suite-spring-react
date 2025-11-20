@@ -28,24 +28,24 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 3. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
 
 ## Folder Highlights
-| Path                                                                                           | Description                                                         |
-|------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| [`src/main/java/contactapp/Contact.java`](src/main/java/contactapp/Contact.java)               | Contact entity enforcing the ID/name/phone/address constraints.     |
-| [`src/main/java/contactapp/ContactService.java`](src/main/java/contactapp/ContactService.java) | Singleton service with in-memory CRUD, uniqueness checks, and validation reuse. |
-| [`src/main/java/contactapp/Task.java`](src/main/java/contactapp/Task.java) *(placeholder)*               | Task entity (ID/name/description) mirroring the requirements document. |
-| [`src/main/java/contactapp/TaskService.java`](src/main/java/contactapp/TaskService.java) *(placeholder)* | Task service API (add/delete/update) documented under task requirements. |
-| [`src/main/java/contactapp/Validation.java`](src/main/java/contactapp/Validation.java)         | Centralized validation helpers (not blank, length, numeric checks). |
-| [`src/test/java/contactapp/ContactTest.java`](src/test/java/contactapp/ContactTest.java)       | Unit tests for the `Contact` class (valid + invalid scenarios).     |
-| [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)            | Assignment write-up and checklist from the instructor (now under `docs/`). |
-| [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach. |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                   | Architecture Decision Record index with links to ADR-0001…ADR-0007. |
-| [`index.md`](index.md)                                                                         | Quick reference guide for the repo layout.                          |
-| [`pom.xml`](pom.xml)                                                                           | Maven build file (dependencies, plugins, compiler config).          |
-| [`config/checkstyle`](config/checkstyle)                                                       | Checkstyle configuration used by Maven/CI quality gates.            |
-| [`config/owasp-suppressions.xml`](config/owasp-suppressions.xml)                               | Placeholder suppression list for OWASP Dependency-Check.            |
-| [`scripts/ci_metrics_summary.py`](scripts/ci_metrics_summary.py)                               | Helper that parses JaCoCo/PITest/Dependency-Check reports and posts the QA summary table in CI. |
-| [`scripts/serve_quality_dashboard.py`](scripts/serve_quality_dashboard.py)                     | Tiny HTTP server that opens `target/site/qa-dashboard` locally after downloading CI artifacts. |
-| [`.github/workflows`](.github/workflows)                                                       | CI/CD pipelines (tests, quality gates, release packaging, CodeQL).  |
+| Path                                                                                                                 | Description                                                                                     |
+|----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| [`src/main/java/contactapp/Contact.java`](src/main/java/contactapp/Contact.java)                                     | Contact entity enforcing the ID/name/phone/address constraints.                                 |
+| [`src/main/java/contactapp/ContactService.java`](src/main/java/contactapp/ContactService.java)                       | Singleton service with in-memory CRUD, uniqueness checks, and validation reuse.                 |
+| [`src/main/java/contactapp/Task.java`](src/main/java/contactapp/Task.java) *(placeholder)*                           | Task entity (ID/name/description) mirroring the requirements document.                          |
+| [`src/main/java/contactapp/TaskService.java`](src/main/java/contactapp/TaskService.java) *(placeholder)*             | Task service API (add/delete/update) documented under task requirements.                        |
+| [`src/main/java/contactapp/Validation.java`](src/main/java/contactapp/Validation.java)                               | Centralized validation helpers (not blank, length, numeric checks).                             |
+| [`src/test/java/contactapp/ContactTest.java`](src/test/java/contactapp/ContactTest.java)                             | Unit tests for the `Contact` class (valid + invalid scenarios).                                 |
+| [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)                                 | Assignment write-up and checklist (now under `docs/`).                                          |
+| [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach.                    |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index with links to ADR-0001…ADR-0007.                             |
+| [`index.md`](index.md)                                                                                               | Quick reference guide for the repo layout.                                                      |
+| [`pom.xml`](pom.xml)                                                                                                 | Maven build file (dependencies, plugins, compiler config).                                      |
+| [`config/checkstyle`](config/checkstyle)                                                                             | Checkstyle configuration used by Maven/CI quality gates.                                        |
+| [`config/owasp-suppressions.xml`](config/owasp-suppressions.xml)                                                     | Placeholder suppression list for OWASP Dependency-Check.                                        |
+| [`scripts/ci_metrics_summary.py`](scripts/ci_metrics_summary.py)                                                     | Helper that parses JaCoCo/PITest/Dependency-Check reports and posts the QA summary table in CI. |
+| [`scripts/serve_quality_dashboard.py`](scripts/serve_quality_dashboard.py)                                           | Tiny HTTP server that opens `target/site/qa-dashboard` locally after downloading CI artifacts.  |
+| [`.github/workflows`](.github/workflows)                                                                             | CI/CD pipelines (tests, quality gates, release packaging, CodeQL).                              |
 
 ## Design Decisions & Highlights
 - **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps HashMap keys stable and mirrors real-world record identifiers.
@@ -488,7 +488,14 @@ graph TD
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow’s “Summary” tab and look for the “QA Metrics” section for the latest numbers.
 
-Need richer visuals? Download the `quality-reports-<os>-jdk<ver>` artifact from the workflow run, unzip it, `cd target/site`, and run `python serve_quality_dashboard.py`. Modern browsers block ES modules when loaded directly from `file://` URLs, so the helper launches a tiny HTTP server, opens `http://localhost:<port>/qa-dashboard/index.html`, and serves the React dashboard with the correct `metrics.json`. You’ll see the same KPIs, inline progress bars, and quick links over to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports, all sourced from the exact results of that build.
+Need richer visuals? Download the `quality-reports-<os>-jdk<ver>` artifact from the workflow run, unzip it, and from the artifact root run:
+
+```bash
+cd ~/Downloads/quality-reports-<os>-jdk<ver>
+python serve_quality_dashboard.py --path site
+```
+
+(If the artifact retains the `target/site` structure, change `--path site` to `--path target/site`.) Modern browsers block ES modules when loaded directly from `file://` URLs, so the helper launches a tiny HTTP server, opens `http://localhost:<port>/qa-dashboard/index.html`, and serves the React dashboard with the correct `metrics.json`. You’ll see the same KPIs, inline progress bars, and quick links over to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports, all sourced from the exact results of that build.
 
 <img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
 
