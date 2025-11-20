@@ -24,6 +24,6 @@ Related: src/main/java/contactapp/ContactService.java, docs/logs/CHANGELOG.md
 - Any future persistent storage layer will need to preserve the singleton contract or add migration logic.
 
 ## Alternatives considered
-- **Per-request service instances with plain `HashMap`** – rejected because uniqueness checks would race under concurrency and tests would observe isolated maps.
-- **Synchronized wrappers (`Collections.synchronizedMap`)** – workable but heavier than required; `ConcurrentHashMap` provides finer-grained concurrency.
-- **Exposing the raw map** – rejected because callers could corrupt state, and SpotBugs flagged `MS_EXPOSE_REP`.
+- **Per-request service instances with plain `HashMap`** - rejected because uniqueness checks would race under concurrency and tests would observe isolated maps.
+- **Synchronized wrappers (`Collections.synchronizedMap`)** - workable but heavier than required; `ConcurrentHashMap` provides finer-grained concurrency.
+- **Exposing the raw map** - rejected because callers could corrupt state, and SpotBugs flagged `MS_EXPOSE_REP`.

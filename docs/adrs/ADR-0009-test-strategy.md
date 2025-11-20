@@ -26,6 +26,6 @@ Related: src/test/java/contactapp, docs/design-notes/notes/test-design-notes.md,
 - PITest runs add time to CI, but they guarantee regressions (e.g., removing validation or `clearAll*`) are detected immediately.
 
 ## Alternatives considered
-- **Single integration test suite** – rejected because it would blur the boundary between domain and service logic and make it harder to pinpoint failures.
-- **Minimal “happy path only” tests** – rejected; they would pass coverage gates but provide little confidence or mutation resistance.
-- **Different assertion libraries (plain JUnit assertions)** – workable but less readable; AssertJ’s fluent style and rich error messages were preferred.
+- **Single integration test suite** - rejected because it would blur the boundary between domain and service logic and make it harder to pinpoint failures.
+- **Minimal “happy path only” tests** - rejected; they would pass coverage gates but provide little confidence or mutation resistance.
+- **Different assertion libraries (plain JUnit assertions)** - workable but less readable; AssertJ’s fluent style and rich error messages were preferred.

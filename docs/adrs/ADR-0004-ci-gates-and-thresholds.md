@@ -23,6 +23,6 @@ Related: pom.xml, .github/workflows/java-ci.yml, docs/ci-cd/ci_cd_plan.md, READM
 - Raising thresholds later (e.g., JaCoCo > 90%, PITest > 85%) will be straightforward because the infrastructure already exists.
 
 ## Alternatives considered
-- **Only run tests in CI** – rejected because silent coverage/mutation regressions would go unnoticed until grading.
-- **Gate solely on Codecov/PITest hosted services** – rejected since the course environment limits external integrations and we already have Maven plugins.
-- **Run Dependency-Check manually** – rejected; embedding it keeps the SBOM and report history consistent.
+- **Only run tests in CI** - rejected because silent coverage/mutation regressions would go unnoticed until grading.
+- **Gate solely on Codecov/PITest hosted services** - rejected since the course environment limits external integrations and we already have Maven plugins.
+- **Run Dependency-Check manually** - rejected; embedding it keeps the SBOM and report history consistent.

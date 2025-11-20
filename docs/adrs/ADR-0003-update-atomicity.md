@@ -22,5 +22,5 @@ Related: src/main/java/contactapp/Contact.java, src/main/java/contactapp/Contact
 - Developers must remember to use the `update` helper for multi-field operations; direct setter chains reintroduce the risk.
 
 ## Alternatives considered
-- **Sequential setter calls with try/catch rollback** – rejected as overly complex and error-prone; keeping snapshot copies just to roll back was unnecessary.
-- **Rebuilding objects (`new Contact(...)`) on every update** – rejected because IDs are immutable and replacing references would complicate the map and tests.
+- **Sequential setter calls with try/catch rollback** - rejected as overly complex and error-prone; keeping snapshot copies just to roll back was unnecessary.
+- **Rebuilding objects (`new Contact(...)`) on every update** - rejected because IDs are immutable and replacing references would complicate the map and tests.

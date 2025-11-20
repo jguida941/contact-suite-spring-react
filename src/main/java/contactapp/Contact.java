@@ -4,10 +4,10 @@ package contactapp;
  * Contact domain object.
  *
  * Enforces all field constraints from the requirements:
- * - contactId: non-null, length 1–10, not updatable
- * - firstName/lastName: non-null, length 1–10
+ * - contactId: non-null, length 1-10, not updatable
+ * - firstName/lastName: non-null, length 1-10
  * - phone: non-null, exactly 10 numeric digits
- * - address: non-null, length 1–30
+ * - address: non-null, length 1-30
  *
  * All violations result in {@link IllegalArgumentException} being thrown
  * by the underlying {@link Validation} helper.

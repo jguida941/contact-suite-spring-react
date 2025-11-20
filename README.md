@@ -196,10 +196,10 @@ void testInvalidContactId(String id, String expectedMessage) {
 ## [ContactService.java](src/main/java/contactapp/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/ContactServiceTest.java)
 
 ### Service Snapshot
-- **Singleton access** – `getInstance()` exposes one shared service so every caller sees the same `ConcurrentHashMap` backing store.
-- **Atomic uniqueness guard** – `addContact` rejects null inputs up front and calls `ConcurrentHashMap.putIfAbsent(...)` directly so duplicate IDs never overwrite state even under concurrent access.
-- **Shared validation** – `deleteContact` uses `Validation.validateNotBlank` for IDs and `updateContact` delegates to `Contact.update(...)`, guaranteeing the constructor’s length/null/phone rules apply to updates too.
-- **Defensive views** – `getDatabase()` returns an unmodifiable snapshot (tests now use `clearAllContacts()` to reset state) so callers can’t mutate the internal map accidentally.
+- **Singleton access** - `getInstance()` exposes one shared service so every caller sees the same `ConcurrentHashMap` backing store.
+- **Atomic uniqueness guard** - `addContact` rejects null inputs up front and calls `ConcurrentHashMap.putIfAbsent(...)` directly so duplicate IDs never overwrite state even under concurrent access.
+- **Shared validation** - `deleteContact` uses `Validation.validateNotBlank` for IDs and `updateContact` delegates to `Contact.update(...)`, guaranteeing the constructor’s length/null/phone rules apply to updates too.
+- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot (tests now use `clearAllContacts()` to reset state) so callers can’t mutate the internal map accidentally.
 
 ## Validation & Error Handling
 
@@ -267,7 +267,7 @@ graph TD
 ## [Task.java](src/main/java/contactapp/Task.java) / [TaskTest.java](src/test/java/contactapp/TaskTest.java)
 
 ### Service Snapshot
-- Task IDs are required, trimmed, and immutable after construction (length 1–10).
+- Task IDs are required, trimmed, and immutable after construction (length 1-10).
 - Name (≤20 chars) and description (≤50 chars) share one helper so constructor, setters, and `update(...)` all enforce identical rules.
 - `Task#update` validates both values first, then swaps them in one shot; invalid inputs leave the object untouched.
 - Tests mirror Contact coverage: constructor trimming, happy-path setters/update, and every invalid-path exception message.
@@ -277,13 +277,13 @@ graph TD
 ### Validation Pipeline
 ```mermaid
 graph TD
-    A[Constructor / setter input] --> B["validateLength(taskId, 1–10)"]
+    A[Constructor / setter input] --> B["validateLength(taskId, 1-10)"]
     B -->|ok| C["trim & store taskId"]
     B -->|fail| X[IllegalArgumentException]
-    C --> D["validateLength(name, 1–20)"]
+    C --> D["validateLength(name, 1-20)"]
     D -->|ok| E["trimmed name stored"]
     D -->|fail| X
-    E --> F["validateLength(description, 1–50)"]
+    E --> F["validateLength(description, 1-50)"]
     F -->|ok| G["trimmed description stored"]
     F -->|fail| X
 ```

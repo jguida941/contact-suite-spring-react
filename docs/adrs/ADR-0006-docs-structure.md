@@ -25,5 +25,5 @@ Related: README.md, docs/requirements/, docs/architecture/, docs/adrs/, docs/log
 - There is a small documentation overhead for each significant change, but it keeps the project audit-ready.
 
 ## Alternatives considered
-- **Single README for everything** – rejected; navigation became painful and reviewers struggled to isolate decisions.
-- **External wiki** – rejected because the course repository needs to be self-contained and accessible offline.
+- **Single README for everything** - rejected; navigation became painful and reviewers struggled to isolate decisions.
+- **External wiki** - rejected because the course repository needs to be self-contained and accessible offline.

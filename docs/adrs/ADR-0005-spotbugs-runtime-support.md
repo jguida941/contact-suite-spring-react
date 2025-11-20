@@ -22,5 +22,5 @@ Related: pom.xml (spotbugs-maven-plugin), README.md#spotbugs, docs/ci-cd/ci_cd_p
 - We must periodically bump the plugin once it supports newer bytecode levels to avoid missing genuine issues.
 
 ## Alternatives considered
-- **Remove SpotBugs from `mvn verify`** – rejected; it’s a required rubric item and catches exposure/concurrency bugs.
-- **Skip SpotBugs on newer JDKs indefinitely** – rejected; we want CI parity across the matrix, so we only skip when upstream issues exist and document the workaround.
+- **Remove SpotBugs from `mvn verify`** - rejected; it’s a required rubric item and catches exposure/concurrency bugs.
+- **Skip SpotBugs on newer JDKs indefinitely** - rejected; we want CI parity across the matrix, so we only skip when upstream issues exist and document the workaround.

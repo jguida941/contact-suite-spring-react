@@ -5,9 +5,9 @@ package contactapp;
  * Task domain object.
  *
  * Enforces the Task requirements:
- *  - taskId: required, length 1–10, immutable after construction
- *  - name: required, length 1–20
- *  - description: required, length 1–50
+ *  - taskId: required, length 1-10, immutable after construction
+ *  - name: required, length 1-20
+ *  - description: required, length 1-50
  *
  * All validation is delegated to {@link Validation} so the constructor,
  * setters, and {@link #update(String, String)} stay in sync.
@@ -28,9 +28,9 @@ public final class Task {
     /**
      * Creates a new Task with the given values.
      *
-     * @param taskId      unique identifier (required, length 1–10)
-     * @param name        task name (required, length 1–20)
-     * @param description task description (required, length 1–50)
+     * @param taskId      unique identifier (required, length 1-10)
+     * @param name        task name (required, length 1-20)
+     * @param description task description (required, length 1-50)
      * @throws IllegalArgumentException if any argument violates the constraints
      */
     public Task(

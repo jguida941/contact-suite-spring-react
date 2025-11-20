@@ -21,7 +21,7 @@ Summary: Implements Task (id,name,description) and TaskService with singleton st
 
 ## Phase Breakdown
 
-### Phase 1 – Domain & Validation Foundations
+### Phase 1 - Domain & Validation Foundations
 - Confirm requirements from `docs/requirements/task-requirements/requirements.md` and align with Contact patterns.
 - Implement `Task` class:
   - Fields: `taskId` (immutable, ≤10 chars), `name` (mutable, ≤20), `description` (mutable, ≤50).
@@ -29,7 +29,7 @@ Summary: Implements Task (id,name,description) and TaskService with singleton st
   - Provide getters, `setName`, `setDescription`, and `update(String newName, String newDescription)` for atomic updates.
 - Reuse `Validation.validateLength` / `validateNotBlank`; extend Validation only if new shared helpers become necessary.
 
-### Phase 2 – Service Layer Implementation
+### Phase 2 - Service Layer Implementation
 - Design `TaskService` mirroring `ContactService`:
   - Singleton with lazy-loaded `getInstance`.
   - Backing store `ConcurrentHashMap<String, Task>` for add/update/delete.
@@ -39,7 +39,7 @@ Summary: Implements Task (id,name,description) and TaskService with singleton st
   - Provide `getDatabase()` snapshot and `clearAllTasks()` to aid testing and isolation.
 - Ensure all public methods carry Javadoc consistent with Definition of Done.
 
-### Phase 3 – Testing & Quality Gates
+### Phase 3 - Testing & Quality Gates
 - Expand `TaskTest` with:
   - Happy-path construction, trimming behavior, setter updates, bulk update.
   - Negative cases for every constraint (null, blank, over-length) mirroring Contact tests.

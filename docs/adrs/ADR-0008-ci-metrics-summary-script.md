@@ -27,6 +27,6 @@ Related: scripts/ci_metrics_summary.py, README.md#qa-summary, .github/workflows/
 - Minor maintenance overhead exists when adding new gates (e.g., CodeQL results would need another loader), but the structure makes that straightforward.
 
 ## Alternatives considered
-- **Rely on individual tool outputs** – rejected because the CI summary would require opening multiple artifacts per matrix leg.
-- **Use third-party reporting services** – rejected due to external dependency overhead and the course requirement to keep everything self-contained.
-- **Let Maven plugins emit the summary** – rejected; plugin output is verbose and not easily aggregated into a concise GitHub Actions summary.
+- **Rely on individual tool outputs** - rejected because the CI summary would require opening multiple artifacts per matrix leg.
+- **Use third-party reporting services** - rejected due to external dependency overhead and the course requirement to keep everything self-contained.
+- **Let Maven plugins emit the summary** - rejected; plugin output is verbose and not easily aggregated into a concise GitHub Actions summary.

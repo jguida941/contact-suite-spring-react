@@ -23,6 +23,6 @@ Related: src/main/java/contactapp/Contact.java, src/main/java/contactapp/Validat
 - Any future domain (e.g., Task) inherits the same helpers, but we must ensure new max-length rules still fit the shared API; otherwise, Validation may need additional methods.
 
 ## Alternatives considered
-- **Inline validation per class** – rejected because duplicating the logic caused message drift and made mutation coverage brittle.
-- **Accept raw user input** – rejected because keeping whitespace or partially valid strings would violate requirements and lead to confusing state.
-- **Introduce a third-party validation framework** – rejected as overkill for a small project and harder to run inside the constrained CS320 tooling.
+- **Inline validation per class** - rejected because duplicating the logic caused message drift and made mutation coverage brittle.
+- **Accept raw user input** - rejected because keeping whitespace or partially valid strings would violate requirements and lead to confusing state.
+- **Introduce a third-party validation framework** - rejected as overkill for a small project and harder to run inside the constrained CS320 tooling.
