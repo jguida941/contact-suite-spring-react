@@ -32,6 +32,7 @@ All notable changes to this project will be documented here. Follow the
 - Checked off every item in `docs/requirements/task-requirements/requirements_checklist.md` now that the Task entity/service and tests are implemented.
 - Finalized `docs/architecture/2025-11-19-task-entity-and-service.md` (status Implemented, summary, DoD results, deviations) so the Task design record reflects the delivered code.
 - Dependabot Maven job now runs daily instead of weekly so dependency updates land faster.
+- Bumped `org.pitest:pitest-maven` to 1.22.0 plus SpotBugs dependencies (`spotbugs-annotations` 4.9.8 and `spotbugs-maven-plugin` 4.9.8.1) to keep the QA toolchain current.
 - Published ADR-0009 describing the permanent unit-test strategy (layered test classes,
   AssertJ + parameterized tests, singleton reset helpers, and CI enforcement via JaCoCo/PITest).
 
