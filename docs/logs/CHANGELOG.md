@@ -28,6 +28,8 @@ All notable changes to this project will be documented here. Follow the
 - Added Shields.io badges for JaCoCo line coverage, PITest mutation score, SpotBugs status,
   and Dependency-Check findings at the top of the README, plus a license badge for quick
   at-a-glance metadata.
+- Published ADR-0009 describing the permanent unit-test strategy (layered test classes,
+  AssertJ + parameterized tests, singleton reset helpers, and CI enforcement via JaCoCo/PITest).
 
 ### Changed
 - Java CI workflow now installs Python 3.12 for every matrix leg so the QA
