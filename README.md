@@ -44,6 +44,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | [`config/checkstyle`](config/checkstyle)                                                       | Checkstyle configuration used by Maven/CI quality gates.            |
 | [`config/owasp-suppressions.xml`](config/owasp-suppressions.xml)                               | Placeholder suppression list for OWASP Dependency-Check.            |
 | [`scripts/ci_metrics_summary.py`](scripts/ci_metrics_summary.py)                               | Helper that parses JaCoCo/PITest/Dependency-Check reports and posts the QA summary table in CI. |
+| [`scripts/serve_quality_dashboard.py`](scripts/serve_quality_dashboard.py)                     | Tiny HTTP server that opens `target/site/qa-dashboard` locally after downloading CI artifacts. |
 | [`.github/workflows`](.github/workflows)                                                       | CI/CD pipelines (tests, quality gates, release packaging, CodeQL).  |
 
 ## Design Decisions & Highlights
@@ -436,7 +437,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - Node.js 20 is provisioned via `actions/setup-node@v4` and the React dashboard under `ui/qa-dashboard/` is built every run so the artifacts contain the interactive QA console.
 - Mutation coverage now relies on GitHub-hosted runners by default; the self-hosted lane is opt-in and only fires when the repository variable `RUN_SELF_HOSTED` is set.
 - After every matrix job, `scripts/ci_metrics_summary.py` posts a table to the GitHub Actions run summary showing tests, JaCoCo coverage, PITest mutation score, and Dependency-Check counts (with ASCII bars for quick scanning).
-- The same summary script emits a dark-mode HTML dashboard (`target/site/qa-dashboard/index.html`) with quick stats and links to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports (packaged inside the `quality-reports-*` artifact for download).
+- The same summary script emits a dark-mode HTML dashboard (`target/site/qa-dashboard/index.html`) with quick stats and links to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports (packaged inside the `quality-reports-*` artifact for download) and drops `serve_quality_dashboard.py` next to the reports for easy local previewing.
 
 ### Caching Strategy
 - Maven artifacts are cached via `actions/cache@v4` (`~/.m2/repository`) to keep builds fast.
@@ -487,8 +488,7 @@ graph TD
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow’s “Summary” tab and look for the “QA Metrics” section for the latest numbers.
 
-Need richer visuals? Download the `quality-reports-<os>-jdk<ver>` artifact from the workflow run and open `target/site/qa-dashboard/index.html`. The dashboard is a single dark-mode page with the same KPIs, inline progress bars, and quick links over to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports.
-The React app reads `metrics.json` (generated alongside the reports) so it always reflects the exact results from that build.
+Need richer visuals? Download the `quality-reports-<os>-jdk<ver>` artifact from the workflow run, unzip it, `cd target/site`, and run `python serve_quality_dashboard.py`. Modern browsers block ES modules when loaded directly from `file://` URLs, so the helper launches a tiny HTTP server, opens `http://localhost:<port>/qa-dashboard/index.html`, and serves the React dashboard with the correct `metrics.json`. You’ll see the same KPIs, inline progress bars, and quick links over to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports, all sourced from the exact results of that build.
 
 <img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
 

@@ -159,16 +159,16 @@ function App() {
       </section>
 
       <div className="links">
-        <a className="link-button" href="../target/site/jacoco/index.html">
+        <a className="link-button" href="../jacoco/index.html">
           JaCoCo Report
         </a>
-        <a className="link-button" href="../target/site/spotbugs.html">
+        <a className="link-button" href="../spotbugs.html">
           SpotBugs Report
         </a>
-        <a className="link-button" href="../target/dependency-check-report.html">
+        <a className="link-button" href="../../dependency-check-report.html">
           Dependency-Check
         </a>
-        <a className="link-button" href="../target/pit-reports/index.html">
+        <a className="link-button" href="../../pit-reports/index.html">
           PITest Report
         </a>
       </div>

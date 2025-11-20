@@ -28,6 +28,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`config/checkstyle/checkstyle.xml`](config/checkstyle/checkstyle.xml)                                 | Custom Checkstyle rules enforced in CI.                                                |
 | [`config/owasp-suppressions.xml`](config/owasp-suppressions.xml)                                       | Placeholder suppression list for OWASP Dependency-Check.                               |
 | [`scripts/ci_metrics_summary.py`](scripts/ci_metrics_summary.py)                                       | Prints the QA metrics table (tests/coverage/mutations/dependencies) in GitHub Actions. |
+| [`scripts/serve_quality_dashboard.py`](scripts/serve_quality_dashboard.py)                             | Launches a local server for `target/site/qa-dashboard` when reading downloaded artifacts. |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`docs/adrs/README.md`](docs/adrs/README.md)                                                           | ADR index summarizing ADR-0001 through ADR-0007.                                       |
 | [`docs/logs/backlog.md`](docs/logs/backlog.md)                                                         | Backlog for reporting and domain enhancements.                                         |

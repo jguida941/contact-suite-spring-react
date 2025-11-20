@@ -20,6 +20,8 @@ All notable changes to this project will be documented here. Follow the
   catalog (`docs/adrs/README.md`) plus ADR-0001 through ADR-0008 to capture
   validation, storage, atomic update, CI, SpotBugs runtime, documentation, Task
   feature choices, and the CI metrics summary script.
+- Added `scripts/serve_quality_dashboard.py` (packaged with the `quality-reports-*`
+  artifact) so contributors can spin up a local HTTP server to view the React QA dashboard.
 
 ### Changed
 - Java CI workflow now installs Python 3.12 for every matrix leg so the QA
@@ -106,6 +108,9 @@ All notable changes to this project will be documented here. Follow the
 - Refreshed `README.md` and `index.md` to correct Task file paths (now under
   `contactapp`), link to the new architecture/ADR directories, and fix stale
   relative links left over from the original docs layout.
+- Updated `ui/qa-dashboard` to emit relative asset paths, fixed report links,
+  and documented the new `serve_quality_dashboard.py` helper so the downloaded
+  dashboard renders correctly when opened locally or via the bundled server.
 - Extended `scripts/ci_metrics_summary.py` so Dependency-Check uses the shared
   `target/` constant, PITest "detected" counts flow into summaries, and the QA
   report now includes a dependency severity breakdown row plus ADR tracking.

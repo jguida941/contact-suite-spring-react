@@ -330,6 +330,11 @@ def write_dashboard(
     metrics_path = dashboard_dir / "metrics.json"
     metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
 
+    helper_src = ROOT / "scripts" / "serve_quality_dashboard.py"
+    helper_dst = TARGET / "site" / "serve_quality_dashboard.py"
+    if helper_src.exists():
+        shutil.copy(helper_src, helper_dst)
+
 
 def main() -> int:
     summary_lines = [section_header(), "", "| Metric | Result | Details |", "| --- | --- | --- |"]

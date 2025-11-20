@@ -16,11 +16,12 @@ Related: scripts/ci_metrics_summary.py, README.md#qa-summary, .github/workflows/
   - Writes a Markdown summary to `GITHUB_STEP_SUMMARY`, including coverage/mutation bar charts and dependency severity breakdowns.
   - Generates `target/site/qa-dashboard/metrics.json` (plus copies the React dashboard build when available) so artifacts contain a self-contained QA report.
   - Operates defensively: missing files or parse errors result in `_no data_` labels rather than build failures.
+- Bundle `scripts/serve_quality_dashboard.py` into `target/site/` so anyone who downloads the `quality-reports-*` artifact can run a tiny HTTP server locally and open the dark-mode dashboard without additional tooling.
 - Require every CI matrix leg to run the script after `mvn verify` so the QA summary is always present regardless of platform/JDK.
 
 ## Consequences
 - Reviewers get instant visibility into test counts, line coverage, mutation score, and dependency findings for each runner without downloading artifacts.
-- The same metrics feed the React QA dashboard, keeping local and hosted reporting in sync.
+- The same metrics feed the React QA dashboard, keeping local and hosted reporting in sync, and the bundled `serve_quality_dashboard.py` makes it trivial to preview the artifact offline.
 - Script now becomes part of the project’s contract; future tooling changes should extend the helper instead of bypassing it.
 - Minor maintenance overhead exists when adding new gates (e.g., CodeQL results would need another loader), but the structure makes that straightforward.
 
