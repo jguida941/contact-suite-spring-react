@@ -2,6 +2,8 @@ package contactapp;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -127,16 +129,14 @@ public class AppointmentServiceTest {
      * Proves IDs are validated even if a subclass returns blank IDs.
      */
     @Test
-    void testAddAppointmentWithBlankIdThrows() {
+    void testAddAppointmentWithBlankIdThrows() throws Exception {
         AppointmentService service = AppointmentService.getInstance();
         Date future = futureDate(30);
-        // Subclass to bypass constructor normalization and simulate a blank id
-        Appointment bad = new Appointment("tmp", future, "Desc") {
-            @Override
-            public String getAppointmentId() {
-                return " ";
-            }
-        };
+        // Force a blank id via reflection to simulate corrupted input and hit the guard
+        Appointment bad = new Appointment("tmp", future, "Desc");
+        Field idField = Appointment.class.getDeclaredField("appointmentId");
+        idField.setAccessible(true);
+        idField.set(bad, " ");
 
         assertThatThrownBy(() -> service.addAppointment(bad))
                 .isInstanceOf(IllegalArgumentException.class)
