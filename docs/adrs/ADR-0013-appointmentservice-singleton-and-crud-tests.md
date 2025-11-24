@@ -17,7 +17,8 @@
 ## Decision
 - Expose a process-wide singleton via `AppointmentService.getInstance()` with synchronized initialization.
 - Back the service with `ConcurrentHashMap<String, Appointment>` keyed by trimmed IDs; return an unmodifiable
-  snapshot of defensive copies from `getDatabase()` (via `Appointment.copy`) to prevent external mutation.
+  snapshot of defensive copies from `getDatabase()` (via `Appointment.copy`, which validates the source and
+  reuses the public constructor for the clone) to prevent external mutation.
 - `addAppointment` rejects null inputs, validates IDs provided by the entity (already trimmed), and refuses to overwrite existing IDs;
   `deleteAppointment` trims/validates IDs; `updateAppointment` trims/validates IDs and delegates field validation
   to `Appointment.update(...)` via `computeIfPresent` to avoid a get-then-mutate race.
