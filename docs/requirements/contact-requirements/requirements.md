@@ -1,5 +1,5 @@
 
-# CS230 - Contact Service Milestone 1 Requirements
+# CS320 - Contact Service Milestone 1 Requirements
 
 ## Contact Class Requirements
 
@@ -27,10 +27,6 @@
 
 - The contact service shall be able to delete contacts by `contactId`.
 
-- The contact service shall be able to update contact fields by `contactId`.
-  The following fields are updatable, and all updates shall obey the same
-  validation rules as the constructor:
-    - `firstName`
-    - `lastName`
-    - `phone`
-    - `address`
+- The contact service shall be able to update contact fields by `contactId`
+  via a single `updateContact` operation; all updates obey the same validation
+  rules as the constructor.

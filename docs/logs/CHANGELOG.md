@@ -5,6 +5,11 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 ### Added
+- Appointment domain/service documentation and tests:
+  - `docs/adrs/ADR-0012-appointment-validation-and-tests.md` and `docs/adrs/ADR-0013-appointmentservice-singleton-and-crud-tests.md`.
+  - README/index updates for Appointment classes/tests and ADR index through ADR-0013.
+  - Expanded README sections with validation/service mermaid diagrams and scenario coverage for appointments.
+  - AppointmentService/AppointmentServiceTest implementation and coverage (singleton, add/duplicate/null, delete/blank/missing, update/trim/blank/missing, clear-all).
 - README command cheat sheet plus a CI “Jobs at a Glance” table so common tasks and pipeline behavior are easy to follow without losing detail.
 - Clarified README validation diagrams (trimmed text fields, phone digits-only) and documented the container verify job alongside the optional self-hosted mutation lane.
 - Documented Sonatype OSS Index setup in `README.md` so dependency scans can be
@@ -13,7 +18,7 @@ All notable changes to this project will be documented here. Follow the
   so each matrix run publishes tests/coverage/mutation/dependency metrics.
 - Added a "Sample QA Summary" section to `README.md` showing what the Actions
   summary table looks like for a representative run.
-- Created `docs/backlog.md`, moving the detailed
+- Created `docs/logs/backlog.md`, moving the detailed
   backlog/sample content out of the README to keep it focused.
 - Introduced `Contact#update(...)` so multi-field updates validate every value
   before committing changes, preventing partially updated contacts.
@@ -30,17 +35,22 @@ All notable changes to this project will be documented here. Follow the
 - Added Shields.io badges for JaCoCo line coverage, PITest mutation score, SpotBugs status,
   and Dependency-Check findings at the top of the README, plus a license badge for quick
   at-a-glance metadata.
-- Updated README badges to the bolder “for-the-badge” style with GitHub/Codecov logos so the status bar matches the secure snapshot look-and-feel; static-analysis badges now use the same passing green.
+- Updated README badges to the bolder “for-the-badge” style with GitHub/Codecov logos so the status bar matches the secure snapshot look-and-feel; static-analysis badges now use the same passing green and point to this repository.
 - Checked off every item in `docs/requirements/task-requirements/requirements_checklist.md` now that the Task entity/service and tests are implemented.
 - Finalized `docs/architecture/2025-11-19-task-entity-and-service.md` (status Implemented, summary, DoD results, deviations) so the Task design record reflects the delivered code.
 - Dependabot Maven job now runs daily instead of weekly so dependency updates land faster.
 - Bumped `org.pitest:pitest-maven` to 1.22.0 plus SpotBugs dependencies (`spotbugs-annotations` 4.9.8 and `spotbugs-maven-plugin` 4.9.8.1) to keep the QA toolchain current.
 - Published ADR-0009 describing the permanent unit-test strategy (layered test classes,
   AssertJ + parameterized tests, singleton reset helpers, and CI enforcement via JaCoCo/PITest).
+- Added appointment architecture/ADRs plus tightened appointment validation (trim-before-validate, not-blank guard),
+  ID trimming in service adds, date validation reuse in `update`, and time-stable appointment tests (relative dates).
 
 ### Changed
-- Simplified CI flow diagram labels (again) so GitHub mermaid renders cleanly.
-- Simplified the CI flow diagram labels again so GitHub renders the mermaid chart reliably.
+- Documented the shared `validateDateNotPast` helper across README/index/ADR/design notes and expanded `ValidationTest` with future/past-date cases so Appointment docs mirror the code.
+- Appointment update/add logic now validates both fields before mutation, enforces trimmed IDs on add,
+  and uses `computeIfPresent` for updates; README/architecture/design notes updated accordingly.
+- AppointmentService normalizes IDs across CRUD and returns an unmodifiable snapshot of defensive copies to prevent external mutation.
+- Simplified CI flow diagram labels for reliable GitHub mermaid rendering.
 - Relocated the README command cheat sheet under the CI/CD section for better flow while keeping all commands visible.
 - ADR-0007 (Task Entity/Service) and ADR-0009 (Test Strategy) are now marked Accepted in the ADR index and corresponding files.
 - Java CI workflow now installs Python 3.12 for every matrix leg so the QA
@@ -91,8 +101,8 @@ All notable changes to this project will be documented here. Follow the
 - Clarified README sections describing the `ConcurrentHashMap<String, Contact>`
   storage, the `Map.copyOf(...)` snapshot, and the atomic update helper managed
   by `ContactService`.
-- Corrected README documentation to state that SpotBugs currently runs on all
-  supported JDKs (17/21/25) instead of implying it auto-skips on newer runtimes.
+- Corrected README documentation to state that SpotBugs currently runs on supported
+  JDKs (17/21) instead of implying it auto-skips on newer runtimes.
 - Enhanced `scripts/ci_metrics_summary.py` to show colored icons/bars, severity
   breakdowns, and generate a dark-mode `target/site/qa-dashboard/index.html`
   page with quick links to JaCoCo/SpotBugs/Dependency-Check/PITest reports.

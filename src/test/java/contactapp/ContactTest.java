@@ -21,9 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 public class ContactTest {
 
-    // Simple test to check for contactId, firstName, lastName,
-    // phone, and address field values
-    // @test tests for good path creation of a Contact object
+    /**
+     * Verifies the constructor stores every field when valid data is supplied.
+     */
     @Test
     void testSuccessfulCreation() {
         Contact contact = new Contact(
@@ -43,7 +43,9 @@ public class ContactTest {
                 .hasFieldOrPropertyWithValue("address", "7622 Main Street");
     }
 
-    // Test that updating values with the setters works with valid data
+    /**
+     * Ensures setters accept valid data and mutate the stored state accordingly.
+     */
     @Test
     void testValidSetters() {
         Contact contact = new Contact("1", "firstName", "lastName", "1234567890", "7622 Main Street");
@@ -60,7 +62,9 @@ public class ContactTest {
                 .hasFieldOrPropertyWithValue("address", "1234 Taro Street");
     }
 
-    // Constructor should trim leading/trailing whitespace for all stored fields
+    /**
+     * Confirms the constructor trims text inputs before persisting them.
+     */
     @Test
     void testConstructorTrimsStoredValues() {
         Contact contact = new Contact(
@@ -77,8 +81,9 @@ public class ContactTest {
         assertThat(contact.getAddress()).isEqualTo("742 Evergreen Terrace");
     }
 
-    // CsvSource provides multiple sets of invalid input values for the test below
-    // Each line is one test case (contactId, firstName, lastName, phone, address)
+    /**
+     * Enumerates invalid constructor inputs (id, names, phone, address).
+     */
     @CsvSource(
             value = {
                     // contactId validation
@@ -120,9 +125,9 @@ public class ContactTest {
             // Specify that the string "null" should be treated as a null value
             nullValues = "null"
     )
-
-    // Parameterized test: this method will run once for each set of input values we define
-    // it tests for bad path creation of a Contact object
+    /**
+     * Verifies the constructor rejects each invalid input combination defined above.
+     */
     @ParameterizedTest
     void testFailedCreation(
             String contactId,
@@ -139,6 +144,9 @@ public class ContactTest {
                 .hasMessage(expectedMessage);
     }
 
+    /**
+     * Drives invalid first-name values for the setter validation test.
+     */
     @CsvSource(
             value = {
                     "' ', 'firstName must not be null or blank'"
@@ -149,6 +157,9 @@ public class ContactTest {
             nullValues = "null"
     )
 
+    /**
+     * Ensures {@link Contact#setFirstName(String)} throws for blank/null/too-long names.
+     */
     @ParameterizedTest
     void testFailedSetFirstName(String invalidFirstName, String expectedMessage) {
         Contact contact = new Contact("1", "firstName", "lastName", "1234567890", "7622 Main Street");
@@ -159,7 +170,9 @@ public class ContactTest {
                 .hasMessage(expectedMessage);
     }
 
-    // Test data for update(...) that should fail validation and leave state unchanged
+    /**
+     * Supplies invalid arguments to {@link #testUpdateRejectsInvalidValuesAtomically(String, String, String, String, String)}.
+     */
     private static Stream<Arguments> invalidUpdateValues() {
         return Stream.of(
                 Arguments.of(" ", "lastName", "1234567890", "7622 Main Street", "firstName must not be null or blank"),
@@ -169,7 +182,9 @@ public class ContactTest {
         );
     }
 
-    // update(...) should reject invalid values and keep the original contact fields intact (atomicity)
+    /**
+     * Ensures {@link Contact#update(String, String, String, String)} rejects invalid data and leaves state unchanged.
+     */
     @ParameterizedTest
     @MethodSource("invalidUpdateValues")
     void testUpdateRejectsInvalidValuesAtomically(

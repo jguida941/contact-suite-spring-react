@@ -16,7 +16,7 @@ File: docs/design-notes/validation-and-contact-notes.md
 
 ## What the design is
 - All checks live in `contactapp.Validation`.
-- Methods like `validateNotBlank`, `validateLength`, `validateNumeric10`.
+- Methods like `validateNotBlank`, `validateLength`, `validateNumeric10`, plus `validateDateNotPast` for domains (Appointment) that constrain dates.
 - They throw `IllegalArgumentException` with standard message text.
 
 ## How Contact uses it

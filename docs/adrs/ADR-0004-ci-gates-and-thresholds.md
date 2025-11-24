@@ -12,7 +12,7 @@
 - CI needed deterministic failure criteria so every pull request sees the same gates locally (`mvn verify`) and remotely (GitHub Actions).
 
 ## Decision
-- Wire the Maven `verify` phase to run Checkstyle, SpotBugs (`spotbugs-maven-plugin` 4.9.7.0), JaCoCo (min instruction coverage 80%), PITest (mutation threshold 70%), and OWASP Dependency-Check (fail build on CVSS ≥ 7, cache under `.owasp-cache`), with `nvdApiDelay` and `dependency.check.skip` exposed for CI to tune or temporarily skip the feed without code changes.
+- Wire the Maven `verify` phase to run Checkstyle, SpotBugs (`spotbugs-maven-plugin` 4.9.8.1), JaCoCo (min instruction coverage 80%), PITest (mutation threshold 70%), and OWASP Dependency-Check (fail build on CVSS ≥ 7, cache under `.owasp-cache`), with `nvdApiDelay` and `dependency.check.skip` exposed for CI to tune or temporarily skip the feed without code changes.
 - Document that Dependency-Check defaults to 3500ms `nvdApiDelay` when an NVD API key is configured and 8000ms without one, so throttling expectations are clear in both README and workflow flags.
 - Add CodeQL and Dependabot workflows separate from the main Java CI job but required for merges through branch protection.
 - Publish coverage/mutation/dependency metrics through `scripts/ci_metrics_summary.py` so each matrix leg reports a consistent KPI table.

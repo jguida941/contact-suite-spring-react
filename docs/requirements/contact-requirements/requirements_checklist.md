@@ -28,10 +28,7 @@
 - [x] addContact adds a contact with a unique contactId (2025-11-18)
 - [x] addContact rejects duplicate contactId (2025-11-18)
 - [x] deleteContact removes contact by contactId (2025-11-18)
-- [x] updateFirstName updates firstName by contactId and enforces validation (2025-11-18)
-- [x] updateLastName updates lastName by contactId and enforces validation (2025-11-18)
-- [x] updatePhone updates phone by contactId and enforces validation (2025-11-18)
-- [x] updateAddress updates address by contactId and enforces validation (2025-11-18)
+- [x] updateContact updates first/last/phone/address by contactId and enforces validation (2025-11-18)
 
 ## Tests
 

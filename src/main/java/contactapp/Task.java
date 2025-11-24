@@ -1,6 +1,5 @@
 package contactapp;
 
-
 /**
  * Task domain object.
  *

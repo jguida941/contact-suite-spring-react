@@ -1,0 +1,42 @@
+# ADR-0013: AppointmentService Singleton and CRUD Tests
+
+**Status**: Accepted  
+**Date**: 2025-11-24  
+**Owners**: Justin Guida  
+
+**Related**: [AppointmentService.java](../../src/main/java/contactapp/AppointmentService.java),
+[AppointmentServiceTest.java](../../src/test/java/contactapp/AppointmentServiceTest.java),
+[Appointment.java](../../src/main/java/contactapp/Appointment.java),
+[Appointment requirements](../requirements/appointment-requirements/requirements.md)
+
+## Context
+- Appointment storage must enforce unique IDs, reuse appointment validation, and allow add/delete/update.
+- A singleton service avoids fragmented state across callers; tests need a reset hook to avoid cross-test leakage.
+- API contracts return booleans for duplicate/missing IDs, mirroring existing services.
+
+## Decision
+- Expose a process-wide singleton via `AppointmentService.getInstance()` with synchronized initialization.
+- Back the service with `ConcurrentHashMap<String, Appointment>` keyed by trimmed IDs; return an unmodifiable
+  snapshot of defensive copies from `getDatabase()` (via `Appointment.copy`) to prevent external mutation.
+- `addAppointment` rejects null inputs, validates IDs provided by the entity (already trimmed), and refuses to overwrite existing IDs;
+  `deleteAppointment` trims/validates IDs; `updateAppointment` trims/validates IDs and delegates field validation
+  to `Appointment.update(...)` via `computeIfPresent` to avoid a get-then-mutate race.
+- Provide `clearAllAppointments()` so tests can isolate state.
+- Validate behavior in `AppointmentServiceTest`:
+  - Future dates are generated relative to “now” to keep the “not in the past” rule time-stable.
+  - Singleton identity.
+  - Add success, duplicate ID failure, null add throws.
+  - Delete success, blank ID throws, missing delete returns false.
+  - Update success, blank ID throws, missing update returns false, trims ID.
+  - Clear-all empties the backing store.
+
+## Consequences
+- Shared singleton state requires explicit test resets but keeps API surface consistent with other services; update
+  now uses `computeIfPresent` to remove the get-then-mutate window.
+- Boolean contracts simplify caller logic for missing/duplicate IDs, but rely on tests to prevent accidental overwrites.
+- Defensive copies from `getDatabase()` add minor allocation overhead but protect internal state.
+
+## Alternatives considered
+- **Per-request service instances** - rejected; would fragment state and complicate synchronization.
+- **Plain HashMap with synchronized methods** - workable but less concurrent-friendly than `ConcurrentHashMap`.
+- **Throw on missing IDs** - rejected in favor of boolean contracts consistent with existing services/tests.

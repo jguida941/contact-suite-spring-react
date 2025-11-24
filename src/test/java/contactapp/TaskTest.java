@@ -22,6 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 public class TaskTest {
 
+    /**
+     * Ensures constructor trimming works for every field.
+     */
     @Test
     void testSuccessfulCreationTrimsValues() {
         Task task = new Task(" 123 ", "  Write tests ", "  Cover edge cases ");
@@ -31,6 +34,9 @@ public class TaskTest {
         assertThat(task.getDescription()).isEqualTo("Cover edge cases");
     }
 
+    /**
+     * Confirms {@link Task#update(String, String)} swaps both mutable fields in one operation.
+     */
     @Test
     void testUpdateReplacesValuesAtomically() {
         Task task = new Task("100", "Draft plan", "Outline initial work");
@@ -41,6 +47,9 @@ public class TaskTest {
         assertThat(task.getDescription()).isEqualTo("Finish Task entity and service");
     }
 
+    /**
+     * Validates that setters accept good data and persist changes.
+     */
     @Test
     void testSettersAcceptValidValues() {
         Task task = new Task("100", "Draft plan", "Outline initial work");
@@ -52,6 +61,9 @@ public class TaskTest {
         assertThat(task.getDescription()).isEqualTo("Document Task behavior");
     }
 
+    /**
+     * Supplies invalid constructor inputs for {@link #testConstructorValidation(String, String, String, String)}.
+     */
     @CsvSource(value = {
             // taskId validation
             "' ', name, description, 'taskId must not be null or blank'",
@@ -72,6 +84,9 @@ public class TaskTest {
             "1, name, 'This description is intentionally made way too long to exceed the fifty character limit set', 'description length must be between 1 and 50'"
     }, nullValues = "null")
 
+    /**
+     * Ensures invalid constructor inputs raise {@link IllegalArgumentException} with the expected message.
+     */
     @ParameterizedTest
     void testConstructorValidation(
             String taskId,
@@ -83,6 +98,9 @@ public class TaskTest {
                 .hasMessage(expectedMessage);
     }
 
+    /**
+     * Drives invalid name values for {@link #testSetNameValidation(String, String)}.
+     */
     @CsvSource(value = {
             "' ', 'name must not be null or blank'",
             "'', 'name must not be null or blank'",
@@ -90,6 +108,9 @@ public class TaskTest {
             "This name is definitely too long, 'name length must be between 1 and 20'",
     }, nullValues = "null")
 
+    /**
+     * Verifies {@link Task#setName(String)} rejects blank/null/over-length names.
+     */
     @ParameterizedTest
     void testSetNameValidation(String invalidName, String expectedMessage) {
         Task task = new Task("100", "Valid", "Valid description");
@@ -99,6 +120,9 @@ public class TaskTest {
                 .hasMessage(expectedMessage);
     }
 
+    /**
+     * Supplies invalid descriptions for {@link #testSetDescriptionValidation(String, String)}.
+     */
     @CsvSource(value = {
             "' ', 'description must not be null or blank'",
             "'', 'description must not be null or blank'",
@@ -106,6 +130,9 @@ public class TaskTest {
             "'This description is intentionally made way too long to exceed the fifty character limit set', 'description length must be between 1 and 50'"
     }, nullValues = "null")
 
+    /**
+     * Ensures {@link Task#setDescription(String)} enforces the required constraints.
+     */
     @ParameterizedTest
     void testSetDescriptionValidation(String invalidDescription, String expectedMessage) {
         Task task = new Task("100", "Valid", "Valid description");

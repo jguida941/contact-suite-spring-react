@@ -40,15 +40,21 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | [`src/main/java/contactapp/ContactService.java`](src/main/java/contactapp/ContactService.java)                       | Singleton service with in-memory CRUD, uniqueness checks, and validation reuse.                 |
 | [`src/main/java/contactapp/Task.java`](src/main/java/contactapp/Task.java)                                           | Task entity (ID/name/description) mirroring the requirements document.                          |
 | [`src/main/java/contactapp/TaskService.java`](src/main/java/contactapp/TaskService.java)                             | Task service API (add/delete/update) mirroring the `ContactService` patterns.                   |
-| [`src/main/java/contactapp/Validation.java`](src/main/java/contactapp/Validation.java)                               | Centralized validation helpers (not blank, length, numeric checks).                             |
+| [`src/main/java/contactapp/Appointment.java`](src/main/java/contactapp/Appointment.java)                             | Appointment entity (ID/date/description) with date-not-past enforcement.                        |
+| [`src/main/java/contactapp/AppointmentService.java`](src/main/java/contactapp/AppointmentService.java)               | Appointment service singleton with in-memory CRUD and ID trim/validation guards.                |
+| [`src/main/java/contactapp/Validation.java`](src/main/java/contactapp/Validation.java)                               | Centralized validation helpers (not blank, length, numeric, date-not-past checks).              |
 | [`src/test/java/contactapp/ContactTest.java`](src/test/java/contactapp/ContactTest.java)                             | Unit tests for the `Contact` class (valid + invalid scenarios).                                 |
 | [`src/test/java/contactapp/TaskTest.java`](src/test/java/contactapp/TaskTest.java)                                   | Unit tests for the `Task` class (trimming, invalid inputs, and atomic update validation).       |
 | [`src/test/java/contactapp/TaskServiceTest.java`](src/test/java/contactapp/TaskServiceTest.java)                     | Unit tests for `TaskService` (singleton behavior and CRUD).                                     |
-| [`src/test/java/contactapp/ValidationTest.java`](src/test/java/contactapp/ValidationTest.java)                       | Boundary/blank/null coverage for the shared validation helpers.                                 |
+| [`src/test/java/contactapp/AppointmentTest.java`](src/test/java/contactapp/AppointmentTest.java)                     | Unit tests for Appointment entity (ID/date/description validation).                             |
+| [`src/test/java/contactapp/AppointmentServiceTest.java`](src/test/java/contactapp/AppointmentServiceTest.java)       | Unit tests for AppointmentService singleton and CRUD behavior.                                  |
+| [`src/test/java/contactapp/ValidationTest.java`](src/test/java/contactapp/ValidationTest.java)                       | Boundary/blank/null/future coverage for the shared validation helpers.                          |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)                                 | Contact assignment requirements and checklist.                                                  |
+| [`docs/requirements/appointment-requirements/`](docs/requirements/appointment-requirements/)                         | Appointment assignment requirements and checklist.                                              |
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                       | Task assignment requirements and checklist (same format as Contact).                            |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach.                    |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index with links to ADR-0001…ADR-0009.                             |
+| [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record.                                               |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index with links to ADR-0001…ADR-0013.                             |
 | [`docs/ci-cd/`](docs/ci-cd/)                                                                                         | CI/CD design notes (pipeline plan + badge automation).                                          |
 | [`docs/design-notes/`](docs/design-notes/)                                                                           | Informal design notes hub; individual write-ups live under `docs/design-notes/notes/`.          |
 | [`index.md`](index.md)                                                                                               | Quick reference guide for the repo layout.                                                      |
@@ -61,10 +67,10 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 
 ## Design Decisions & Highlights
 - **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps map keys stable and mirrors real-world record identifiers.
-- **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, and (for phones) `validateNumeric10`, so IDs, names, phones, and addresses all share one enforcement pipeline.
+- **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, `validateNumeric10`, and (for appointments) `validateDateNotPast`, so IDs, names, phones, addresses, and dates all share one enforcement pipeline.
 - **Fail-fast IllegalArgumentException** - Invalid input is a caller bug, so we throw standard JDK exceptions with precise messages and assert on them in tests.
-- **ConcurrentHashMap storage strategy** - Milestone 1 uses an in-memory `ConcurrentHashMap<String, Contact>` (inside the singleton `ContactService`) for predictable average O(1) CRUD plus thread-safe access, while still treating the service class as the seam for future persistence layers.
-- **Boolean service API** - The service’s `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). That keeps the milestone interface lightweight while still letting JUnit assertions check the outcome without extra exception types.
+- **ConcurrentHashMap storage strategy** - Milestone 1 uses in-memory `ConcurrentHashMap` stores (inside the singleton `ContactService`, `TaskService`, and `AppointmentService`) for predictable average O(1) CRUD plus thread-safe access, while still treating each service class as the seam for future persistence layers.
+- **Boolean service API** - Every service’s `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). That keeps the milestone interfaces lightweight while still letting JUnit assertions check the outcome without extra exception types.
 - **Security posture** - Input validation in the domain + service layers acts as the first defense layer; nothing reaches the in-memory store unless it passes the guards.
 - **Testing depth** - Parameterized JUnit 5 tests, AssertJ assertions, JaCoCo coverage, and PITest mutation scores combine to prove the validation logic rather than just executing it.
 
@@ -78,6 +84,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - `validateNotBlank(input, label)` - rejects null, empty, and whitespace-only fields with label-specific messages.
 - `validateLength(input, label, min, max)` - enforces 1-10 char IDs/names and 1-30 char addresses (bounds are parameters, so future changes touch one file).
 - `validateNumeric10(input, label, requiredLength)` - requires digits-only phone numbers with exact length (10 in this project).
+- `validateDateNotPast(date, label)` - rejects null dates and any timestamp earlier than `new Date()`, powering the Appointment rules.
 - These helpers double as both correctness logic and security filtering.
 
 ### Service Layer (`ContactService`)
@@ -198,6 +205,7 @@ void testInvalidContactId(String id, String expectedMessage) {
 - `ValidationTest.validateLengthRejectsTooLong` hits the max-length branch to keep upper-bound validation covered.
 - `ValidationTest.validateLengthRejectsTooShort` covers the min-length branch so both ends of the range are exercised.
 - `ValidationTest.validateNumeric10RejectsBlankStrings` and `ValidationTest.validateNumeric10RejectsNull` ensure the phone validator raises the expected messages before regex/length checks.
+- `ValidationTest.validateDateNotPastAcceptsFutureDate`, `validateDateNotPastRejectsNull`, and `validateDateNotPastRejectsPastDate` assert the appointment date guard enforces the non-null/not-in-the-past contract before any Appointment state mutates.
 
 <br>
 
@@ -327,6 +335,7 @@ graph TD
 - Setters accept valid updates and reject invalid ones with the same helper-generated messages.
 - `update(...)` replaces both mutable fields atomically and never mutates on invalid input.
 - `testUpdateRejectsInvalidValuesAtomically` (`@MethodSource`) enumerates invalid name/description pairs (blank/empty/null/over-length) and asserts the Task remains unchanged when validation fails.
+- `TaskServiceTest` mirrors the entity atomicity: invalid updates (blank name) throw and leave the stored task unchanged.
 
   <br>
 
@@ -376,6 +385,7 @@ graph TD
 ### Approach & TDD
 - `@BeforeEach` clears the singleton to keep tests isolated.
 - Tests were written alongside each service method so duplicates/missing/blank cases were covered before implementation settled.
+- Invalid update inputs throw and leave the stored task unchanged, mirroring the Task entity’s atomicity guarantees.
 
 ### Assertion Patterns
 - AssertJ checks (`containsEntry`, `doesNotContainKey`, `isTrue/isFalse`) keep map expectations concise.
@@ -384,8 +394,95 @@ graph TD
 - Singleton identity tests (instance returns same reference) match what is enforced for the contact service.
 - Happy-path add/delete/update plus duplicate and missing branches confirm boolean results and map state.
 - Tests prove trimmed IDs succeed on update and blank IDs throw before accessing the map.
+- Invalid update inputs (e.g., blank name) throw and leave the stored task unchanged, proving atomicity at the service layer.
 
   <br>
+
+# [Appointment.java](src/main/java/contactapp/Appointment.java) / [AppointmentTest.java](src/test/java/contactapp/AppointmentTest.java)
+
+### Service Snapshot
+- Appointment IDs are required, trimmed, and immutable after construction (length 1-10).
+- `appointmentDate` uses `java.util.Date`, must not be null or in the past, and is stored/returned via defensive copies.
+- Descriptions are required, trimmed, and capped at 50 characters; constructor and update share the same validation path.
+
+### Validation & Error Handling
+
+#### Validation Pipeline
+```mermaid
+graph TD
+    A[Constructor / update input] --> B[validateNotBlank appointmentId]
+    B -->|pass| C[trim id]
+    B -->|fail| X[IllegalArgumentException]
+    C --> D[validateLength appointmentId 1-10]
+    D -->|ok| E[validateDateNotPast]
+    D -->|fail| X
+    E -->|ok| F[defensive copy of date stored]
+    E -->|fail| X
+    F --> G[validateLength description 1-50]
+    G -->|ok| H[trimmed description stored]
+    G -->|fail| X
+```
+- IDs are checked not-blank, trimmed, then length-validated so stored and validated values match.
+- Dates are validated via `Validation.validateDateNotPast` and copied on set/get to prevent external mutation.
+- String fields reuse `Validation.validateLength`, so constructor/setters/update share the same messages.
+
+### Testing Strategy
+- `AppointmentTest` covers trimmed creation with defensive date copies, description setter happy path, invalid constructor cases (null/blank/over-length id/description, null/past dates), invalid description setters, invalid updates (null/past dates, bad descriptions) that leave state unchanged, and defensive getters.
+- AssertJ getters/field checks verify stored values; future/past dates are relative to “now” to avoid flakiness.
+
+### Scenario Coverage
+- `testSuccessfulCreationTrimsAndCopiesDate` validates trim/defensive copy on construction.
+- `testUpdateReplacesValuesAtomically` confirms date/description updates and defensive date copy.
+- `testSetDescriptionAcceptsValidValue` covers setter happy path.
+- `testGetAppointmentDateReturnsDefensiveCopy` ensures callers can’t mutate stored dates.
+- `testConstructorValidation` enumerates invalid id/description/null/past date cases.
+- `testSetDescriptionValidation` covers invalid description setter inputs.
+- `testUpdateRejectsInvalidValuesAtomically` enumerates invalid update inputs and asserts state remains unchanged.
+
+## [AppointmentService.java](src/main/java/contactapp/AppointmentService.java) / [AppointmentServiceTest.java](src/test/java/contactapp/AppointmentServiceTest.java)
+
+### Service Snapshot
+- **Singleton access** - `getInstance()` exposes one shared service backed by a `ConcurrentHashMap<String, Appointment>`.
+- **Atomic uniqueness guard** - `addAppointment` rejects null inputs, validates IDs (already trimmed by the `Appointment` constructor), and uses `putIfAbsent` so duplicate IDs never overwrite existing entries.
+- **Shared validation** - `deleteAppointment` trims/validates IDs; `updateAppointment` trims IDs and delegates field rules to `Appointment.update(...)` via `computeIfPresent` to avoid a get-then-mutate race.
+- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies; `clearAllAppointments()` resets state between tests.
+
+### Validation & Error Handling
+
+#### Validation Pipeline
+```mermaid
+graph TD
+    A[Service call] --> B{Operation}
+    B -->|add| C["appointment != null?"]
+    C -->|no| X[IllegalArgumentException]
+    C -->|yes| D["validateNotBlank(id), putIfAbsent"]
+    B -->|delete| E["validateNotBlank + trim(appointmentId)"]
+    B -->|update| E
+    E --> F["computeIfPresent(trimmedId, update)"]
+    F -->|missing| G[return false]
+    F -->|found| H["Appointment.update(...) reuses Validation"]
+```
+- Add path validates the (already trimmed) ID and uses `putIfAbsent`; delete/update trim + validate IDs before map access; validation failures bubble as `IllegalArgumentException`; duplicates/missing entries return `false`.
+
+### Testing Strategy
+- `AppointmentServiceTest` mirrors the Contact/Task patterns: singleton identity, add success/duplicate/null add, add-blank-id guard, delete success/blank/missing, update success/blank/missing/trimmed IDs, clear-all, and defensive-copy verification.
+- Future dates are generated relative to “now” to keep “not in the past” checks stable.
+
+### Scenario Coverage
+- `testSingletonInstance` proves the singleton accessor returns the same instance.
+- `testAddAppointment` stores a future-dated appointment and asserts map contents.
+- `testAddDuplicateAppointmentIdFails` returns `false` on duplicate IDs and preserves the original entry.
+- `testAddAppointmentNullThrows` asserts the null guard message.
+- `testAddAppointmentWithBlankIdThrows` hits the add-path ID validation guard.
+- `testDeleteAppointment` removes an existing entry.
+- `testDeleteAppointmentBlankIdThrows` and `testDeleteMissingAppointmentReturnsFalse` cover validation/missing delete branches.
+- `testUpdateAppointment` changes date/description; `testUpdateAppointmentTrimsId` shows whitespace IDs are trimmed.
+- `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through snapshots.
+- `testUpdateAppointmentBlankIdThrows` and `testUpdateMissingAppointmentReturnsFalse` cover validation/missing update branches.
+- `testClearAllAppointmentsRemovesEntries` proves the reset hook empties the backing store.
+- `testCopyRejectsNullInternalState` exercises the copy guard against corrupted internal fields.
+
+<br>
 
 ## Static Analysis & Quality Gates
 
@@ -521,7 +618,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - The `release-artifacts` job is intentionally gated with `if: github.event_name == 'release' && github.event.action == 'published'`, so you will see it marked as “skipped” on normal pushes or pull requests. It only runs when a GitHub release/tag is published.
 
 ### Coverage Publishing (Codecov)
-- After JaCoCo generates `target/site/jacoco/jacoco.xml`, the workflow uploads it to [Codecov](https://codecov.io/gh/jguida941/cs320-contact-service-junit) so the coverage badge stays current.
+- After JaCoCo generates `target/site/jacoco/jacoco.xml`, the workflow uploads it to [Codecov](https://codecov.io/gh/jguida941/contact-service-junit) so the coverage badge stays current.
 - Setup steps (once per repository):
   1. Sign in to Codecov with GitHub and add this repo.
   2. Generate a repository token in Codecov and save it as the GitHub secret `CODECOV_TOKEN`.
@@ -630,7 +727,7 @@ You’ll see the same KPIs, inline progress bars, and quick links over to the Ja
   tar xzf ./actions-runner-osx-*.tar.gz
 
   # Configure the runner (get token from GitHub UI)
-  ./config.sh --url https://github.com/jguida941/cs320-contact-service-junit --token YOUR_TOKEN_FROM_GITHUB
+  ./config.sh --url https://github.com/jguida941/contact-service-junit --token YOUR_TOKEN_FROM_GITHUB
 
   # Set MAVEN_OPTS permanently (choose based on your shell)
   # For zsh (default on modern macOS):
@@ -663,7 +760,7 @@ If you're working through CS320 (or just exploring the project), the recommended
 |------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
 | [docs/requirements/contact-requirements/](docs/requirements/contact-requirements/) | Contact assignment requirements and acceptance criteria.                 |
 | [docs/requirements/task-requirements/](docs/requirements/task-requirements/)       | Task assignment requirements and acceptance criteria.                    |
-| [docs/index.md](docs/index.md)                                                     | Repo structure reference (future `docs/design.md` will hold deep dives). |
+| [index.md](index.md)                                                               | Repo structure reference (future `docs/design.md` will hold deep dives). |
 | [GitHub Actions workflows](.github/workflows)                                      | CI/CD definitions described above.                                       |
 | [config/checkstyle](config/checkstyle)                                             | Checkstyle rules enforced in CI.                                         |
 | [Java 17 (Temurin)](https://adoptium.net/temurin/releases/)                        | JDK used locally and in CI.                                              |

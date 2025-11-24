@@ -1,5 +1,8 @@
 package contactapp;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -16,7 +19,9 @@ class ValidationTest {
     private static final int ADDRESS_MAX = 30;
     private static final int PHONE_LENGTH = 10;
 
-    // Ensure helper allows lengths exactly at the configured boundaries for names/addresses
+    /**
+     * Ensures the helper allows inputs exactly at the configured min/max boundaries.
+     */
     @Test
     void validateLengthAcceptsBoundaryValues() {
         assertThatNoException().isThrownBy(() ->
@@ -29,7 +34,9 @@ class ValidationTest {
                 Validation.validateLength("123456789012345678901234567890", "address", MIN_LENGTH, ADDRESS_MAX));
     }
 
-    // Blank inputs must still fail length validation for firstName
+    /**
+     * Blank inputs must fail length validation for any label.
+     */
     @Test
     void validateLengthRejectsBlankStrings() {
         assertThatThrownBy(() ->
@@ -38,7 +45,9 @@ class ValidationTest {
                 .hasMessage("firstName must not be null or blank");
     }
 
-    // Null inputs must also fail length validation immediately
+    /**
+     * Null inputs should fail immediately before trim/length checks.
+     */
     @Test
     void validateLengthRejectsNull() {
         assertThatThrownBy(() ->
@@ -48,9 +57,7 @@ class ValidationTest {
     }
 
     /**
-     * validateLength: we already cover the "too short" branch (length < min).
-     * This test hits the other side of the condition (length > max), so JaCoCo
-     * sees the upper-bound failure path and we lock in the standard range message.
+     * Covers the "too long" branch of {@link Validation#validateLength(String, String, int, int)}.
      */
     @Test
     void validateLengthRejectsTooLong() {
@@ -60,7 +67,9 @@ class ValidationTest {
                 .hasMessage("firstName length must be between 1 and 10");
     }
 
-    // Added to cover the min-length branch (over max was covered separately) to keep JaCoCo/Codecov at 100%.
+    /**
+     * Covers the "too short" branch of {@link Validation#validateLength(String, String, int, int)}.
+     */
     @Test
     void validateLengthRejectsTooShort() {
         assertThatThrownBy(() ->
@@ -69,7 +78,9 @@ class ValidationTest {
                 .hasMessage("middleName length must be between 2 and 5");
     }
 
-    // Phone number validator must detect blank string before digit/length checks
+    /**
+     * Phone numbers must fail fast when blank.
+     */
     @Test
     void validateNumeric10RejectsBlankStrings() {
         assertThatThrownBy(() ->
@@ -78,12 +89,47 @@ class ValidationTest {
                 .hasMessage("phone must not be null or blank");
     }
 
-    // Null phone input should trigger the same blank check before regex/length logic
+    /**
+     * Null phones must trigger the same blank check as blanks.
+     */
     @Test
     void validateNumeric10RejectsNull() {
         assertThatThrownBy(() ->
                 Validation.validateNumeric10(null, "phone", PHONE_LENGTH))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("phone must not be null or blank");
+    }
+
+    /**
+     * Confirms future dates pass {@link Validation#validateDateNotPast(Date, String)}.
+     */
+    @Test
+    void validateDateNotPastAcceptsFutureDate() {
+        final Date future = Date.from(Instant.now().plus(Duration.ofHours(1)));
+        assertThatNoException().isThrownBy(() ->
+                Validation.validateDateNotPast(future, "appointmentDate"));
+    }
+
+    /**
+     * Null dates must throw an explicit error.
+     */
+    @Test
+    void validateDateNotPastRejectsNull() {
+        assertThatThrownBy(() ->
+                Validation.validateDateNotPast(null, "appointmentDate"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("appointmentDate must not be null");
+    }
+
+    /**
+     * Past dates must be rejected so appointments cannot be scheduled retroactively.
+     */
+    @Test
+    void validateDateNotPastRejectsPastDate() {
+        final Date past = Date.from(Instant.now().minus(Duration.ofHours(1)));
+        assertThatThrownBy(() ->
+                Validation.validateDateNotPast(past, "appointmentDate"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("appointmentDate must not be in the past");
     }
 }

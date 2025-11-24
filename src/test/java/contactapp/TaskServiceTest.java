@@ -7,15 +7,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests TaskService behavior mirrors the requirements.
+ * Tests {@link TaskService} behavior mirrors the requirements.
+ *
+ * Covers:
+ *  - singleton access
+ *  - add/delete/update behaviors (including duplicate/missing/blank ID branches)
+ *  - ID trimming, null guards, and clear-all reset hook
  */
 public class TaskServiceTest {
 
+    /**
+     * Clears singleton storage so each test starts with an empty map.
+     */
     @BeforeEach
     void reset() {
         TaskService.getInstance().clearAllTasks();
     }
 
+    /**
+     * Ensures {@link TaskService#getInstance()} returns the same singleton every time.
+     */
     @Test
     void testSingletonInstance() {
         TaskService first = TaskService.getInstance();
@@ -24,6 +35,9 @@ public class TaskServiceTest {
         assertThat(first).isSameAs(second);
     }
 
+    /**
+     * Confirms {@link TaskService#addTask(Task)} inserts new tasks.
+     */
     @Test
     void testAddTask() {
         TaskService service = TaskService.getInstance();
@@ -35,6 +49,9 @@ public class TaskServiceTest {
         assertThat(service.getDatabase()).containsEntry("100", task);
     }
 
+    /**
+     * Verifies duplicate IDs are rejected and the original entry remains.
+     */
     @Test
     void testAddDuplicateTaskIdFails() {
         TaskService service = TaskService.getInstance();
@@ -46,6 +63,9 @@ public class TaskServiceTest {
         assertThat(service.getDatabase()).containsEntry("100", original);
     }
 
+    /**
+     * Ensures null inputs trigger the explicit IllegalArgumentException guard.
+     */
     @Test
     void testAddTaskNullThrows() {
         TaskService service = TaskService.getInstance();
@@ -55,6 +75,9 @@ public class TaskServiceTest {
                 .hasMessage("task must not be null");
     }
 
+    /**
+     * Confirms delete removes stored tasks and returns true.
+     */
     @Test
     void testDeleteTask() {
         TaskService service = TaskService.getInstance();
@@ -67,6 +90,9 @@ public class TaskServiceTest {
         assertThat(service.getDatabase()).doesNotContainKey("100");
     }
 
+    /**
+     * Ensures delete validates the incoming ID.
+     */
     @Test
     void testDeleteTaskBlankIdThrows() {
         TaskService service = TaskService.getInstance();
@@ -76,6 +102,9 @@ public class TaskServiceTest {
                 .hasMessage("taskId must not be null or blank");
     }
 
+    /**
+     * Verifies delete returns {@code false} when the ID does not exist.
+     */
     @Test
     void testDeleteMissingTaskReturnsFalse() {
         TaskService service = TaskService.getInstance();
@@ -83,8 +112,10 @@ public class TaskServiceTest {
         assertThat(service.deleteTask("missing")).isFalse();
     }
 
+    /**
+     * Proves {@link TaskService#clearAllTasks()} empties the backing store (PIT guard).
+     */
     @Test
-    // Proves clearAllTasks() actually empties the map so mutation tests can detect a missing Map.clear().
     void testClearAllTasksRemovesEntries() {
         TaskService service = TaskService.getInstance();
         service.addTask(new Task("100", "Write docs", "Document Task service"));
@@ -95,6 +126,9 @@ public class TaskServiceTest {
         assertThat(service.getDatabase()).isEmpty();
     }
 
+    /**
+     * Ensures {@link TaskService#updateTask(String, String, String)} updates stored tasks.
+     */
     @Test
     void testUpdateTask() {
         TaskService service = TaskService.getInstance();
@@ -109,6 +143,9 @@ public class TaskServiceTest {
                 .hasFieldOrPropertyWithValue("description", "Finish TaskService");
     }
 
+    /**
+     * Confirms update trims IDs before lookups so whitespace-wrapped IDs work.
+     */
     @Test
     void testUpdateTaskTrimsId() {
         TaskService service = TaskService.getInstance();
@@ -123,6 +160,9 @@ public class TaskServiceTest {
                 .hasFieldOrPropertyWithValue("description", "Tighten descriptions");
     }
 
+    /**
+     * Ensures update validates the ID input before accessing the map.
+     */
     @Test
     void testUpdateTaskBlankIdThrows() {
         TaskService service = TaskService.getInstance();
@@ -132,10 +172,31 @@ public class TaskServiceTest {
                 .hasMessage("taskId must not be null or blank");
     }
 
+    /**
+     * Verifies {@link TaskService#updateTask(String, String, String)} returns {@code false} when the ID is missing.
+     */
     @Test
     void testUpdateMissingTaskReturnsFalse() {
         TaskService service = TaskService.getInstance();
 
         assertThat(service.updateTask("missing", "Name", "Desc")).isFalse();
+    }
+
+    /**
+     * Confirms invalid update inputs throw and leave the stored Task unchanged.
+     */
+    @Test
+    void testUpdateTaskInvalidValuesLeaveStateUnchanged() {
+        TaskService service = TaskService.getInstance();
+        Task task = new Task("300", "Write docs", "Original description");
+        service.addTask(task);
+
+        assertThatThrownBy(() -> service.updateTask("300", " ", "New desc"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("name must not be null or blank");
+
+        Task stored = service.getDatabase().get("300");
+        assertThat(stored.getName()).isEqualTo("Write docs");
+        assertThat(stored.getDescription()).isEqualTo("Original description");
     }
 }

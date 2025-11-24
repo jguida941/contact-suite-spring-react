@@ -1,5 +1,7 @@
 package contactapp;
 
+import java.util.Date;
+
 /**
  * Utility methods for validating domain fields (Contact, Task, etc.).
  *
@@ -66,6 +68,22 @@ public final class Validation {
         }
         if (input.length() != requiredLength) {
             throw new IllegalArgumentException(label + " must be exactly " + requiredLength + " digits");
+        }
+    }
+
+    /**
+     * Validates that a date is not null and not in the past.
+     *
+     * @param date  the date to check
+     * @param label logical name of the field, used in exception messages
+     * @throws IllegalArgumentException if the date is null or earlier than the current time
+     */
+    public static void validateDateNotPast(final Date date, final String label) {
+        if (date == null) {
+            throw new IllegalArgumentException(label + " must not be null");
+        }
+        if (date.before(new Date())) {
+            throw new IllegalArgumentException(label + " must not be in the past");
         }
     }
 }

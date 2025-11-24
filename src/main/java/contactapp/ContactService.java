@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Service responsible for managing {@link Contact} instances.
  *
- * For this milestone it owns the in memory storage for contacts
- * and exposes operations to add, update, and delete them.
+ * It owns the in-memory storage for contacts and
+ * exposes operations to add, update, and delete them.
  *
  * Implemented as a singleton so the application uses a single shared
  * instance, obtained through {@link #getInstance()}.

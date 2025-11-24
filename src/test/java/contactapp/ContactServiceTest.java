@@ -17,19 +17,25 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 public class ContactServiceTest {
 
-    // @BeforeEach method to clear the ContactService database before each test
+    /**
+     * Clears the singleton map before each test run to keep scenarios isolated.
+     */
     @BeforeEach
     void clearBeforeTest() {
         ContactService.getInstance().clearAllContacts();
     }
 
-    // Check that ContactService singleton instance is not null
+    /**
+     * Ensures {@link ContactService#getInstance()} returns a concrete service.
+     */
     @Test
     void testGetInstance() {
         assertThat(ContactService.getInstance()).isNotNull();
     }
 
-    // getInstance should always return the same singleton reference
+    /**
+     * Verifies repeated calls to {@link ContactService#getInstance()} return the same reference.
+     */
     @Test
     void testGetInstanceReturnsSameReference() {
         ContactService first = ContactService.getInstance();
@@ -37,7 +43,9 @@ public class ContactServiceTest {
         assertThat(first).isSameAs(second);
     }
 
-    // Test adding a new contact to the ContactService
+    /**
+     * Confirms {@link ContactService#addContact(Contact)} inserts new contacts and stores them in the map.
+     */
     @Test
     void testAddContact() {
         ContactService contactService = ContactService.getInstance();
@@ -59,7 +67,9 @@ public class ContactServiceTest {
                 .containsEntry("100", contact);
     }
 
-    // Test deleting an existing contact from the ContactService
+    /**
+     * Proves {@link ContactService#deleteContact(String)} removes existing contacts.
+     */
     @Test
     void testDeleteContact() {
         ContactService contactService = ContactService.getInstance();
@@ -86,7 +96,9 @@ public class ContactServiceTest {
                 .doesNotContainEntry("100", contact);
     }
 
-    // Deleting an ID that doesn't exist should return false and leave the map untouched
+    /**
+     * Ensures delete returns {@code false} when the contact ID is missing.
+     */
     @Test
     void testDeleteMissingContactReturnsFalse() {
         ContactService contactService = ContactService.getInstance();
@@ -94,7 +106,9 @@ public class ContactServiceTest {
         assertThat(contactService.getDatabase()).isEmpty();
     }
 
-    // Test updating an existing contact's mutable fields
+    /**
+     * Verifies {@link ContactService#updateContact(String, String, String, String, String)} updates stored contacts.
+     */
     @Test
     void testUpdateContact() {
         ContactService contactService = ContactService.getInstance();
@@ -130,6 +144,9 @@ public class ContactServiceTest {
                 .hasFieldOrPropertyWithValue("address", "1234 Test Street");
     }
 
+    /**
+     * Confirms IDs are trimmed before lookups during updates.
+     */
     @Test
     void testUpdateContactTrimsId() {
         ContactService service = ContactService.getInstance();
@@ -159,6 +176,9 @@ public class ContactServiceTest {
                 .hasFieldOrPropertyWithValue("address", "1234 Test Street");
     }
 
+    /**
+     * Ensures update throws when the ID is blank so validation mirrors delete().
+     */
     @Test
     void testUpdateContactBlankIdThrows() {
         ContactService service = ContactService.getInstance();
@@ -168,7 +188,9 @@ public class ContactServiceTest {
                 .hasMessage("contactId must not be null or blank");
     }
 
-    // Test for Duplicate Contact IDs
+    /**
+     * Ensures duplicate contact IDs are rejected and the original remains stored.
+     */
     @Test
     void testAddDuplicateContactFails() {
         ContactService service = ContactService.getInstance();
@@ -184,7 +206,9 @@ public class ContactServiceTest {
                 .containsEntry("100", contact1);          // original remains
     }
 
-    // Test updateContact returns false for missing contactId
+    /**
+     * Validates update returns {@code false} when the contact ID does not exist.
+     */
     @Test
     void testUpdateMissingContactReturnsFalse() {
         ContactService service = ContactService.getInstance();
@@ -200,7 +224,9 @@ public class ContactServiceTest {
         assertThat(updated).isFalse();
     }
 
-    // Test deleteContact throws IllegalArgumentException for blank contactId
+    /**
+     * Ensures delete throws when passed a blank ID.
+     */
     @Test
     void testDeleteContactBlankIdThrows() {
         ContactService service = ContactService.getInstance();
@@ -209,7 +235,9 @@ public class ContactServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("contactId must not be null or blank");
     }
-    // Test addContact throws IllegalArgumentException for null contact
+    /**
+     * Verifies {@link ContactService#addContact(Contact)} guards against null input.
+     */
     @Test
     void testAddContactNullThrows() {
         ContactService service = ContactService.getInstance();

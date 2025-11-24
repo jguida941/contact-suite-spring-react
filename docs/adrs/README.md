@@ -1,13 +1,17 @@
 # Architecture Decision Records
 
-| ADR                                               | Title                           | Status   |
-|---------------------------------------------------|---------------------------------|----------|
-| [ADR-0001](ADR-0001-validation-normalization.md)  | Validation Normalization Policy | Accepted |
-| [ADR-0002](ADR-0002-contact-service-storage.md)   | Contact Service Storage Model   | Accepted |
-| [ADR-0003](ADR-0003-update-atomicity.md)          | Update Atomicity Strategy       | Accepted |
-| [ADR-0004](ADR-0004-ci-gates-and-thresholds.md)   | CI Gates and Quality Thresholds | Accepted |
-| [ADR-0005](ADR-0005-spotbugs-runtime-support.md)  | SpotBugs Runtime Support        | Accepted |
-| [ADR-0006](ADR-0006-docs-structure.md)            | Documentation Structure         | Accepted |
-| [ADR-0007](ADR-0007-task-entity-and-service.md)   | Task Entity and Service         | Accepted |
-| [ADR-0008](ADR-0008-ci-metrics-summary-script.md) | CI Metrics Summary Script       | Accepted |
-| [ADR-0009](ADR-0009-test-strategy.md)             | Test Strategy, Tooling, and Full Range Coverage       | Accepted |
+| ADR                                                                 | Title                                           | Status   |
+|---------------------------------------------------------------------|-------------------------------------------------|----------|
+| [ADR-0001](ADR-0001-validation-normalization.md)                    | Validation Normalization Policy                 | Accepted |
+| [ADR-0002](ADR-0002-contact-service-storage.md)                     | Contact Service Storage Model                   | Accepted |
+| [ADR-0003](ADR-0003-update-atomicity.md)                            | Update Atomicity Strategy                       | Accepted |
+| [ADR-0004](ADR-0004-ci-gates-and-thresholds.md)                     | CI Gates and Quality Thresholds                 | Accepted |
+| [ADR-0005](ADR-0005-spotbugs-runtime-support.md)                    | SpotBugs Runtime Support                        | Accepted |
+| [ADR-0006](ADR-0006-docs-structure.md)                              | Documentation Structure                         | Accepted |
+| [ADR-0007](ADR-0007-task-entity-and-service.md)                     | Task Entity and Service                         | Accepted |
+| [ADR-0008](ADR-0008-ci-metrics-summary-script.md)                   | CI Metrics Summary Script                       | Accepted |
+| [ADR-0009](ADR-0009-test-strategy.md)                               | Test Strategy, Tooling, and Full Range Coverage | Accepted |
+| [ADR-0010](ADR-0010-task-validation-and-tests.md)                   | Task Validation and Test Coverage               | Accepted |
+| [ADR-0011](ADR-0011-taskservice-singleton-and-crud-tests.md)        | TaskService Singleton and CRUD Tests            | Accepted |
+| [ADR-0012](ADR-0012-appointment-validation-and-tests.md)            | Appointment Validation and Test Coverage        | Accepted |
+| [ADR-0013](ADR-0013-appointmentservice-singleton-and-crud-tests.md) | AppointmentService Singleton and CRUD Tests     | Accepted |

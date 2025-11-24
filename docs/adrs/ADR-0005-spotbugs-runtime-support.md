@@ -9,12 +9,12 @@
 ## Context
 - SpotBugs is required for the course rubric, but the upstream launcher historically lagged when new JDK releases arrived (e.g., JDK 23).
 - We needed a repeatable way to run SpotBugs locally and in CI without blocking development when the plugin momentarily breaks on the newest toolchains.
-- CI now tests on Temurin 17/21/25, so SpotBugs must succeed across that matrix or be intentionally skipped with documentation.
+- CI now tests on Temurin 17/21, so SpotBugs must succeed across that matrix or be intentionally skipped with documentation.
 
 ## Decision
-- Pin `spotbugs-maven-plugin` to 4.9.7.0 and run it during `mvn verify` with `effort=max`, `threshold=Low`, and `failOnError=true`.
+- Pin `spotbugs-maven-plugin` to 4.9.8.1 and run it during `mvn verify` with `effort=max`, `threshold=Low`, and `failOnError=true`.
 - Default `spotbugs.skip` to `false` so analysis always runs, but allow overriding the property when local developers hit known JVM incompatibilities.
-- Document in README and the CI/CD plan that SpotBugs currently passes on JDK 17/21/25; if a future runtime regresses, developers temporarily run it on JDK 17 while the upstream fix lands.
+- Document in README and the CI/CD plan that SpotBugs currently passes on JDK 17/21; if a future runtime regresses, developers temporarily run it on JDK 17 while the upstream fix lands.
 - Capture findings in CI artifacts (HTML + XML) and link them through the QA summary to keep visibility high.
 
 ## Consequences

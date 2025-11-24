@@ -2,7 +2,7 @@
 Status: Implemented
 Owner: Justin Guida
 Implemented: 2025-11-20
-Links: requirements/task-requirements/requirements.md, PR #123
+Links: requirements/task-requirements/requirements.md
 Summary: Implements Task (id,name,description) and TaskService with singleton store and atomic updates.
 
 ## Implementation Plan Overview
@@ -23,8 +23,8 @@ Key points:
 
 ## Definition of Done
 - All unit tests pass via `mvn verify`.
-- Line coverage: 98% on Task/TaskService classes (JaCoCo).
-- Mutation score: 98% on Task/TaskService classes (PITest report dated 2025-11-20).
+- Line coverage: current JaCoCo reports 100% on mutated classes.
+- Mutation score: PITest shows all mutants killed on Task/TaskService as of 2025-11-24.
 - Checkstyle and SpotBugs: zero new issues for Task-related files.
 - CodeQL and Dependency Check: no Task-specific findings as of 2025-11-20.
 - Public types/methods include Javadoc on Task and TaskService.

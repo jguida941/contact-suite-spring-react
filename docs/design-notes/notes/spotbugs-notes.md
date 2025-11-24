@@ -36,7 +36,7 @@ File: docs/design-notes/notes/spotbugs-notes.md
   Losing SpotBugs would remove these automated checks entirely.
 
 ## What the design is
-- Pin `spotbugs-maven-plugin` to a known good version (e.g., 4.9.7.0) and run it during `mvn verify`.
+- Pin `spotbugs-maven-plugin` to a known good version (e.g., 4.9.8.1) and run it during `mvn verify`.
 - If a new JDK breaks SpotBugs locally, developers can temporarily run it on JDK 17 while waiting for upstream fixes instead of disabling it outright.
 - Keep `spotbugs.skip=false` by default so CI always runs the gate.
 
