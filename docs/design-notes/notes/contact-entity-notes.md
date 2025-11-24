@@ -2,7 +2,7 @@
 
 (Related: [Contact.java](../../src/main/java/contactapp/Contact.java), [ADR-0001](../../adrs/ADR-0001-validation-normalization.md), [ADR-0003](../../adrs/ADR-0003-update-atomicity.md))
 
-File: docs/design-notes/contact-entity-notes.md
+File: docs/design-notes/notes/contact-entity-notes.md
 
 ## Why Contact exists
 - `Contact` is the single source of truth for contact data and its rules.

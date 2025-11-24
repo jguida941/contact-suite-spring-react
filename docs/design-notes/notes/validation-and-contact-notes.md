@@ -2,7 +2,7 @@
 
 (Related: [ADR-0001](../../adrs/ADR-0001-validation-normalization.md), [Contact.java](../../src/main/java/contactapp/Contact.java))
 
-File: docs/design-notes/validation-and-contact-notes.md
+File: docs/design-notes/notes/validation-and-contact-notes.md
 
 ## What problem this solves
 - Inputs were being validated in many places. This means it was hard to keep consistent.

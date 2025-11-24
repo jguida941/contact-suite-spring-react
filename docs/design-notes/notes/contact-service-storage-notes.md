@@ -2,7 +2,7 @@
 
 (Related: [ADR-0002](../../adrs/ADR-0002-contact-service-storage.md), [ContactService.java](../../src/main/java/contactapp/ContactService.java))
 
-File: docs/design-notes/contact-service-storage-notes.md
+File: docs/design-notes/notes/contact-service-storage-notes.md
 
 ## What problem this solves
 - The app needs one central list of contacts so every caller sees the same state.

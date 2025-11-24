@@ -8,10 +8,11 @@
 [![OWASP Dependency-Check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/dependency.json&style=for-the-badge)](#static-analysis--quality-gates)
 [![License](https://img.shields.io/badge/License-MIT-1D4ED8?style=for-the-badge)](LICENSE)
 
-Small Java project for the CS320 Contact Service milestone. The work breaks down into three pieces:
+Small Java project for the CS320 Contact Service milestone, now expanded to Task and Appointment. The work breaks down into four pieces:
 1. Build the `Contact` and `ContactService` classes exactly as described in the requirements.
 2. Prove every rule with unit tests (length limits, null checks, unique IDs, and add/update/delete behavior) using the shared `Validation` helper so exceptions surface clear messages.
 3. Mirror the same patterns for the `Task` entity/service (ID/name/description) so both domains share validation, atomic updates, and singleton storage.
+4. Apply the same validation/service patterns for `Appointment` (ID/date/description) with date-not-past enforcement and defensive date copies.
 
 Everything is packaged under `contactapp`; production classes live in `src/main/java` and the JUnit tests in `src/test/java`.
 
