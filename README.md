@@ -451,7 +451,7 @@ graph TD
 - **Singleton access** - `getInstance()` exposes one shared service backed by a `ConcurrentHashMap<String, Appointment>`.
 - **Atomic uniqueness guard** - `addAppointment` rejects null inputs, validates IDs (already trimmed by the `Appointment` constructor), and uses `putIfAbsent` so duplicate IDs never overwrite existing entries.
 - **Shared validation** - `deleteAppointment` trims/validates IDs; `updateAppointment` trims IDs and delegates field rules to `Appointment.update(...)` via `computeIfPresent` to avoid a get-then-mutate race.
-- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies; `clearAllAppointments()` resets state between tests.
+- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Appointment.copy()`, which validates the source and reuses the public constructor); `clearAllAppointments()` resets state between tests.
 
 ### Validation & Error Handling
 

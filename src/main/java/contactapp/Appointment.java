@@ -101,6 +101,7 @@ public final class Appointment {
      * Creates a defensive copy of this Appointment.
      */
     Appointment copy() {
+        // Validate the source state, then reuse the public constructor so defensive copies and validation stay aligned.
         validateCopySource(this);
         return new Appointment(this.appointmentId, new Date(this.appointmentDate.getTime()), this.description);
     }

@@ -46,6 +46,7 @@ All notable changes to this project will be documented here. Follow the
   ID trimming in service adds, date validation reuse in `update`, and time-stable appointment tests (relative dates).
 
 ### Changed
+- Appointment is now `final`, `Appointment.copy()` validates source state and reuses the public constructor for defensive copies, and `AppointmentServiceTest` uses reflection (instead of subclassing) to simulate a blank ID so SpotBugs remains clean.
 - Documented the shared `validateDateNotPast` helper across README/index/ADR/design notes and expanded `ValidationTest` with future/past-date cases so Appointment docs mirror the code.
 - Appointment update/add logic now validates both fields before mutation, enforces trimmed IDs on add,
   and uses `computeIfPresent` for updates; README/architecture/design notes updated accordingly.
