@@ -53,6 +53,7 @@ All errors return consistent JSON: `{ "message": "..." }`
 springdoc-openapi dependency auto-generates API documentation:
 - Swagger UI at `/swagger-ui.html`
 - OpenAPI spec at `/v3/api-docs`
+- Appointment payloads use ISO 8601 with millis + offset (`yyyy-MM-dd'T'HH:mm:ss.SSSXXX`, UTC) for `appointmentDate`.
 
 ### Testing Strategy
 MockMvc integration tests cover:

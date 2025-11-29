@@ -6,6 +6,7 @@ import contactapp.api.exception.DuplicateResourceException;
 import contactapp.api.exception.ResourceNotFoundException;
 import contactapp.domain.Appointment;
 import contactapp.service.AppointmentService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -49,6 +50,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/appointments")
+@SuppressFBWarnings(
+        value = "EI_EXPOSE_REP2",
+        justification = "Spring-managed singleton service is intentionally stored without copy"
+)
 public class AppointmentController {
 
     private final AppointmentService appointmentService;

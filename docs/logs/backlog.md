@@ -38,5 +38,5 @@ Service-level lookup methods have been implemented:
 - **Custom validation exception**: `GlobalExceptionHandler` catches all `IllegalArgumentException`. Consider introducing `DomainValidationException` for finer-grained handling, separating domain validation errors from unexpected framework exceptions.
 
 ## Dependency Risks (to track)
-- **commons-lang3 3.17.0** flagged by Dependency-Check (CVE-2025-48924). Monitor upstream or upgrade when a fixed release is available.
-- **swagger-ui DOMPurify 3.1.6** (transitive via swagger-ui 5.18.2) flagged with CVE-2025-26791. Evaluate upgrading swagger-ui when a patched version is released or apply suppression if false positive.
+- ~~**commons-lang3 3.17.0** flagged by Dependency-Check (CVE-2025-48924).~~ **FIXED**: Upgraded to 3.20.0.
+- ~~**swagger-ui DOMPurify 3.1.6** (transitive via swagger-ui 5.18.2) flagged with CVE-2025-26791.~~ **FIXED**: Upgraded springdoc-openapi to 2.8.7.

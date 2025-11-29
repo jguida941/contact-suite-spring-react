@@ -1,0 +1,196 @@
+# API Fuzzing Workflow - Phase 2.5
+#
+# Runs Schemathesis against the OpenAPI spec to detect:
+# - 5xx server errors (crashes under unexpected input)
+# - Schema violations (responses not matching spec)
+# - Edge cases in data handling
+#
+# See docs/REQUIREMENTS.md Phase 2.5 for details.
+
+name: API Fuzzing
+
+on:
+  # Run after main CI passes on push to main/master
+  push:
+    branches:
+      - main
+      - master
+  # Run on PRs to catch issues before merge
+  pull_request:
+    branches:
+      - main
+      - master
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+# Limit concurrent runs to avoid resource contention
+concurrency:
+  group: api-fuzzing-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Install Schemathesis
+        run: |
+          pip install schemathesis
+          schemathesis --version
+
+      # Build the app first (skip tests since main CI already ran them)
+      - name: Build application
+        run: mvn -B -DskipTests package
+
+      # Start the Spring Boot app in the background
+      - name: Start Spring Boot app
+        run: |
+          echo "Starting Spring Boot application..."
+          nohup java -jar target/*.jar --server.port=8080 > app.log 2>&1 &
+          echo $! > app.pid
+          echo "App PID: $(cat app.pid)"
+
+      # Wait for the app to be ready
+      - name: Wait for app startup
+        run: |
+          echo "Waiting for app to start..."
+          for i in {1..60}; do
+            if curl -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+              echo "App is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: App not ready yet..."
+            sleep 2
+          done
+          echo "App failed to start within 120 seconds"
+          cat app.log
+          exit 1
+
+      # Export OpenAPI spec for ZAP and artifact archiving
+      - name: Export OpenAPI spec
+        run: |
+          mkdir -p target/openapi
+          curl -s http://localhost:8080/v3/api-docs > target/openapi/openapi.json
+          echo "OpenAPI spec exported to target/openapi/openapi.json"
+          # Also export as YAML for readability
+          python -c "import json, yaml, sys; yaml.dump(json.load(open('target/openapi/openapi.json')), open('target/openapi/openapi.yaml', 'w'), default_flow_style=False)" 2>/dev/null || echo "YAML export skipped (pyyaml not installed)"
+
+      # Run Schemathesis API fuzzing
+      - name: Run API fuzzing
+        id: fuzzing
+        run: |
+          echo "Running Schemathesis against OpenAPI spec..."
+          set +e  # Don't exit on error so we can capture the result
+
+          schemathesis run \
+            http://localhost:8080/v3/api-docs \
+            --checks all \
+            --base-url http://localhost:8080 \
+            --workers 1 \
+            --max-examples 50 \
+            --hypothesis-deadline 5000 \
+            --hypothesis-suppress-health-check all \
+            --validate-schema true \
+            --junit-xml target/schemathesis-results.xml \
+            2>&1 | tee target/schemathesis-output.txt
+
+          FUZZING_EXIT_CODE=${PIPESTATUS[0]}
+          echo "fuzzing_exit_code=$FUZZING_EXIT_CODE" >> $GITHUB_OUTPUT
+
+          if [ $FUZZING_EXIT_CODE -eq 0 ]; then
+            echo "::notice::API fuzzing passed - no issues found"
+          else
+            echo "::error::API fuzzing found issues (exit code: $FUZZING_EXIT_CODE)"
+          fi
+
+      # Stop the app
+      - name: Stop Spring Boot app
+        if: always()
+        run: |
+          if [ -f app.pid ]; then
+            PID=$(cat app.pid)
+            echo "Stopping app (PID: $PID)..."
+            kill $PID 2>/dev/null || true
+            sleep 2
+            kill -9 $PID 2>/dev/null || true
+          fi
+
+      # Upload OpenAPI spec as artifact (for ZAP and other tools)
+      - name: Upload OpenAPI spec artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: target/openapi/
+          if-no-files-found: ignore
+
+      # Upload fuzzing results
+      - name: Upload fuzzing results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-fuzzing-results
+          path: |
+            target/schemathesis-results.xml
+            target/schemathesis-output.txt
+            app.log
+          if-no-files-found: ignore
+
+      # Upload app logs on failure for debugging
+      - name: Upload app logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-logs-failure
+          path: app.log
+          if-no-files-found: ignore
+
+      # Publish summary to GitHub Actions
+      - name: Publish fuzzing summary
+        if: always()
+        run: |
+          echo "## API Fuzzing Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.fuzzing.outputs.fuzzing_exit_code }}" == "0" ]; then
+            echo "### Status: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "No 5xx errors or schema violations detected." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Status: Issues Found" >> $GITHUB_STEP_SUMMARY
+            echo "API fuzzing detected potential issues. Review the artifacts for details." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- \`openapi-spec\`: OpenAPI specification (JSON/YAML) for ZAP and other tools" >> $GITHUB_STEP_SUMMARY
+          echo "- \`api-fuzzing-results\`: Schemathesis output and JUnit XML results" >> $GITHUB_STEP_SUMMARY
+
+      # Fail the job if fuzzing found issues
+      - name: Check fuzzing results
+        if: steps.fuzzing.outputs.fuzzing_exit_code != '0'
+        run: |
+          echo "API fuzzing found issues. See artifacts for details."
+          exit 1

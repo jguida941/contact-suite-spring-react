@@ -5,6 +5,28 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 ### Added
+- **Phase 2.5 complete**: API security testing foundation implemented.
+
+### Fixed
+- **Dependency vulnerabilities resolved**:
+  - Upgraded springdoc-openapi from 2.7.0 to 2.8.7 to fix CVE-2025-26791 (DOMPurify in swagger-ui).
+  - Added explicit commons-lang3 3.20.0 dependency to override Spring Boot's 3.17.0 and fix CVE-2025-48924.
+- **SpotBugs issues fixed (7 issues → 0)**:
+  - `AppointmentRequest`/`AppointmentResponse`: Added compact constructors and overridden accessors for defensive Date copies.
+  - Controllers: Added `@SuppressFBWarnings` for intentional Spring DI singleton service storage (false positive).
+
+### Changed
+- Updated `docs/logs/backlog.md` to mark CVE dependencies as fixed.
+
+### Added (continued)
+- **Phase 2.5 complete** (continued):
+  - Added `.github/workflows/api-fuzzing.yml` for Schemathesis API fuzzing.
+  - Workflow starts Spring Boot app, waits for health check, runs Schemathesis against `/v3/api-docs`.
+  - Checks: all (5xx errors, schema violations, response validation).
+  - Exports OpenAPI spec to `target/openapi/openapi.json` as CI artifact for ZAP and other tools.
+  - Publishes JUnit XML results (`target/schemathesis-results.xml`) and summary to GitHub Actions.
+  - Added `scripts/api_fuzzing.py` helper script for local API fuzzing runs.
+  - Updated CI/CD plan Phase 9 to complete status.
 - **Phase 2 complete**: REST API + DTOs implemented.
   - Added REST controllers: `ContactController`, `TaskController`, `AppointmentController` at `/api/v1/{resource}`.
   - Created request/response DTOs with Bean Validation (`ContactRequest`, `TaskRequest`, `AppointmentRequest`, etc.).

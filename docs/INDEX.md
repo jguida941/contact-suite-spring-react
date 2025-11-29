@@ -86,13 +86,14 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../config/owasp-suppressions.xml`](../config/owasp-suppressions.xml) | Placeholder suppression list for OWASP Dependency-Check. |
 | [`../scripts/ci_metrics_summary.py`](../scripts/ci_metrics_summary.py) | Prints the QA metrics table (tests/coverage/mutations/dependencies) in GitHub Actions. |
 | [`../scripts/serve_quality_dashboard.py`](../scripts/serve_quality_dashboard.py) | Launches a local server for `target/site/qa-dashboard` when reading downloaded artifacts. |
+| [`../scripts/api_fuzzing.py`](../scripts/api_fuzzing.py) | API fuzzing helper for local Schemathesis runs (starts app, fuzzes, exports OpenAPI spec). |
 | [`architecture/2025-11-19-task-entity-and-service.md`](architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`architecture/2025-11-24-appointment-entity-and-service.md`](architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record. |
 | [`adrs/README.md`](adrs/README.md) | ADR index summarizing ADR-0001 through ADR-0020. |
 | [`design-notes/README.md`](design-notes/README.md) | Landing page for informal design notes (individual topics in `design-notes/notes/`). |
 | [`logs/backlog.md`](logs/backlog.md) | Backlog for reporting and domain enhancements. |
 | [`logs/CHANGELOG.md`](logs/CHANGELOG.md) | Project changelog. |
-| [`../.github/workflows`](../.github/workflows) | GitHub Actions pipelines (CI, release packaging, CodeQL). |
+| [`../.github/workflows`](../.github/workflows) | GitHub Actions pipelines (CI, release packaging, CodeQL, API fuzzing). |
 
 ## Milestone Requirements (Original Assignments)
 

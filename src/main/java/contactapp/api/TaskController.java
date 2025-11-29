@@ -6,6 +6,7 @@ import contactapp.api.exception.DuplicateResourceException;
 import contactapp.api.exception.ResourceNotFoundException;
 import contactapp.domain.Task;
 import contactapp.service.TaskService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -46,6 +47,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/tasks")
+@SuppressFBWarnings(
+        value = "EI_EXPOSE_REP2",
+        justification = "Spring-managed singleton service is intentionally stored without copy"
+)
 public class TaskController {
 
     private final TaskService taskService;

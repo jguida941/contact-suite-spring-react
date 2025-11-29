@@ -45,4 +45,22 @@ public record AppointmentRequest(
         @Size(min = 1, max = MAX_DESCRIPTION_LENGTH, message = "description length must be between {min} and {max}")
         String description
 ) {
+    /**
+     * Compact constructor that makes a defensive copy of the mutable Date.
+     */
+    public AppointmentRequest {
+        // Defensive copy of mutable Date to satisfy SpotBugs EI_EXPOSE_REP2
+        appointmentDate = appointmentDate == null ? null : new Date(appointmentDate.getTime());
+    }
+
+    /**
+     * Returns a defensive copy of the appointment date.
+     *
+     * @return a copy of the appointment date, or null if not set
+     */
+    @Override
+    public Date appointmentDate() {
+        // Defensive copy to satisfy SpotBugs EI_EXPOSE_REP
+        return appointmentDate == null ? null : new Date(appointmentDate.getTime());
+    }
 }

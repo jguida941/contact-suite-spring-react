@@ -57,9 +57,14 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 1. ☐ Add OWASP ZAP baseline/API scan in CI against a running test instance (fail on high/critical findings).
 2. ☐ Publish ZAP reports as artifacts for triage.
 
-## Phase 9 - API Fuzzing (Planned)
-1. ☐ Add Schemathesis or RESTler in CI against the OpenAPI spec; fail on 5xx or schema violations.
-2. ☐ Gate fuzzing behind the same matrices as integration tests to keep runtime reasonable.
+## Phase 9 - API Fuzzing ✅
+1. ✅ Add Schemathesis in CI against the OpenAPI spec; fail on 5xx or schema violations.
+   - `.github/workflows/api-fuzzing.yml` runs Schemathesis after app startup.
+   - Exports OpenAPI spec as artifact for ZAP integration in Phase 8.
+   - Publishes JUnit XML results and summary to GitHub Actions.
+2. ✅ Fuzzing runs on ubuntu-latest with 20-minute timeout to keep CI reasonable.
+   - Uses `--max-examples 50` and `--workers 1` for speed.
+   - Local testing available via `scripts/api_fuzzing.py`.
 
 ## Phase 10 - Auth/Role Integration Tests (Planned)
 1. ☐ Add MockMvc/WebTestClient flows that assert 401/403 for anonymous or unauthorized roles and 2xx for allowed roles.

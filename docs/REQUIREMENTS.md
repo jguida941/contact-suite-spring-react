@@ -30,7 +30,7 @@
 
 - **Phase 2 complete**: REST API + DTOs implemented.
 - Spring Boot 3.4.12 Maven project with layered packages (`domain`, `service`, `api`, `persistence`).
-- Domain classes (`Contact`, `Task`, `Appointment`) with validation rules preserved.
+- Domain classes (`Contact`, `Task`, `Appointment`) with validation rules preserved; `appointmentDate` serialized as ISO 8601 with millis + offset (`yyyy-MM-dd'T'HH:mm:ss.SSSXXX`, UTC).
 - Services annotated with `@Service` for Spring DI while retaining `getInstance()` for backward compatibility.
 - REST controllers expose CRUD at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`.
 - DTOs with Bean Validation (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) mapped to domain objects.
@@ -141,10 +141,16 @@ Implementation details:
 - Added `GlobalExceptionHandlerTest` (4 tests) for direct exception handler coverage.
 - Added service lookup method tests (13 tests) covering `getAllXxx()` and `getXxxById()` methods.
 
-### Phase 2.5: API Security Testing Foundation
-- Generate OpenAPI automatically from controllers (`springdoc-openapi`) with `/api/v1` prefix.
-- Add API fuzzing (Schemathesis/RESTler) in CI against the OpenAPI spec; fail on 5xx or schema violations.
-- Prepare ZAP-compatible artifacts for later DAST runs.
+### Phase 2.5: API Security Testing Foundation (Completed)
+Implementation details:
+- OpenAPI spec already generated via springdoc-openapi at `/v3/api-docs` and `/swagger-ui.html`.
+- Added Schemathesis API fuzzing in CI via `.github/workflows/api-fuzzing.yml`:
+  - Starts Spring Boot app, waits for health check, runs Schemathesis.
+  - Checks: all (5xx errors, schema violations, edge cases).
+  - Exports OpenAPI spec to `target/openapi/openapi.json` for ZAP and other tools.
+  - Publishes JUnit XML results and fuzzing summary to GitHub Actions.
+- ZAP-compatible artifacts prepared: OpenAPI spec exported as CI artifact (`openapi-spec`).
+- Added `scripts/api_fuzzing.py` helper for local fuzzing runs.
 
 ### Phase 3: Persistence
 - Add JPA entities/repositories and replace in-memory maps with persistence-backed services.
@@ -266,9 +272,9 @@ Implementation details:
 - [x] Controller tests added (71 tests: 30 Contact + 21 Task + 20 Appointment)
 
 ### Phase 2.5: API Security Testing Foundation
-- [ ] OpenAPI spec generated automatically from controllers
-- [ ] API fuzzing (Schemathesis or RESTler) running in CI
-- [ ] ZAP-compatible artifacts prepared
+- [x] OpenAPI spec generated automatically from controllers
+- [x] API fuzzing (Schemathesis or RESTler) running in CI
+- [x] ZAP-compatible artifacts prepared
 
 ### Phase 3: Persistence
 - [ ] Postgres configuration for dev/prod

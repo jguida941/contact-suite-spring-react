@@ -39,7 +39,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    - **OpenAPI spec** at `http://localhost:8080/v3/api-docs`
    - REST APIs at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
 4. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-5. Planning note: Phase 1 (Spring Boot scaffold) complete; Phase 2 (REST API + DTOs) complete with 261 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0020+ capture the selected stack and implementation decisions.
+5. Planning note: Phases 0-2.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing) with 261 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0021 capture the selected stack and implementation decisions.
 
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
@@ -90,7 +90,8 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`config/owasp-suppressions.xml`](config/owasp-suppressions.xml)                                                     | Placeholder suppression list for OWASP Dependency-Check.                                        |
 | [`scripts/ci_metrics_summary.py`](scripts/ci_metrics_summary.py)                                                     | Helper that parses JaCoCo/PITest/Dependency-Check reports and posts the QA summary table in CI. |
 | [`scripts/serve_quality_dashboard.py`](scripts/serve_quality_dashboard.py)                                           | Tiny HTTP server that opens `target/site/qa-dashboard` locally after downloading CI artifacts.  |
-| [`.github/workflows`](.github/workflows)                                                                             | CI/CD pipelines (tests, quality gates, release packaging, CodeQL).                              |
+| [`scripts/api_fuzzing.py`](scripts/api_fuzzing.py)                                                                   | API fuzzing helper for local Schemathesis runs (starts app, fuzzes, exports OpenAPI spec).      |
+| [`.github/workflows`](.github/workflows)                                                                             | CI/CD pipelines (tests, quality gates, release packaging, CodeQL, API fuzzing).                 |
 
 ## Design Decisions & Highlights
 - **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps map keys stable and mirrors real-world record identifiers.
@@ -456,7 +457,7 @@ graph TD
 
 ### Service Snapshot
 - Appointment IDs are required, trimmed, and immutable after construction (length 1-10).
-- `appointmentDate` uses `java.util.Date`, must not be null or in the past, and is stored/returned via defensive copies.
+- `appointmentDate` uses `java.util.Date`, must not be null or in the past, is stored/returned via defensive copies, and is serialized/deserialized as ISO 8601 with millis + offset (`yyyy-MM-dd'T'HH:mm:ss.SSSXXX`, UTC).
 - Descriptions are required, trimmed, and capped at 50 characters; constructor and update share the same validation path.
 
 ### Validation & Error Handling
@@ -808,6 +809,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 | Job                 | Trigger                                                                             | What it does                                                                                                                                                                                                 | Notes                                                                                                      |
 |---------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | `build-test`        | Push/PR to main/master, release, manual dispatch                                    | Matrix `{ubuntu, windows} × {JDK 17, 21}` running `mvn verify` (tests + Checkstyle + SpotBugs + JaCoCo + PITest + Dependency-Check), builds QA dashboard, posts QA summary, uploads reports, Codecov upload. | Retries `mvn verify` with Dependency-Check/PITest skipped if the first attempt fails due to feed/timeouts. |
+| `api-fuzz`          | Push/PR to main/master, manual dispatch                                             | Starts Spring Boot app, runs Schemathesis against `/v3/api-docs`, exports OpenAPI spec, publishes JUnit XML results. Fails on 5xx errors or schema violations.                                              | 20-minute timeout; exports spec as artifact for ZAP.                                                       |
 | `container-test`    | Always (needs `build-test`)                                                         | Re-runs `mvn verify` inside `maven:3.9.9-eclipse-temurin-17` to prove a clean container build; retries with Dependency-Check/PITest skipped on failure.                                                      | Uses same MAVEN_OPTS for PIT attach.                                                                       |
 | `mutation-test`     | Only when repo var `RUN_SELF_HOSTED == 'true'` and a `self-hosted` runner is online | Runs `mvn verify` on the self-hosted runner with PITest enabled; retries with Dependency-Check/PITest skipped on failure.                                                                                    | Optional lane; skipped otherwise.                                                                          |
 | `release-artifacts` | Release event (`published`)                                                         | Packages the JAR and uploads it as an artifact; generates release notes.                                                                                                                                     | Not run on normal pushes/PRs.                                                                              |
@@ -820,6 +822,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 | `mvn spotbugs:check`                                      | Run only SpotBugs and fail on findings.                                                  |
 | `mvn -DossIndexServerId=ossindex verify`                  | Opt-in authenticated OSS Index for Dependency-Check (see Sonatype section).              |
 | `cd ui/qa-dashboard && npm ci && npm run build`           | Build the React QA dashboard locally (already built in CI).                              |
+| `pip install schemathesis && python scripts/api_fuzzing.py --start-app` | Run API fuzzing locally (starts app, fuzzes, exports spec).              |
 
 ### Matrix Verification
 - `.github/workflows/java-ci.yml` runs `mvn -B verify` across `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` to surface OS and JDK differences early.
@@ -860,10 +863,23 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ### CodeQL Security Analysis
 - `.github/workflows/codeql.yml` runs independently of the matrix job to keep static analysis focused.
 - The workflow pins Temurin JDK 17 via `actions/setup-java@v4`, caches Maven dependencies, and enables the `+security-and-quality` query pack for broader coverage.
-- GitHub’s CodeQL `autobuild` runs the Maven build automatically; a commented `mvn` fallback is available if the repo ever needs a custom command.
+- GitHub's CodeQL `autobuild` runs the Maven build automatically; a commented `mvn` fallback is available if the repo ever needs a custom command.
 - Concurrency guards prevent overlapping scans on the same ref, and `paths-ignore` ensures doc-only/image-only changes do not queue CodeQL unnecessarily.
 - Triggers: pushes/PRs to `main` or `master` (respecting the filters), a weekly scheduled scan (`cron: 0 3 * * 0`), and optional manual dispatch.
 
+### API Fuzzing (Schemathesis)
+- `.github/workflows/api-fuzzing.yml` runs Schemathesis against the live OpenAPI spec to detect 5xx errors, schema violations, and edge cases.
+- **Workflow steps**:
+  1. Build the JAR with `mvn -DskipTests package`.
+  2. Start Spring Boot app in background, wait for `/actuator/health` to return `UP`.
+  3. Export OpenAPI spec to `target/openapi/openapi.json` (artifact for ZAP/other tools).
+  4. Run `schemathesis run` with `--checks all --max-examples 50 --workers 1`.
+  5. Stop app, publish JUnit XML results and summary to GitHub Actions.
+- **Artifacts produced**:
+  - `openapi-spec`: JSON/YAML OpenAPI specification for ZAP and other security tools.
+  - `api-fuzzing-results`: Schemathesis output and JUnit XML for test reporting.
+- **Local testing**: `pip install schemathesis && python scripts/api_fuzzing.py --start-app` runs the same fuzzing locally.
+- **Failure criteria**: Any 5xx response or schema violation fails the workflow.
 
 ## CI/CD Flow Diagram
 ```mermaid
@@ -877,8 +893,11 @@ graph TD
     G{RUN_SELF_HOSTED set?}
     H[Self-hosted mutation lane]
     I[Release artifacts]
+    J[API Fuzzing Schemathesis]
+    K[OpenAPI spec artifact]
 
     A --> B --> E
+    A --> J --> K
     B --> C
     C -->|yes| D --> B
     C -->|no| E

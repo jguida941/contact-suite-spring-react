@@ -25,6 +25,25 @@ public record AppointmentResponse(
         String description
 ) {
     /**
+     * Compact constructor that makes a defensive copy of the mutable Date.
+     */
+    public AppointmentResponse {
+        // Defensive copy of mutable Date to satisfy SpotBugs EI_EXPOSE_REP2
+        appointmentDate = appointmentDate == null ? null : new Date(appointmentDate.getTime());
+    }
+
+    /**
+     * Returns a defensive copy of the appointment date.
+     *
+     * @return a copy of the appointment date, or null if not set
+     */
+    @Override
+    public Date appointmentDate() {
+        // Defensive copy to satisfy SpotBugs EI_EXPOSE_REP
+        return appointmentDate == null ? null : new Date(appointmentDate.getTime());
+    }
+
+    /**
      * Creates an AppointmentResponse from an Appointment domain object.
      *
      * @param appointment the domain object to convert (must not be null)
