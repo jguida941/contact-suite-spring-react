@@ -871,15 +871,15 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - `.github/workflows/api-fuzzing.yml` runs Schemathesis against the live OpenAPI spec to detect 5xx errors, schema violations, and edge cases.
 - **Workflow steps**:
   1. Build the JAR with `mvn -DskipTests package`.
-  2. Start Spring Boot app in background, wait for `/actuator/health` to return `UP`.
+  2. Start Spring Boot app in background, wait for `/actuator/health` to return `UP` (uses `jq` for robust JSON parsing).
   3. Export OpenAPI spec to `target/openapi/openapi.json` (artifact for ZAP/other tools).
-  4. Run `schemathesis run` with `--checks all --max-examples 50 --workers 1`.
+  4. Run `schemathesis run` with `--checks not_a_server_error,content_type_conformance,response_schema_conformance --max-examples 50 --workers 1`.
   5. Stop app, publish JUnit XML results and summary to GitHub Actions.
 - **Artifacts produced**:
   - `openapi-spec`: JSON/YAML OpenAPI specification for ZAP and other security tools.
   - `api-fuzzing-results`: Schemathesis output and JUnit XML for test reporting.
 - **Local testing**: `pip install schemathesis && python scripts/api_fuzzing.py --start-app` runs the same fuzzing locally.
-- **Failure criteria**: Any 5xx response or schema violation fails the workflow.
+- **Failure criteria**: Any 5xx response, content-type mismatch, or response schema violation fails the workflow. Expected 400s from validation (e.g., past dates) are not flagged.
 
 ## CI/CD Flow Diagram
 ```mermaid
