@@ -67,18 +67,20 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/main/java/contactapp/api/TaskController.java`](src/main/java/contactapp/api/TaskController.java)               | REST controller for Task CRUD operations at `/api/v1/tasks`.                                    |
 | [`src/main/java/contactapp/api/AppointmentController.java`](src/main/java/contactapp/api/AppointmentController.java) | REST controller for Appointment CRUD operations at `/api/v1/appointments`.                      |
 | [`src/main/java/contactapp/api/GlobalExceptionHandler.java`](src/main/java/contactapp/api/GlobalExceptionHandler.java) | Maps exceptions to HTTP responses (400, 404, 409).                                            |
+| [`src/main/java/contactapp/api/CustomErrorController.java`](src/main/java/contactapp/api/CustomErrorController.java) | Ensures ALL errors return JSON (including Tomcat-level errors).                               |
 | [`src/main/java/contactapp/api/dto/`](src/main/java/contactapp/api/dto/)                                             | Request/Response DTOs with Bean Validation (`ContactRequest`, `TaskRequest`, etc.).             |
 | [`src/main/java/contactapp/api/exception/`](src/main/java/contactapp/api/exception/)                                 | Custom exceptions (`ResourceNotFoundException`, `DuplicateResourceException`).                  |
 | [`src/test/java/contactapp/ContactControllerTest.java`](src/test/java/contactapp/ContactControllerTest.java)         | MockMvc integration tests for Contact API (30 tests).                                           |
 | [`src/test/java/contactapp/TaskControllerTest.java`](src/test/java/contactapp/TaskControllerTest.java)               | MockMvc integration tests for Task API (21 tests).                                              |
 | [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests).                                       |
 | [`src/test/java/contactapp/GlobalExceptionHandlerTest.java`](src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (4 tests).                                      |
+| [`src/test/java/contactapp/CustomErrorControllerTest.java`](src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (14 tests).                                              |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)                                 | Contact assignment requirements and checklist.                                                  |
 | [`docs/requirements/appointment-requirements/`](docs/requirements/appointment-requirements/)                         | Appointment assignment requirements and checklist.                                              |
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                       | Task assignment requirements and checklist (same format as Contact).                            |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach.                    |
 | [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record.                                               |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0021).                                         |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0022).                                         |
 | [`docs/ci-cd/`](docs/ci-cd/)                                                                                         | CI/CD design notes (pipeline plan + badge automation).                                          |
 | [`docs/design-notes/`](docs/design-notes/)                                                                           | Informal design notes hub; individual write-ups live under `docs/design-notes/notes/`.          |
 | [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)                                                                       | **Master document**: scope, architecture, phased plan, checklist, and code examples.            |
@@ -558,6 +560,7 @@ graph TD
 - **Service-level lookup methods** - Controllers use `getAllXxx()` and `getXxxById(id)` service methods for better encapsulation instead of accessing `getDatabase()` directly.
 - **DTOs with Bean Validation** (`ContactRequest`, `TaskRequest`, `AppointmentRequest`) validate input at the HTTP boundary before reaching domain logic.
 - **Global exception handling** via `@RestControllerAdvice` maps exceptions to consistent JSON error responses.
+- **Custom error controller** ensures ALL errors return JSON, including container-level errors (malformed requests, invalid paths) that bypass Spring MVC exception handling.
 - **OpenAPI/Swagger UI** available at `/swagger-ui.html` and `/v3/api-docs` (powered by springdoc-openapi).
 - **Enhanced OpenAPI spec**: Controllers use `@Tag`, `@Operation`, and `@ApiResponses` annotations to produce a production-quality spec with `application/json` content types and documented error responses (400/404/409).
 
@@ -597,6 +600,7 @@ flowchart TD
 - **TaskControllerTest** (21 tests): Same patterns adapted for Task entity.
 - **AppointmentControllerTest** (20 tests): Date validation, past-date rejection, ISO 8601 format handling.
 - **GlobalExceptionHandlerTest** (4 tests): Direct unit tests for exception handler methods (`handleIllegalArgument`, `handleNotFound`, `handleDuplicate`).
+- **CustomErrorControllerTest** (14 tests): Unit tests for container-level error handling (status codes, JSON content type, message mapping).
 
 ### Test Isolation Pattern
 Controller tests use reflection to access package-private `clearAll*()` methods on the autowired service:
@@ -810,20 +814,20 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 | Job                 | Trigger                                                                             | What it does                                                                                                                                                                                                 | Notes                                                                                                      |
 |---------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | `build-test`        | Push/PR to main/master, release, manual dispatch                                    | Matrix `{ubuntu, windows} × {JDK 17, 21}` running `mvn verify` (tests + Checkstyle + SpotBugs + JaCoCo + PITest + Dependency-Check), builds QA dashboard, posts QA summary, uploads reports, Codecov upload. | Retries `mvn verify` with Dependency-Check/PITest skipped if the first attempt fails due to feed/timeouts. |
-| `api-fuzz`          | Push/PR to main/master, manual dispatch                                             | Starts Spring Boot app, runs Schemathesis against `/v3/api-docs`, exports OpenAPI spec, publishes JUnit XML results. Fails on 5xx errors or schema violations.                                              | 20-minute timeout; exports spec as artifact for ZAP.                                                       |
+| `api-fuzz`          | Push/PR to main/master, manual dispatch                                             | Starts Spring Boot app, runs Schemathesis against `/v3/api-docs`, exports OpenAPI spec, publishes JUnit XML results. Fails on 5xx errors or schema violations.                                               | 20-minute timeout; exports spec as artifact for ZAP.                                                       |
 | `container-test`    | Always (needs `build-test`)                                                         | Re-runs `mvn verify` inside `maven:3.9.9-eclipse-temurin-17` to prove a clean container build; retries with Dependency-Check/PITest skipped on failure.                                                      | Uses same MAVEN_OPTS for PIT attach.                                                                       |
 | `mutation-test`     | Only when repo var `RUN_SELF_HOSTED == 'true'` and a `self-hosted` runner is online | Runs `mvn verify` on the self-hosted runner with PITest enabled; retries with Dependency-Check/PITest skipped on failure.                                                                                    | Optional lane; skipped otherwise.                                                                          |
 | `release-artifacts` | Release event (`published`)                                                         | Packages the JAR and uploads it as an artifact; generates release notes.                                                                                                                                     | Not run on normal pushes/PRs.                                                                              |
 
 ### Local Command Cheat Sheet
-| Command                                                   | Purpose                                                                                  |
-|-----------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `mvn verify`                                              | Full build: compile, unit tests, Checkstyle, SpotBugs, JaCoCo, PITest, Dependency-Check. |
-| `mvn -Ddependency.check.skip=true -Dpit.skip=true verify` | Fast local build when Dependency-Check feed is slow/unavailable.                         |
-| `mvn spotbugs:check`                                      | Run only SpotBugs and fail on findings.                                                  |
-| `mvn -DossIndexServerId=ossindex verify`                  | Opt-in authenticated OSS Index for Dependency-Check (see Sonatype section).              |
-| `cd ui/qa-dashboard && npm ci && npm run build`           | Build the React QA dashboard locally (already built in CI).                              |
-| `pip install schemathesis && python scripts/api_fuzzing.py --start-app` | Run API fuzzing locally (starts app, fuzzes, exports spec).              |
+| Command                                                                 | Purpose                                                                                  |
+|-------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `mvn verify`                                                            | Full build: compile, unit tests, Checkstyle, SpotBugs, JaCoCo, PITest, Dependency-Check. |
+| `mvn -Ddependency.check.skip=true -Dpit.skip=true verify`               | Fast local build when Dependency-Check feed is slow/unavailable.                         |
+| `mvn spotbugs:check`                                                    | Run only SpotBugs and fail on findings.                                                  |
+| `mvn -DossIndexServerId=ossindex verify`                                | Opt-in authenticated OSS Index for Dependency-Check (see Sonatype section).              |
+| `cd ui/qa-dashboard && npm ci && npm run build`                         | Build the React QA dashboard locally (already built in CI).                              |
+| `pip install schemathesis && python scripts/api_fuzzing.py --start-app` | Run API fuzzing locally (starts app, fuzzes, exports spec).                              |
 
 ### Matrix Verification
 - `.github/workflows/java-ci.yml` runs `mvn -B verify` across `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` to surface OS and JDK differences early.
@@ -870,15 +874,17 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 
 ### API Fuzzing (Schemathesis)
 - `.github/workflows/api-fuzzing.yml` runs Schemathesis against the live OpenAPI spec to detect 5xx errors, schema violations, and edge cases.
+- **Schemathesis v4+ compatibility**: The workflow uses updated options after v4 removed `--base-url`, `--hypothesis-*`, and `--junit-xml` flags.
+- **CustomErrorController**: Ensures all error responses return `application/json`, allowing `content_type_conformance` check to pass even for container-level errors.
 - **Workflow steps**:
   1. Build the JAR with `mvn -DskipTests package`.
   2. Start Spring Boot app in background, wait for `/actuator/health` to return `UP` (uses `jq` for robust JSON parsing).
   3. Export OpenAPI spec to `target/openapi/openapi.json` (artifact for ZAP/other tools).
-  4. Run `schemathesis run` with `--checks not_a_server_error,content_type_conformance,response_schema_conformance --max-examples 50 --workers 1`.
-  5. Stop app, publish JUnit XML results and summary to GitHub Actions.
+  4. Run `schemathesis run` with `--checks not_a_server_error --checks content_type_conformance --checks response_schema_conformance --max-examples 50 --workers 1`.
+  5. Stop app, publish summary to GitHub Actions.
 - **Artifacts produced**:
   - `openapi-spec`: JSON/YAML OpenAPI specification for ZAP and other security tools.
-  - `api-fuzzing-results`: Schemathesis output and JUnit XML for test reporting.
+  - `api-fuzzing-results`: Schemathesis output for debugging.
 - **Local testing**: `pip install schemathesis && python scripts/api_fuzzing.py --start-app` runs the same fuzzing locally.
 - **Failure criteria**: Any 5xx response, content-type mismatch, or response schema violation fails the workflow. Expected 400s from validation (e.g., past dates) are not flagged.
 

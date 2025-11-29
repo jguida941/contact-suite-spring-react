@@ -119,15 +119,19 @@ jobs:
           echo "Running Schemathesis against OpenAPI spec..."
           set +e  # Don't exit on error so we can capture the result
 
-          # Note: Using specific checks instead of 'all' to avoid false positives
-          # from expected 400 responses (e.g., past dates rejected by @FutureOrPresent)
-          # Schemathesis v4+ removed --base-url (inferred from spec), --hypothesis-* options
+          # Note: Schemathesis v4+ removed many options:
+          # - --base-url (now inferred from spec URL)
+          # - --hypothesis-* options
+          # - --junit-xml (removed in v4+, just capture stdout instead)
+          # CustomErrorController ensures ALL errors return JSON, so content_type_conformance passes.
+          # Each check must be passed via its own --checks flag.
           schemathesis run \
             http://localhost:8080/v3/api-docs \
-            --checks not_a_server_error,content_type_conformance,response_schema_conformance \
+            --checks not_a_server_error \
+            --checks content_type_conformance \
+            --checks response_schema_conformance \
             --workers 1 \
             --max-examples 50 \
-            --junit-xml target/schemathesis-results.xml \
             2>&1 | tee target/schemathesis-output.txt
 
           FUZZING_EXIT_CODE=${PIPESTATUS[0]}
@@ -167,7 +171,6 @@ jobs:
         with:
           name: api-fuzzing-results
           path: |
-            target/schemathesis-results.xml
             target/schemathesis-output.txt
             app.log
           if-no-files-found: ignore

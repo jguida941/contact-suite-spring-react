@@ -49,6 +49,12 @@ management:
 # -----------------------------------------------------------------------------
 server:
   port: 8080
+  error:
+    # Disable Tomcat's default HTML error page so CustomErrorController handles all errors
+    whitelabel:
+      enabled: false
+    # Include error message in response for better debugging (generic messages still used)
+    include-message: always
 
 # -----------------------------------------------------------------------------
 # Logging Configuration (default: INFO level)

@@ -9,7 +9,7 @@ Quick links and context for automation/assistant workflows implementing this pla
 | **Requirements** | `docs/REQUIREMENTS.md` | **START HERE** - Master document with scope, phases, checklist, code examples |
 | **Roadmap** | `docs/ROADMAP.md` | Quick phase overview |
 | **Index** | `docs/INDEX.md` | Full file/folder navigation |
-| **ADR Index** | `docs/adrs/README.md` | Stack decisions (ADR-0014–0021) |
+| **ADR Index** | `docs/adrs/README.md` | Stack decisions (ADR-0014–0022) |
 | **CI/CD Plan** | `docs/ci-cd/ci_cd_plan.md` | Pipeline phases including security testing |
 | **Backlog** | `docs/logs/backlog.md` | Deferred decisions (do not implement yet) |
 
@@ -21,9 +21,10 @@ Quick links and context for automation/assistant workflows implementing this pla
 - REST controllers at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
 - DTOs with Bean Validation mapped to domain objects; constraints use `Validation.MAX_*` constants
 - Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON responses (400, 404, 409)
+- Custom error controller (`CustomErrorController`) ensures ALL errors return JSON (including Tomcat-level errors)
 - OpenAPI/Swagger UI at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi)
 - Health/info actuator endpoints available; other actuator endpoints locked down
-- Latest CI: **261 tests passing** (100% mutation score: 159/159), **100% line coverage**, SpotBugs clean
+- Latest CI: **275 tests passing** (100% mutation score), **100% line coverage**, SpotBugs clean
 - No persistence yet (Phase 3+)
 - Domain validation in `Validation.java` is the **source of truth** for all field rules
 - Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) for better encapsulation

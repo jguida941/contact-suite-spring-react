@@ -35,11 +35,13 @@
 - REST controllers expose CRUD at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`.
 - DTOs with Bean Validation (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) mapped to domain objects.
 - Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 404, 409).
+- Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: 261 tests passing, 100% mutation score (159/159), 100% line coverage, SpotBugs clean.
+- Latest CI: 275 tests passing, 100% mutation score, 100% line coverage, SpotBugs clean.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
 - Exception handler tests (4 tests): GlobalExceptionHandlerTest validates direct handler coverage.
+- Error controller tests (14 tests): CustomErrorControllerTest validates container-level error handling.
 - Service tests include lookup method coverage: getAllContacts/getContactById, getAllTasks/getTaskById, getAllAppointments/getAppointmentById.
 - Data is still volatile (ConcurrentHashMap only); no database, migrations, or persistence abstraction yet (Phase 3).
 - `ui/qa-dashboard` is a sample Vite/React metrics console, not a product UI.

@@ -64,6 +64,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/api/TaskController.java`](../src/main/java/contactapp/api/TaskController.java) | REST controller for Task CRUD at `/api/v1/tasks`. |
 | [`../src/main/java/contactapp/api/AppointmentController.java`](../src/main/java/contactapp/api/AppointmentController.java) | REST controller for Appointment CRUD at `/api/v1/appointments`. |
 | [`../src/main/java/contactapp/api/GlobalExceptionHandler.java`](../src/main/java/contactapp/api/GlobalExceptionHandler.java) | @RestControllerAdvice mapping exceptions to HTTP responses. |
+| [`../src/main/java/contactapp/api/CustomErrorController.java`](../src/main/java/contactapp/api/CustomErrorController.java) | ErrorController ensuring ALL errors return JSON (including Tomcat-level). |
 | [`../src/main/java/contactapp/api/dto/ContactRequest.java`](../src/main/java/contactapp/api/dto/ContactRequest.java) | Contact request DTO with Bean Validation. |
 | [`../src/main/java/contactapp/api/dto/ContactResponse.java`](../src/main/java/contactapp/api/dto/ContactResponse.java) | Contact response DTO. |
 | [`../src/main/java/contactapp/api/dto/TaskRequest.java`](../src/main/java/contactapp/api/dto/TaskRequest.java) | Task request DTO with Bean Validation. |
@@ -77,6 +78,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/TaskControllerTest.java`](../src/test/java/contactapp/TaskControllerTest.java) | MockMvc integration tests for Task API (21 tests). |
 | [`../src/test/java/contactapp/AppointmentControllerTest.java`](../src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests). |
 | [`../src/test/java/contactapp/GlobalExceptionHandlerTest.java`](../src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (4 tests). |
+| [`../src/test/java/contactapp/CustomErrorControllerTest.java`](../src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (14 tests). |
 
 ### Build & Configuration
 | Path | Description |
@@ -89,7 +91,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../scripts/api_fuzzing.py`](../scripts/api_fuzzing.py) | API fuzzing helper for local Schemathesis runs (starts app, fuzzes, exports OpenAPI spec). |
 | [`architecture/2025-11-19-task-entity-and-service.md`](architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`architecture/2025-11-24-appointment-entity-and-service.md`](architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record. |
-| [`adrs/README.md`](adrs/README.md) | ADR index summarizing ADR-0001 through ADR-0020. |
+| [`adrs/README.md`](adrs/README.md) | ADR index summarizing ADR-0001 through ADR-0022. |
 | [`design-notes/README.md`](design-notes/README.md) | Landing page for informal design notes (individual topics in `design-notes/notes/`). |
 | [`logs/backlog.md`](logs/backlog.md) | Backlog for reporting and domain enhancements. |
 | [`logs/CHANGELOG.md`](logs/CHANGELOG.md) | Project changelog. |

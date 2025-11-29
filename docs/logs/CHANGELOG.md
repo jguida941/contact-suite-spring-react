@@ -5,6 +5,13 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 ### Added
+- **CustomErrorController** for production-grade JSON error responses (ADR-0022):
+  - Implements Spring Boot's `ErrorController` interface to intercept `/error` path.
+  - Ensures ALL errors return `application/json`, including Tomcat-level errors (malformed requests, invalid paths) that bypass Spring MVC's `@RestControllerAdvice`.
+  - Provides user-friendly error messages based on HTTP status (400, 404, 405, 415, 500).
+  - Disabled Tomcat's whitelabel error page via `server.error.whitelabel.enabled=false`.
+  - Added 14 unit tests in `CustomErrorControllerTest` for status codes, JSON content type, and message mapping.
+  - Critical for Schemathesis `content_type_conformance` check passing with fuzzed inputs.
 - **Phase 2.5 complete**: API security testing foundation implemented.
 - **OpenAPI spec improvements** for better tooling compatibility:
   - Added `@Tag`, `@Operation`, `@ApiResponses` annotations to all controllers.
@@ -13,6 +20,12 @@ All notable changes to this project will be documented here. Follow the
   - Added operation summaries for Swagger UI clarity.
 
 ### Fixed
+- **Schemathesis v4+ compatibility fixes** (multiple deprecated options removed):
+  - Removed `--junit-xml` flag (removed in v4+, just capture stdout instead).
+  - Removed `--base-url` flag (v4+ infers from spec URL).
+  - Removed `--hypothesis-*` flags (removed in v4+).
+  - Fixed `--checks` syntax: each check must be passed via its own flag, not comma-separated.
+  - Updated both `.github/workflows/api-fuzzing.yml` and `scripts/api_fuzzing.py` to match.
 - **API fuzzing date format mismatch resolved** (CI fuzzing failure root cause):
   - `AppointmentResponse` now uses same `@JsonFormat` pattern as `AppointmentRequest`: `yyyy-MM-dd'T'HH:mm:ss.SSSXXX` with UTC timezone.
   - Previously, request accepted millis+offset but response omitted them, causing Schemathesis schema violations.

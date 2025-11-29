@@ -23,3 +23,4 @@
 | [ADR-0019](ADR-0019-deployment-and-packaging.md)                    | Deployment and Packaging                        | Accepted |
 | [ADR-0020](ADR-0020-spring-boot-scaffold.md)                        | Spring Boot Scaffold                            | Accepted |
 | [ADR-0021](ADR-0021-rest-api-implementation.md)                     | REST API Implementation                         | Accepted |
+| [ADR-0022](ADR-0022-custom-error-controller.md)                     | Custom Error Controller for JSON Errors         | Accepted |
