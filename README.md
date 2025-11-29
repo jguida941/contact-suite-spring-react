@@ -39,7 +39,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    - **OpenAPI spec** at `http://localhost:8080/v3/api-docs`
    - REST APIs at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
 4. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-5. Planning note: Phases 0-2.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing) with 261 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0021 capture the selected stack and implementation decisions.
+5. Planning note: Phases 0-2.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing) with 278 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0022 capture the selected stack and implementation decisions.
 
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
@@ -74,7 +74,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/test/java/contactapp/TaskControllerTest.java`](src/test/java/contactapp/TaskControllerTest.java)               | MockMvc integration tests for Task API (21 tests).                                              |
 | [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests).                                       |
 | [`src/test/java/contactapp/GlobalExceptionHandlerTest.java`](src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (4 tests).                                      |
-| [`src/test/java/contactapp/CustomErrorControllerTest.java`](src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (14 tests).                                              |
+| [`src/test/java/contactapp/CustomErrorControllerTest.java`](src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (17 tests).                                              |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)                                 | Contact assignment requirements and checklist.                                                  |
 | [`docs/requirements/appointment-requirements/`](docs/requirements/appointment-requirements/)                         | Appointment assignment requirements and checklist.                                              |
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                       | Task assignment requirements and checklist (same format as Contact).                            |
@@ -600,7 +600,7 @@ flowchart TD
 - **TaskControllerTest** (21 tests): Same patterns adapted for Task entity.
 - **AppointmentControllerTest** (20 tests): Date validation, past-date rejection, ISO 8601 format handling.
 - **GlobalExceptionHandlerTest** (4 tests): Direct unit tests for exception handler methods (`handleIllegalArgument`, `handleNotFound`, `handleDuplicate`).
-- **CustomErrorControllerTest** (14 tests): Unit tests for container-level error handling (status codes, JSON content type, message mapping).
+- **CustomErrorControllerTest** (17 tests): Unit tests for container-level error handling (status codes, JSON content type, message mapping).
 
 ### Test Isolation Pattern
 Controller tests use reflection to access package-private `clearAll*()` methods on the autowired service:
