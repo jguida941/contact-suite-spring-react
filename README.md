@@ -620,7 +620,7 @@ flowchart TD
     D -->|pass| E[Service Layer]
     E --> F[200/201/204 Response]
 ```
-- **Bean Validation** (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) catches invalid input early with user-friendly error messages.
+- **Bean Validation** (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) catches invalid input early with user-friendly error messages. DTOs use `@Schema(pattern = ".*\\S.*")` to document non-whitespace requirement in OpenAPI.
 - **Path variable validation**: `@NotBlank @Size(min=1, max=10)` on `{id}` path parameters enforces ID constraints (no whitespace-only, max 10 chars). Controllers are annotated with `@Validated` (required for Spring to enforce method-level constraints on `@PathVariable`). OpenAPI spec documents this via `@Parameter(schema=@Schema(minLength=1, maxLength=10))`.
 - **Domain validation** (`Validation.validateLength`, `validateDigits`, `validateDateNotPast`) acts as a backup layer—same rules, same constants.
 - DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules.

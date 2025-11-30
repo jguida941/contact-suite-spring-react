@@ -1,5 +1,6 @@
 package contactapp.api.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -30,14 +31,17 @@ import static contactapp.domain.Validation.MAX_NAME_LENGTH;
  * @param address   contact's address
  */
 public record ContactRequest(
+        @Schema(pattern = ".*\\S.*", description = "Contact ID (must contain non-whitespace)")
         @NotBlank(message = "id must not be null or blank")
         @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
         String id,
 
+        @Schema(pattern = ".*\\S.*", description = "First name (must contain non-whitespace)")
         @NotBlank(message = "firstName must not be null or blank")
         @Size(min = 1, max = MAX_NAME_LENGTH, message = "firstName length must be between {min} and {max}")
         String firstName,
 
+        @Schema(pattern = ".*\\S.*", description = "Last name (must contain non-whitespace)")
         @NotBlank(message = "lastName must not be null or blank")
         @Size(min = 1, max = MAX_NAME_LENGTH, message = "lastName length must be between {min} and {max}")
         String lastName,
@@ -46,6 +50,7 @@ public record ContactRequest(
         @Pattern(regexp = "\\d{10}", message = "phone must be exactly 10 digits")
         String phone,
 
+        @Schema(pattern = ".*\\S.*", description = "Address (must contain non-whitespace)")
         @NotBlank(message = "address must not be null or blank")
         @Size(min = 1, max = MAX_ADDRESS_LENGTH, message = "address length must be between {min} and {max}")
         String address

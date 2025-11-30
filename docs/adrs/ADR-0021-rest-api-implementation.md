@@ -31,7 +31,7 @@ Request DTOs use Jakarta Bean Validation annotations:
 - `@Pattern` for format validation (phone numbers)
 - `@FutureOrPresent` for date validation (appointments)
 
-**Key design decision**: DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules. This ensures that Bean Validation and domain validation enforce identical limits.
+**Key design decision**: DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules. This ensures that Bean Validation and domain validation enforce identical limits. All `@NotBlank` fields also include `@Schema(pattern = ".*\\S.*")` so OpenAPI accurately documents the non-whitespace requirement.
 
 ### Two-Layer Validation Strategy
 ```

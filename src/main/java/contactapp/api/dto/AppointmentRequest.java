@@ -1,6 +1,7 @@
 package contactapp.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,6 +33,7 @@ import static contactapp.domain.Validation.MAX_ID_LENGTH;
  * @param description     appointment description
  */
 public record AppointmentRequest(
+        @Schema(pattern = ".*\\S.*", description = "Appointment ID (must contain non-whitespace)")
         @NotBlank(message = "id must not be null or blank")
         @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
         String id,
@@ -41,6 +43,7 @@ public record AppointmentRequest(
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
         Date appointmentDate,
 
+        @Schema(pattern = ".*\\S.*", description = "Appointment description (must contain non-whitespace)")
         @NotBlank(message = "description must not be null or blank")
         @Size(min = 1, max = MAX_DESCRIPTION_LENGTH, message = "description length must be between {min} and {max}")
         String description

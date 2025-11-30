@@ -31,7 +31,8 @@ All notable changes to this project will be documented here. Follow the
 - **Path variable validation** on controllers:
   - Added `@NotBlank @Size(min=1, max=MAX_ID_LENGTH)` to all `{id}` path parameters to reject whitespace-only and enforce 10-char limit.
   - Added `@Parameter(schema=@Schema(minLength=1, maxLength=10))` for proper OpenAPI spec documentation.
-  - Eliminates Schemathesis "schema validation mismatch" warnings by documenting actual API constraints (empty strings rejected).
+  - Eliminates Schemathesis "schema validation mismatch" warnings by documenting actual API constraints.
+  - Added `@Schema(pattern = ".*\\S.*")` to all `@NotBlank` DTO fields to reject whitespace-only strings in OpenAPI schema.
 - **OpenAPI spec improvements** for better tooling compatibility:
   - Added `@Tag`, `@Operation`, `@ApiResponses` annotations to all controllers.
   - Changed content type from `*/*` to `application/json` via `produces`/`consumes` attributes.
