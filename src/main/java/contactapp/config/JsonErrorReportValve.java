@@ -2,7 +2,8 @@ package contactapp.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.valves.ErrorReportValve;
@@ -21,6 +22,9 @@ import org.apache.catalina.valves.ErrorReportValve;
  * this valve operates at the servlet container level and can intercept errors
  * that never reach the Spring application context.
  *
+ * <p>Uses explicit Content-Length to avoid chunked transfer encoding issues
+ * with malformed URLs containing control characters.
+ *
  * @see TomcatConfig for registration of this valve
  */
 public class JsonErrorReportValve extends ErrorReportValve {
@@ -34,31 +38,34 @@ public class JsonErrorReportValve extends ErrorReportValve {
 
         final int statusCode = response.getStatus();
 
-        // Don't process successful responses
-        if (statusCode < ERROR_STATUS_THRESHOLD) {
+        // Don't process successful responses or already committed responses
+        if (statusCode < ERROR_STATUS_THRESHOLD || response.isCommitted()) {
             return;
         }
-
-        // Set JSON content type
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
 
         // Build JSON error response
         final String message = getErrorMessage(statusCode);
         final String jsonResponse = "{\"message\":\"" + message + "\"}";
+        final byte[] bytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
 
         try {
+            // Reset buffer if possible
             try {
                 response.resetBuffer();
             } catch (IllegalStateException e) {
-                // Response already committed, can't reset
+                // Response already committed, can't reset - just return
+                return;
             }
 
-            final Writer writer = response.getReporter();
-            if (writer != null) {
-                writer.write(jsonResponse);
-                writer.flush();
-            }
+            // Set headers - Content-Length avoids chunked encoding issues
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.setContentLength(bytes.length);
+
+            // Write directly to output stream
+            final OutputStream out = response.getOutputStream();
+            out.write(bytes);
+            out.flush();
         } catch (IOException e) {
             // Can't write response, nothing we can do
         }

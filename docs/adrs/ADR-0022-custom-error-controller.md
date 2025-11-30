@@ -31,7 +31,49 @@ Implement a two-layer solution to ensure ALL errors return JSON:
 
 ### Implementation
 
-**CustomErrorController.java**
+**JsonErrorReportValve.java** - Handles container-level errors with explicit Content-Length
+```java
+public class JsonErrorReportValve extends ErrorReportValve {
+
+    @Override
+    protected void report(final Request request, final Response response,
+                          final Throwable throwable) {
+        final int statusCode = response.getStatus();
+
+        // Do not touch successful or already committed responses
+        if (statusCode < ERROR_STATUS_THRESHOLD || response.isCommitted()) {
+            return;
+        }
+
+        // Build JSON
+        final String message = getErrorMessage(statusCode);
+        final String jsonResponse = "{\"message\":\"" + message + "\"}";
+        final byte[] bytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
+
+        try {
+            try {
+                response.resetBuffer();
+            } catch (IllegalStateException e) {
+                return; // Response already committed, bail out
+            }
+
+            // Set headers explicitly - Content-Length avoids chunked encoding issues
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.setContentLength(bytes.length);
+
+            // Write bytes directly
+            final OutputStream out = response.getOutputStream();
+            out.write(bytes);
+            out.flush();
+        } catch (IOException e) {
+            // Can't write response
+        }
+    }
+}
+```
+
+**CustomErrorController.java** - Spring Boot error handler
 ```java
 @RestController
 @Hidden // Exclude from OpenAPI spec - internal error handler, not a public API
@@ -52,6 +94,33 @@ server:
       enabled: false  # Disable Tomcat's default HTML error page
     include-message: always
 ```
+
+### Why JsonErrorReportValve Uses Explicit Content-Length
+
+The original valve implementation caused "chunked encoding, invalid chunk" errors during Schemathesis fuzzing:
+
+**What was going wrong:**
+1. **No Content-Length**: Tomcat defaulted to chunked transfer encoding
+2. **No committed check**: Could write to already-committed responses
+3. **No buffer reset**: Could append bytes mid-chunk, corrupting the stream
+
+When Schemathesis sends URLs containing control characters (`\x1f`, etc.):
+1. Tomcat's HTTP connector starts building a chunked response (no Content-Length)
+2. An error occurs at a low level (URL decoding / connector layer)
+3. The valve writes additional bytes without resetting or setting Content-Length
+4. Client sees: "Server declared chunked encoding but sent an invalid chunk"
+
+**The fix implements five safeguards:**
+
+| Safeguard | Implementation | Purpose |
+|-----------|---------------|---------|
+| 1. Committed check | `response.isCommitted()` | Prevents appending bytes mid-chunk |
+| 2. Buffer reset | `response.resetBuffer()` | Clears partial response data |
+| 3. Bailout on exception | Catch `IllegalStateException` | Graceful handling of edge cases |
+| 4. Explicit Content-Length | `response.setContentLength(bytes.length)` | Forces fixed-length encoding (no chunks) |
+| 5. Binary write | `OutputStream.write(bytes)` | Writes exact byte count declared |
+
+This is the standard pattern Tomcat and Spring Boot error handlers use: **guard → reset → set headers → write bytes → flush**.
 
 ### Error Message Strategy
 The controller provides user-friendly messages based on HTTP status:

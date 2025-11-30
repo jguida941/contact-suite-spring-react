@@ -125,13 +125,12 @@ jobs:
           # - --junit-xml (removed in v4+, just capture stdout instead)
           # NOT using content_type_conformance: malformed URLs (invalid Unicode) fail at
           # Tomcat's connector level BEFORE reaching JsonErrorReportValve, returning HTML.
-          # See ADR-0022 for details.
+          # JsonErrorReportValve now sets explicit Content-Length to avoid chunked encoding
+          # issues with malformed URLs. See ADR-0022 for details.
           schemathesis run \
             http://localhost:8080/v3/api-docs \
             --checks not_a_server_error \
             --checks response_schema_conformance \
-            --workers 1 \
-            --max-examples 50 \
             2>&1 | tee target/schemathesis-output.txt
 
           FUZZING_EXIT_CODE=${PIPESTATUS[0]}

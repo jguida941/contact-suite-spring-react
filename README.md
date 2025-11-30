@@ -39,7 +39,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    - **OpenAPI spec** at `http://localhost:8080/v3/api-docs`
    - REST APIs at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
 4. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-5. Planning note: Phases 0-2.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing) with 278 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0022 capture the selected stack and implementation decisions.
+5. Planning note: Phases 0-2.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing) with 295 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0022 capture the selected stack and implementation decisions.
 
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
@@ -77,6 +77,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests).                                       |
 | [`src/test/java/contactapp/GlobalExceptionHandlerTest.java`](src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (4 tests).                                      |
 | [`src/test/java/contactapp/CustomErrorControllerTest.java`](src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (17 tests).                                              |
+| [`src/test/java/contactapp/config/JsonErrorReportValveTest.java`](src/test/java/contactapp/config/JsonErrorReportValveTest.java) | Unit tests for JsonErrorReportValve (17 tests).                                         |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)                                 | Contact assignment requirements and checklist.                                                  |
 | [`docs/requirements/appointment-requirements/`](docs/requirements/appointment-requirements/)                         | Appointment assignment requirements and checklist.                                              |
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                       | Task assignment requirements and checklist (same format as Contact).                            |
@@ -193,9 +194,9 @@ graph TD
     A[Client request] --> B[ContactService]
     B --> C[Validation]
     C --> D{valid?}
-    D --> E[IllegalArgumentException]
+    D -->|no| E[IllegalArgumentException]
     E --> F[Client handles/fails fast]
-    D --> G[State assignment]
+    D -->|yes| G[State assignment]
 ```
 - Fail-fast means invalid state never reaches persistence/logs, and callers/tests can react immediately.
 
@@ -503,9 +504,9 @@ flowchart TD
     C6 -->|fail| X
     U1[update newDate, newDescription] --> U2[validateDateNotPast]
     U2 -->|fail| X
-    U2 --> U3["validateLength(description, 1-50)"]
+    U2 -->|ok| U3["validateLength(description, 1-50)"]
     U3 -->|fail| X
-    U3 --> U4[copy date + trim & store description]
+    U3 -->|ok| U4[copy date + trim & store description]
 ```
 - Constructor: `validateLength` validates/measures trimmed ID, then trim & store. Then delegates to setters for date + description.
 - `validateLength` measures `input.trim().length()` on the original input, then the caller trims before storing (matches Contact/Task pattern).
@@ -549,10 +550,12 @@ graph TD
 
     B -->|deleteAppointment| F["validateNotBlank + trim(appointmentId)"]
     F --> G["remove(trimmedId)"]
+    G -->|missing| Y[return false]
+    G -->|found| Z[entry removed]
 
     B -->|updateAppointment| H["validateNotBlank + trim(appointmentId)"]
     H --> I["computeIfPresent(trimmedId, appointment.update(date, desc))"]
-    I -->|missing| J[return false]
+    I -->|missing| Y
     I -->|found| K["Appointment.update(...) reuses Validation"]
 ```
 - Add path validates the (already trimmed) ID and uses `putIfAbsent`; delete/update trim + validate IDs before map access; validation failures bubble as `IllegalArgumentException`; duplicates/missing entries return `false`.
@@ -627,6 +630,7 @@ flowchart TD
 - **AppointmentControllerTest** (20 tests): Date validation, past-date rejection, ISO 8601 format handling.
 - **GlobalExceptionHandlerTest** (4 tests): Direct unit tests for exception handler methods (`handleIllegalArgument`, `handleNotFound`, `handleDuplicate`).
 - **CustomErrorControllerTest** (17 tests): Unit tests for container-level error handling (status codes, JSON content type, message mapping).
+- **JsonErrorReportValveTest** (17 tests): Unit tests for Tomcat valve JSON error handling (Content-Length, buffer reset, committed response guards).
 
 ### Test Isolation Pattern
 Controller tests use reflection to access package-private `clearAll*()` methods on the autowired service:
@@ -638,6 +642,18 @@ void setUp() throws Exception {
     clearMethod.invoke(contactService);  // Use autowired service, not getInstance()
 }
 ```
+
+### JsonErrorReportValveTest Scenario Coverage
+- `report_successfulResponse_doesNotWriteBody` - Verifies successful responses (status < 400) are not processed.
+- `report_committedResponse_doesNotWriteBody` - Verifies already-committed responses are skipped to avoid corruption.
+- `report_badRequest_writesJsonBody` - Verifies 400 errors write JSON with correct Content-Type, Content-Length, and message.
+- `report_notFound_writesCorrectMessage` - Verifies 404 errors return "Resource not found" message.
+- `report_resetBufferThrowsException_returnsEarly` - Verifies valve handles `IllegalStateException` gracefully.
+- `report_ioException_handledGracefully` - Verifies IOException during write doesn't throw.
+- `report_statusCodeMapping` (parameterized) - Verifies all HTTP status codes map to correct error messages (400→Bad request, 401→Unauthorized, 403→Forbidden, 404→Resource not found, 405→Method not allowed, 415→Unsupported media type, 500→Internal server error, unknown→Error).
+- `report_withThrowable_stillWritesJson` - Verifies throwable parameter doesn't affect JSON output.
+- `report_statusBelowThreshold_doesNotWriteBody` - Verifies 399 status (below threshold) is not processed.
+- `report_exactlyAtThreshold_writesBody` - Verifies 400 status (exactly at threshold) is processed.
 
 <br>
 
@@ -906,41 +922,49 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - `.github/workflows/api-fuzzing.yml` runs Schemathesis against the live OpenAPI spec to detect 5xx errors, schema violations, and edge cases.
 - **Schemathesis v4+ compatibility**: The workflow uses updated options after v4 removed `--base-url`, `--hypothesis-*`, and `--junit-xml` flags.
 - **Two-layer JSON error handling**: `JsonErrorReportValve` intercepts errors at the Tomcat container level, while `CustomErrorController` handles Spring-level errors. This ensures most error responses return `application/json`. Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used (see ADR-0022).
+- **Content-Length fix for chunked encoding**: `JsonErrorReportValve` now sets explicit `Content-Length` to avoid "invalid chunk" errors during fuzzing. The valve implements five safeguards: `isCommitted()` check, buffer reset, `IllegalStateException` bailout, explicit `Content-Length`, and binary write via `OutputStream`. This is the standard Tomcat pattern: guard → reset → set headers → write bytes → flush.
+- **All Schemathesis phases pass**: Coverage, Fuzzing, and Stateful phases all pass (8,245 test cases generated, 8,245 passed).
 - **Workflow steps**:
   1. Build the JAR with `mvn -DskipTests package`.
   2. Start Spring Boot app in background, wait for `/actuator/health` to return `UP` (uses `jq` for robust JSON parsing).
   3. Export OpenAPI spec to `target/openapi/openapi.json` (artifact for ZAP/other tools).
-  4. Run `schemathesis run` with `--checks not_a_server_error --checks response_schema_conformance --max-examples 50 --workers 1`.
+  4. Run `schemathesis run` with `--checks not_a_server_error --checks response_schema_conformance` (all phases enabled).
   5. Stop app, publish summary to GitHub Actions.
 - **Artifacts produced**:
   - `openapi-spec`: JSON/YAML OpenAPI specification for ZAP and other security tools.
   - `api-fuzzing-results`: Schemathesis output for debugging.
 - **Local testing**: `pip install schemathesis && python scripts/api_fuzzing.py --start-app` runs the same fuzzing locally.
-- **Failure criteria**: Any 5xx response, content-type mismatch, or response schema violation fails the workflow. Expected 400s from validation (e.g., past dates) are not flagged.
+- **Failure criteria**: Any 5xx response or response schema violation fails the workflow. Expected 400s from validation (e.g., past dates) are not flagged.
 
 ## CI/CD Flow Diagram
 ```mermaid
 graph TD
     A[Push or PR or Release]
-    B[Matrix verify Ubuntu+Windows JDK17+21]
-    C{DepCheck or PITest fail?}
-    D[Retry with skips]
+    B[build-test: Matrix verify Ubuntu+Windows JDK17+21]
+    C{Quality gate fail?}
+    D[Retry step with DepCheck/PITest skipped]
     E[QA summary & artifacts & Codecov]
-    F[Container verify Temurin17 Maven3.9.9]
+    F[container-test: Temurin17 Maven3.9.9]
     G{RUN_SELF_HOSTED set?}
-    H[Self-hosted mutation lane]
-    I[Release artifacts]
-    J[API Fuzzing Schemathesis]
+    H[mutation-test: Self-hosted runner]
+    I[release-artifacts: Package JAR]
+    J[api-fuzz: Schemathesis]
     K[OpenAPI spec artifact]
+    L{Release event?}
 
-    A --> B --> E
+    A --> B
     A --> J --> K
     B --> C
-    C -->|yes| D --> B
+    C -->|yes| D --> E
     C -->|no| E
-    B --> F --> G
-    G -->|yes| H --> I
-    G -->|no| I
+    B --> F
+    B --> G
+    G -->|yes| H
+    G -->|no| L
+    H --> L
+    F --> L
+    L -->|yes| I
+    L -->|no| M[Done]
 ```
 
 ## QA Summary

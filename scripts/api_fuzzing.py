@@ -177,14 +177,13 @@ def run_schemathesis(base_url: str, spec_path: str) -> int:
     # - --junit-xml (removed in v4+)
     # NOT using content_type_conformance: malformed URLs (invalid Unicode) fail at
     # Tomcat's connector level BEFORE reaching JsonErrorReportValve, returning HTML.
-    # See ADR-0022 for details.
+    # JsonErrorReportValve now sets explicit Content-Length to avoid chunked encoding
+    # issues with malformed URLs. See ADR-0022 for details.
     cmd = [
         "schemathesis", "run",
         spec_url,
         "--checks", "not_a_server_error",
         "--checks", "response_schema_conformance",
-        "--workers", "1",
-        "--max-examples", "50",  # Keep CI fast
     ]
 
     log(f"Command: {' '.join(cmd)}")

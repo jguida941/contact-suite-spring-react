@@ -12,10 +12,13 @@ All notable changes to this project will be documented here. Follow the
   - Disabled Tomcat's whitelabel error page via `server.error.whitelabel.enabled=false`.
   - Added `@Hidden` annotation to exclude `/error` from OpenAPI spec (prevents Schemathesis from testing it as a regular API).
   - Added 17 unit tests in `CustomErrorControllerTest` for status codes, JSON content type, and message mapping.
+  - Added 17 unit tests in `JsonErrorReportValveTest` for valve behavior (Content-Length, buffer reset, committed response guards, status code mapping).
 - **JsonErrorReportValve** for Tomcat-level JSON error handling (ADR-0022):
   - Custom Tomcat valve intercepts errors at the container level BEFORE they reach Spring MVC.
   - Combined with `CustomErrorController`, creates a two-layer solution ensuring most error responses return `application/json`.
+  - **Fixed chunked encoding issues** with explicit Content-Length: valve now guards with `isCommitted()`, resets buffer, sets explicit `Content-Length`, and writes bytes directly via `OutputStream` (standard Tomcat pattern: guard → reset → set headers → write bytes → flush).
   - Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used.
+  - **All Schemathesis phases now pass** (Coverage, Fuzzing, Stateful): 8,245 test cases generated, 8,245 passed.
 - **Phase 2.5 complete**: API security testing foundation implemented.
 - **OpenAPI spec improvements** for better tooling compatibility:
   - Added `@Tag`, `@Operation`, `@ApiResponses` annotations to all controllers.
