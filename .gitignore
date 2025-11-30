@@ -37,3 +37,9 @@ bin/
 interview.md
 # Local AI scratch/config
 .claude/
+leftoff.md
+
+# Frontend build artifacts
+**/node_modules/
+ui/contact-app/node/
+**/dist/

@@ -1,10 +1,14 @@
 package contactapp.service;
 
 import contactapp.domain.Appointment;
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -12,35 +16,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests {@link AppointmentService} behavior mirrors the requirements.
- *
- * <p>Covers:
- * <ul>
- *   <li>Singleton access</li>
- *   <li>Add/delete/update behaviors (including duplicate/missing/blank ID branches)</li>
- *   <li>Trimming of IDs, null guards, and clear-all reset hook</li>
- * </ul>
- *
- * <p>Tests are in the same package as AppointmentService to access package-private methods.
+ * Tests {@link AppointmentService} behavior against the Spring context (H2 + Flyway).
  */
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 public class AppointmentServiceTest {
+
+    @Autowired
+    private AppointmentService service;
 
     /**
      * Clears AppointmentService so each test operates on a clean in-memory store.
      */
     @BeforeEach
     void reset() {
-        AppointmentService.getInstance().clearAllAppointments();
+        service.clearAllAppointments();
     }
 
-    /**
-     * Ensures {@link AppointmentService#getInstance()} returns the same singleton reference.
-     */
     @Test
-    void testSingletonInstance() {
-        AppointmentService first = AppointmentService.getInstance();
-        AppointmentService second = AppointmentService.getInstance();
-        assertThat(first).isSameAs(second);
+    void testSingletonSharesStateWithSpringBean() {
+        AppointmentService singleton = AppointmentService.getInstance();
+        singleton.clearAllAppointments();
+
+        Date futureDate = futureDate(10);
+        Appointment legacyAppointment = new Appointment("legacy-apt", futureDate, "Singleton path");
+        boolean addedViaSingleton = singleton.addAppointment(legacyAppointment);
+
+        assertThat(addedViaSingleton).isTrue();
+        assertThat(service.getAppointmentById("legacy-apt")).isPresent();
     }
 
     /**
@@ -48,7 +52,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testAddAppointment() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(30);
         Appointment appointment = new Appointment("200", futureDate, "Document Date");
@@ -67,7 +71,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testDeleteAppointment() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(30);
         Appointment appointment = new Appointment("700", futureDate, "Sample Appointment");
@@ -84,7 +88,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testUpdateAppointment() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(30);
         Appointment appointment = new Appointment("400", futureDate, "First Appointment");
@@ -105,7 +109,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testAddDuplicateAppointmentIdFails() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(30);
         Appointment original = new Appointment("300", futureDate, "Document Date");
@@ -123,7 +127,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testAddAppointmentNullThrows() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         assertThatThrownBy(() -> service.addAppointment(null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -135,7 +139,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testAddAppointmentWithBlankIdThrows() throws Exception {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
         Date future = futureDate(30);
         // Force a blank id via reflection to simulate corrupted input and hit the guard
         Appointment bad = new Appointment("tmp", future, "Desc");
@@ -153,7 +157,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testDeleteAppointmentBlankIdThrows() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         assertThatThrownBy(() -> service.deleteAppointment(" "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -165,7 +169,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testDeleteMissingAppointmentReturnsFalse() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         assertThat(service.deleteAppointment("missing")).isFalse();
     }
@@ -175,7 +179,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testClearAllAppointmentsRemovesEntries() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(30);
         Appointment appointment = new Appointment("500", futureDate, "Sample Appointment");
@@ -191,7 +195,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testGetDatabaseReturnsDefensiveCopies() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(30);
         Appointment appointment = new Appointment("900", futureDate, "Immutable?");
@@ -209,7 +213,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testUpdateAppointmentTrimsId() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(45);
         Appointment appointment = new Appointment("600", futureDate, "Initial Description");
@@ -227,7 +231,7 @@ public class AppointmentServiceTest {
      */
     @Test
     void testUpdateAppointmentBlankIdThrows() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(30);
         assertThatThrownBy(() -> service.updateAppointment(" ", futureDate, "Desc"))
@@ -240,33 +244,10 @@ public class AppointmentServiceTest {
      */
     @Test
     void testUpdateMissingAppointmentReturnsFalse() {
-        AppointmentService service = AppointmentService.getInstance();
+        AppointmentService service = this.service;
 
         Date futureDate = futureDate(30);
         assertThat(service.updateAppointment("missing", futureDate, "Desc")).isFalse();
-    }
-
-    /**
-     * Covers the cold-start branch in getInstance() where instance is null.
-     *
-     * <p>Uses reflection to reset the static instance field, then verifies
-     * getInstance() creates a new instance. This ensures full branch coverage
-     * of the lazy initialization pattern.
-     */
-    @Test
-    void testGetInstanceColdStart() throws Exception {
-        // Reset static instance to null via reflection
-        Field instanceField = AppointmentService.class.getDeclaredField("instance");
-        instanceField.setAccessible(true);
-        instanceField.set(null, null);
-
-        // Now getInstance() should create a new instance
-        AppointmentService service = AppointmentService.getInstance();
-        assertThat(service).isNotNull();
-
-        // Verify the instance was properly registered
-        AppointmentService second = AppointmentService.getInstance();
-        assertThat(second).isSameAs(service);
     }
 
     /**

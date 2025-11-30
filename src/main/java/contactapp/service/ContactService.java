@@ -1,78 +1,71 @@
 package contactapp.service;
 
+import contactapp.config.ApplicationContextProvider;
 import contactapp.domain.Contact;
 import contactapp.domain.Validation;
+import contactapp.persistence.store.ContactStore;
+import contactapp.persistence.store.InMemoryContactStore;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationContext;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service responsible for managing {@link Contact} instances.
  *
- * <p>Owns the in-memory storage for contacts and exposes operations
- * to add, update, and delete them.
- *
- * <h2>Spring Integration</h2>
- * <p>Annotated with {@link Service} so Spring can manage the bean lifecycle.
- * The singleton pattern via {@link #getInstance()} is retained for backward
- * compatibility with existing tests and non-Spring callers.
- *
- * <h2>Thread Safety</h2>
- * <p>Uses {@link ConcurrentHashMap} for O(1) thread-safe operations.
- * Updates use {@code computeIfPresent} for atomic lookup + update.
+ * <p>Delegates persistence to a {@link ContactStore} so the same lifecycle
+ * works for both Spring-managed JPA repositories and legacy callers that still
+ * rely on {@link #getInstance()} before the application context starts.
  *
  * <h2>Design Decisions</h2>
  * <ul>
- *   <li>Singleton pattern retained for backward compatibility</li>
- *   <li>{@code @Service} added for Spring DI in controllers (Phase 2)</li>
- *   <li>Defensive copies returned from {@link #getDatabase()}</li>
- *   <li>{@link #clearAllContacts()} is package-private for test isolation</li>
+ *   <li>Singleton pattern retained for backward compatibility (legacy callers)</li>
+ *   <li>{@code @Service} enables Spring DI in controllers (Phase 2+)</li>
+ *   <li>{@code @Transactional} methods ensure repository operations run atomically</li>
+ *   <li>{@link #clearAllContacts()} remains package-private for test isolation</li>
  * </ul>
+ *
+ * <h2>Why Not Final?</h2>
+ * <p>This class was previously {@code final}. The modifier was removed because
+ * Spring's {@code @Transactional} annotation uses CGLIB proxy subclassing,
+ * which requires non-final classes for method interception.
  *
  * @see Contact
  * @see Validation
  */
 @Service
-public final class ContactService {
+@Transactional
+public class ContactService {
 
-    /**
-     * Singleton instance, created lazily on first access.
-     * Retained for backward compatibility with existing tests.
-     */
     private static ContactService instance;
 
-    /**
-     * In-memory storage for contacts keyed by contactId.
-     *
-     * <p>Static so all access paths (Spring DI and {@link #getInstance()}) share
-     * the same backing store regardless of how many instances are created.
-     *
-     * <p>ConcurrentHashMap provides O(1) average time for add, lookup, update,
-     * and delete, and is safe for concurrent access without external locking.
-     */
-    private static final Map<String, Contact> DATABASE = new ConcurrentHashMap<>();
+    private final ContactStore store;
+    private final boolean legacyStore;
 
     /**
-     * Default constructor for Spring bean creation.
-     *
-     * <p>Public to allow Spring to instantiate the service via reflection.
-     * For non-Spring usage, prefer {@link #getInstance()}.
-     *
-     * <p>Thread-safe: Registers this instance as the static singleton only if none
-     * exists, preserving any data already added through {@link #getInstance()}.
-     * This ensures Spring-created beans and legacy callers share the same backing store
-     * regardless of initialization order.
+     * Primary constructor used by Spring to wire the JPA-backed store.
      */
-    public ContactService() {
-        synchronized (ContactService.class) {
-            if (instance == null) {
-                instance = this;
-            }
+    @org.springframework.beans.factory.annotation.Autowired
+    public ContactService(final ContactStore store) {
+        this(store, false);
+    }
+
+    private ContactService(final ContactStore store, final boolean legacyStore) {
+        this.store = store;
+        this.legacyStore = legacyStore;
+        registerInstance(this);
+    }
+
+    private static synchronized void registerInstance(final ContactService candidate) {
+        if (instance != null && instance.legacyStore && !candidate.legacyStore) {
+            instance.getAllContacts().forEach(candidate::addContact);
         }
+        instance = candidate;
     }
 
     /**
@@ -85,33 +78,56 @@ public final class ContactService {
      * injection over this method. This exists for backward compatibility.
      * Both access patterns share the same instance and backing store.
      *
+     * <p>If called before Spring context initializes, lazily creates a service
+     * backed by {@link InMemoryContactStore}. This preserves backward
+     * compatibility for legacy non-Spring callers.
+     *
      * @return the singleton {@code ContactService} instance
      */
     @SuppressFBWarnings(
             value = "MS_EXPOSE_REP",
             justification = "Singleton intentionally exposes shared instance for backward compatibility")
     public static synchronized ContactService getInstance() {
-        if (instance == null) {
-            new ContactService();
+        if (instance != null) {
+            return instance;
         }
-        return instance;
+        final ApplicationContext context = ApplicationContextProvider.getContext();
+        if (context != null) {
+            return context.getBean(ContactService.class);
+        }
+        return new ContactService(new InMemoryContactStore(), true);
     }
 
     /**
-     * Adds a contact if the contactId is not already present.
+     * Adds a new contact to the store.
      *
-     * <p>Uses {@link ConcurrentHashMap#putIfAbsent(Object, Object)} for atomic
-     * uniqueness check and insert, avoiding race conditions.
+     * <p>Uses database uniqueness constraint for atomic duplicate detection.
+     * If a contact with the same ID already exists, the database throws
+     * {@link DataIntegrityViolationException} which is caught and translated
+     * to a {@code false} return value (controller returns 409 Conflict).
      *
-     * @param contact the contact to add; must not be {@code null}
-     * @return {@code true} if the contact was added, {@code false} if the id already exists
-     * @throws IllegalArgumentException if {@code contact} is {@code null}
+     * @param contact the contact to add; must not be null
+     * @return true if the contact was added, false if a duplicate ID exists
+     * @throws IllegalArgumentException if contact is null
      */
     public boolean addContact(final Contact contact) {
         if (contact == null) {
             throw new IllegalArgumentException("contact must not be null");
         }
-        return DATABASE.putIfAbsent(contact.getContactId(), contact) == null;
+        final String contactId = contact.getContactId();
+        if (contactId == null) {
+            throw new IllegalArgumentException("contactId must not be null");
+        }
+        if (store.existsById(contactId)) {
+            return false;
+        }
+        try {
+            store.save(contact);
+            return true;
+        } catch (DataIntegrityViolationException e) {
+            // Duplicate ID - constraint violation from database
+            return false;
+        }
     }
 
     /**
@@ -126,18 +142,11 @@ public final class ContactService {
      */
     public boolean deleteContact(final String contactId) {
         Validation.validateNotBlank(contactId, "contactId");
-        return DATABASE.remove(contactId.trim()) != null;
+        return store.deleteById(contactId.trim());
     }
 
     /**
      * Updates an existing contact's mutable fields by id.
-     *
-     * <p>Implementation notes:
-     * <ul>
-     *   <li>The contactId is validated and trimmed before lookup</li>
-     *   <li>Uses {@link ConcurrentHashMap#computeIfPresent} for thread-safe atomic lookup and update</li>
-     *   <li>If any value is invalid, {@link Contact#update} throws before the contact is changed</li>
-     * </ul>
      *
      * @param contactId the id of the contact to update
      * @param firstName new first name
@@ -156,11 +165,14 @@ public final class ContactService {
         Validation.validateNotBlank(contactId, "contactId");
         final String normalizedId = contactId.trim();
 
-        // computeIfPresent is atomic: lookup + update happen as one operation
-        return DATABASE.computeIfPresent(normalizedId, (key, contact) -> {
-            contact.update(firstName, lastName, phone, address);
-            return contact;
-        }) != null;
+        final Optional<Contact> contact = store.findById(normalizedId);
+        if (contact.isEmpty()) {
+            return false;
+        }
+        final Contact existing = contact.get();
+        existing.update(firstName, lastName, phone, address);
+        store.save(existing);
+        return true;
     }
 
     /**
@@ -172,11 +184,12 @@ public final class ContactService {
      *
      * @return unmodifiable map of contact defensive copies
      */
+    @Transactional(readOnly = true)
     public Map<String, Contact> getDatabase() {
-        return DATABASE.entrySet().stream()
+        return store.findAll().stream()
                 .collect(Collectors.toUnmodifiableMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue().copy()));
+                        Contact::getContactId,
+                        Contact::copy));
     }
 
     /**
@@ -187,8 +200,9 @@ public final class ContactService {
      *
      * @return list of contact defensive copies
      */
+    @Transactional(readOnly = true)
     public List<Contact> getAllContacts() {
-        return DATABASE.values().stream()
+        return store.findAll().stream()
                 .map(Contact::copy)
                 .toList();
     }
@@ -203,19 +217,13 @@ public final class ContactService {
      * @return Optional containing a defensive copy of the contact, or empty if not found
      * @throws IllegalArgumentException if contactId is null or blank
      */
+    @Transactional(readOnly = true)
     public Optional<Contact> getContactById(final String contactId) {
         Validation.validateNotBlank(contactId, "contactId");
-        final Contact contact = DATABASE.get(contactId.trim());
-        return contact == null ? Optional.empty() : Optional.of(contact.copy());
+        return store.findById(contactId.trim()).map(Contact::copy);
     }
 
-    /**
-     * Removes every contact from the in-memory store.
-     *
-     * <p>Package-private to limit usage to test code within the same package.
-     * This prevents accidental calls from production code outside the package.
-     */
     void clearAllContacts() {
-        DATABASE.clear();
+        store.deleteAll();
     }
 }

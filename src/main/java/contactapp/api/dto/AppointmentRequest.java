@@ -17,6 +17,10 @@ import static contactapp.domain.Validation.MAX_ID_LENGTH;
  * validation via {@link contactapp.domain.Validation} acts as a backup layer
  * when the Appointment constructor is called.
  *
+ * <p><strong>Note:</strong> Bean Validation happens before domain trimming. The API
+ * layer therefore rejects whitespace-only values, and any accepted inputs are trimmed
+ * and re-validated inside the domain constructor.
+ *
  * <h2>Field Constraints</h2>
  * <ul>
  *   <li>id: required, 1-10 characters</li>
@@ -33,7 +37,7 @@ import static contactapp.domain.Validation.MAX_ID_LENGTH;
  * @param description     appointment description
  */
 public record AppointmentRequest(
-        @Schema(pattern = ".*\\S.*", description = "Appointment ID (must contain non-whitespace)")
+        @Schema(description = "Appointment ID")
         @NotBlank(message = "id must not be null or blank")
         @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
         String id,
@@ -43,7 +47,7 @@ public record AppointmentRequest(
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
         Date appointmentDate,
 
-        @Schema(pattern = ".*\\S.*", description = "Appointment description (must contain non-whitespace)")
+        @Schema(description = "Appointment description")
         @NotBlank(message = "description must not be null or blank")
         @Size(min = 1, max = MAX_DESCRIPTION_LENGTH, message = "description length must be between {min} and {max}")
         String description

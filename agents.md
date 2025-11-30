@@ -27,9 +27,10 @@ Quick links and context for automation/assistant workflows implementing this pla
 - JacksonConfig disables type coercion for strict OpenAPI schema compliance (ADR-0023)
 - OpenAPI/Swagger UI at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi)
 - Health/info actuator endpoints available; other actuator endpoints locked down
-- Latest CI run: **310 tests passing** (unit + slice + Testcontainers), **100% mutation score**, **100% line coverage**, SpotBugs clean
+- Latest CI run: **345 tests passing** (unit + slice + Testcontainers), **100% mutation score**, **99% line coverage on mutated classes**, SpotBugs clean
 - All Schemathesis API fuzzing phases pass (Coverage, Fuzzing, Stateful: 30,668 test cases, 0 failures)
 - Persistence implemented via Spring Data JPA repositories + Flyway migrations (Postgres dev/prod, H2/Testcontainers tests)
+- Mapper and JPA entity tests cover null guards plus the protected constructors so Hibernate proxies and legacy in-memory stores stay mutation-proof.
 - Domain validation in `Validation.java` is the **source of truth** for all field rules
 - Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) for better encapsulation
 
@@ -62,6 +63,7 @@ Quick links and context for automation/assistant workflows implementing this pla
 | Frontend | React + Vite + TypeScript, TanStack Query | ADR-0017 |
 | Auth | JWT, Spring Security, @PreAuthorize | ADR-0018 |
 | Secrets | Env vars (dev), Vault/secret manager (prod) | ADR-0018 |
+| API response coercion | Disable Jackson type coercion for strict OpenAPI compliance | ADR-0023 |
 | Packaging | Docker, GHCR | ADR-0019 |
 
 ## Phase-by-Phase Milestones
@@ -72,7 +74,7 @@ See `docs/REQUIREMENTS.md` for the full checklist. Definition of done for each p
 - **Phase 1 ✅ (complete)**: Spring Boot starts, health/info endpoints work, services are @Service beans, existing tests pass
 - **Phase 2 ✅ (complete)**: CRUD endpoints for all 3 entities, OpenAPI accessible, 71 controller tests, Bean Validation on DTOs
 - **Phase 2.5 ✅ (complete)**: Schemathesis runs in CI against spec, workflow hardened (pyyaml, jq, JAR validation)
-- **Phase 3**: Data persists in Postgres, Flyway migrations work
+- **Phase 3 ✅ (complete)**: Data persists in Postgres, Flyway migrations work
 - **Phase 4**: React UI can CRUD all entities
 - **Phase 5**: JWT auth protects endpoints, security headers applied
 - **Phase 5.5**: ZAP runs in CI, auth tests assert 401/403

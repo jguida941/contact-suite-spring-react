@@ -15,8 +15,13 @@ import org.springframework.boot.test.context.SpringBootTest;
  * </ul>
  *
  * <p>If this test fails, the application will not start in production.
+ *
+ * <p>The {@link SpringBootTest#webEnvironment()} is set to {@code MOCK} so the
+ * embedded Tomcat server does not attempt to bind to a privileged port inside
+ * constrained CI environments. We only need to know that the beans wire up; the
+ * full HTTP stack is exercised by the controller tests.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 class ApplicationTest {
 
     /**
@@ -42,6 +47,7 @@ class ApplicationTest {
      */
     @Test
     void mainMethodCoverage() {
-        Application.main(new String[]{});
+        // Disable the web stack so constrained CI agents do not need to bind any sockets.
+        Application.main(new String[]{"--spring.main.web-application-type=none"});
     }
 }

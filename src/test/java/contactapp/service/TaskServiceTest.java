@@ -3,43 +3,45 @@ package contactapp.service;
 import contactapp.domain.Task;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Field;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests {@link TaskService} behavior mirrors the requirements.
+ * Tests {@link TaskService} behavior against the Spring context (H2 + Flyway).
  *
- * <p>Covers:
- * <ul>
- *   <li>Singleton access</li>
- *   <li>Add/delete/update behaviors (including duplicate/missing/blank ID branches)</li>
- *   <li>ID trimming, null guards, and clear-all reset hook</li>
- * </ul>
- *
- * <p>Tests are in the same package as TaskService to access package-private methods.
+ * <p>Remaining in the same package allows direct access to {@link TaskService#clearAllTasks()}.
  */
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 public class TaskServiceTest {
+
+    @Autowired
+    private TaskService service;
 
     /**
      * Clears singleton storage so each test starts with an empty map.
      */
     @BeforeEach
     void reset() {
-        TaskService.getInstance().clearAllTasks();
+        service.clearAllTasks();
     }
 
-    /**
-     * Ensures {@link TaskService#getInstance()} returns the same singleton every time.
-     */
     @Test
-    void testSingletonInstance() {
-        TaskService first = TaskService.getInstance();
-        TaskService second = TaskService.getInstance();
+    void testSingletonSharesStateWithSpringBean() {
+        TaskService singleton = TaskService.getInstance();
+        singleton.clearAllTasks();
 
-        assertThat(first).isSameAs(second);
+        Task task = new Task("legacy10", "Legacy add", "added through getInstance");
+        boolean addedViaSingleton = singleton.addTask(task);
+
+        assertThat(addedViaSingleton).isTrue();
+        assertThat(service.getTaskById("legacy10")).isPresent();
     }
 
     /**
@@ -47,7 +49,7 @@ public class TaskServiceTest {
      */
     @Test
     void testAddTask() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task task = new Task("100", "Write docs", "Document Task service");
 
         boolean added = service.addTask(task);
@@ -64,7 +66,7 @@ public class TaskServiceTest {
      */
     @Test
     void testAddDuplicateTaskIdFails() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task original = new Task("100", "Write docs", "Document Task service");
         Task duplicate = new Task("100", "Other", "Another desc");
 
@@ -81,7 +83,7 @@ public class TaskServiceTest {
      */
     @Test
     void testAddTaskNullThrows() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
 
         assertThatThrownBy(() -> service.addTask(null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -93,7 +95,7 @@ public class TaskServiceTest {
      */
     @Test
     void testDeleteTask() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task task = new Task("100", "Write docs", "Document Task service");
         service.addTask(task);
 
@@ -108,7 +110,7 @@ public class TaskServiceTest {
      */
     @Test
     void testDeleteTaskBlankIdThrows() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
 
         assertThatThrownBy(() -> service.deleteTask(" "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -120,7 +122,7 @@ public class TaskServiceTest {
      */
     @Test
     void testDeleteMissingTaskReturnsFalse() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
 
         assertThat(service.deleteTask("missing")).isFalse();
     }
@@ -130,7 +132,7 @@ public class TaskServiceTest {
      */
     @Test
     void testClearAllTasksRemovesEntries() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         service.addTask(new Task("100", "Write docs", "Document Task service"));
         service.addTask(new Task("101", "Review plan", "Double-check requirements"));
 
@@ -144,7 +146,7 @@ public class TaskServiceTest {
      */
     @Test
     void testUpdateTask() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task task = new Task("100", "Write docs", "Document Task service");
         service.addTask(task);
 
@@ -161,7 +163,7 @@ public class TaskServiceTest {
      */
     @Test
     void testUpdateTaskTrimsId() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task task = new Task("200", "Write docs", "Document Task service");
         service.addTask(task);
 
@@ -178,7 +180,7 @@ public class TaskServiceTest {
      */
     @Test
     void testUpdateTaskBlankIdThrows() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
 
         assertThatThrownBy(() -> service.updateTask(" ", "Name", "Desc"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -190,7 +192,7 @@ public class TaskServiceTest {
      */
     @Test
     void testUpdateMissingTaskReturnsFalse() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
 
         assertThat(service.updateTask("missing", "Name", "Desc")).isFalse();
     }
@@ -200,7 +202,7 @@ public class TaskServiceTest {
      */
     @Test
     void testUpdateTaskInvalidValuesLeaveStateUnchanged() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task task = new Task("300", "Write docs", "Original description");
         service.addTask(task);
 
@@ -218,7 +220,7 @@ public class TaskServiceTest {
      */
     @Test
     void testGetDatabaseReturnsDefensiveCopies() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task task = new Task("400", "Original Name", "Original Description");
         service.addTask(task);
 
@@ -233,29 +235,6 @@ public class TaskServiceTest {
         assertThat(freshSnapshot.getDescription()).isEqualTo("Original Description");
     }
 
-    /**
-     * Covers the cold-start branch in getInstance() where instance is null.
-     *
-     * <p>Uses reflection to reset the static instance field, then verifies
-     * getInstance() creates a new instance. This ensures full branch coverage
-     * of the lazy initialization pattern.
-     */
-    @Test
-    void testGetInstanceColdStart() throws Exception {
-        // Reset static instance to null via reflection
-        Field instanceField = TaskService.class.getDeclaredField("instance");
-        instanceField.setAccessible(true);
-        instanceField.set(null, null);
-
-        // Now getInstance() should create a new instance
-        TaskService service = TaskService.getInstance();
-        assertThat(service).isNotNull();
-
-        // Verify the instance was properly registered
-        TaskService second = TaskService.getInstance();
-        assertThat(second).isSameAs(service);
-    }
-
     // ==================== getTaskById Tests ====================
 
     /**
@@ -263,7 +242,7 @@ public class TaskServiceTest {
      */
     @Test
     void testGetTaskByIdReturnsTask() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task task = new Task("500", "Test Task", "Test Description");
         service.addTask(task);
 
@@ -278,7 +257,7 @@ public class TaskServiceTest {
      */
     @Test
     void testGetTaskByIdReturnsEmptyWhenNotFound() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
 
         var result = service.getTaskById("nonexistent");
 
@@ -290,7 +269,7 @@ public class TaskServiceTest {
      */
     @Test
     void testGetTaskByIdBlankIdThrows() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
 
         assertThatThrownBy(() -> service.getTaskById(" "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -302,7 +281,7 @@ public class TaskServiceTest {
      */
     @Test
     void testGetTaskByIdTrimsId() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         Task task = new Task("600", "Trimmed Task", "Test Description");
         service.addTask(task);
 
@@ -319,7 +298,7 @@ public class TaskServiceTest {
      */
     @Test
     void testGetAllTasksReturnsEmptyList() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
 
         var result = service.getAllTasks();
 
@@ -331,7 +310,7 @@ public class TaskServiceTest {
      */
     @Test
     void testGetAllTasksReturnsAllTasks() {
-        TaskService service = TaskService.getInstance();
+        TaskService service = this.service;
         service.addTask(new Task("701", "First Task", "First Description"));
         service.addTask(new Task("702", "Second Task", "Second Description"));
 

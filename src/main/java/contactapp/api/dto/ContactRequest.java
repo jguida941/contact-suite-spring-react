@@ -15,6 +15,11 @@ import static contactapp.domain.Validation.MAX_NAME_LENGTH;
  * validation via {@link contactapp.domain.Validation} acts as a backup layer
  * when the Contact constructor is called.
  *
+ * <p><strong>Note:</strong> Bean Validation runs on the raw request payload. Inputs
+ * that contain only whitespace are rejected before the domain layer sees them.
+ * After API validation succeeds the domain constructors trim and re-validate the
+ * values so persisted state stays normalized.
+ *
  * <h2>Field Constraints</h2>
  * <ul>
  *   <li>id: required, 1-10 characters</li>
@@ -31,17 +36,17 @@ import static contactapp.domain.Validation.MAX_NAME_LENGTH;
  * @param address   contact's address
  */
 public record ContactRequest(
-        @Schema(pattern = ".*\\S.*", description = "Contact ID (must contain non-whitespace)")
+        @Schema(description = "Contact ID")
         @NotBlank(message = "id must not be null or blank")
         @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
         String id,
 
-        @Schema(pattern = ".*\\S.*", description = "First name (must contain non-whitespace)")
+        @Schema(description = "First name")
         @NotBlank(message = "firstName must not be null or blank")
         @Size(min = 1, max = MAX_NAME_LENGTH, message = "firstName length must be between {min} and {max}")
         String firstName,
 
-        @Schema(pattern = ".*\\S.*", description = "Last name (must contain non-whitespace)")
+        @Schema(description = "Last name")
         @NotBlank(message = "lastName must not be null or blank")
         @Size(min = 1, max = MAX_NAME_LENGTH, message = "lastName length must be between {min} and {max}")
         String lastName,
@@ -50,7 +55,7 @@ public record ContactRequest(
         @Pattern(regexp = "\\d{10}", message = "phone must be exactly 10 digits")
         String phone,
 
-        @Schema(pattern = ".*\\S.*", description = "Address (must contain non-whitespace)")
+        @Schema(description = "Address")
         @NotBlank(message = "address must not be null or blank")
         @Size(min = 1, max = MAX_ADDRESS_LENGTH, message = "address length must be between {min} and {max}")
         String address

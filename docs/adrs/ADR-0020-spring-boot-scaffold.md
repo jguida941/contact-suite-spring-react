@@ -21,7 +21,7 @@ Reorganize into layered architecture:
 - `contactapp.domain` - Domain entities (`Contact`, `Task`, `Appointment`, `Validation`)
 - `contactapp.service` - Business logic (`ContactService`, `TaskService`, `AppointmentService`)
 - `contactapp.api` - REST controllers and DTOs (Phase 2 complete)
-- `contactapp.persistence` - Repository interfaces (Phase 3, currently empty)
+- `contactapp.persistence` - Persistence layer (entities, mappers, repositories, store abstractions introduced in Phase 3)
 
 ### Service Bean Wiring
 - Add `@Service` annotation to existing services for Spring DI

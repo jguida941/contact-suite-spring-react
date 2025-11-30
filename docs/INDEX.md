@@ -15,12 +15,13 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | Path | Purpose |
 |------|---------|
 | [`../src/`](../src/) | Java source tree. `src/main/java/contactapp` contains application code; `src/test/java/contactapp` contains tests. |
+| [`../ui/contact-app/`](../ui/contact-app/) | React UI (Vite + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui). |
 | [`ci-cd/`](ci-cd/) | CI/CD design notes (pipeline plan plus `badges.md` for the badge helper). |
 | [`requirements/contact-requirements/`](requirements/contact-requirements/) | Contact assignment requirements (milestone spec). |
 | [`requirements/appointment-requirements/`](requirements/appointment-requirements/) | Appointment assignment requirements (object/service specs + checklist). |
 | [`requirements/task-requirements/`](requirements/task-requirements/) | Task assignment requirements (task object/service specs + checklist). |
 | [`architecture/`](architecture/) | Feature design briefs (e.g., Task entity/service plan with Definition of Done). |
-| [`adrs/`](adrs/) | Architecture Decision Records index plus individual ADR files. |
+| [`adrs/`](adrs/) | Architecture Decision Records index plus individual ADR files (ADR-0001..0028). |
 | [`design-notes/`](design-notes/) | Personal design note hub with supporting explanations under `design-notes/notes/`. |
 | [`logs/`](logs/) | Changelog and backlog. |
 
@@ -58,9 +59,10 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/service/ContactServiceTest.java`](../src/test/java/contactapp/service/ContactServiceTest.java) | Spring Boot test exercising the JPA-backed ContactService (H2 + Flyway) and proving legacy `getInstance()` shares state with DI callers. |
 | [`../src/test/java/contactapp/service/TaskServiceTest.java`](../src/test/java/contactapp/service/TaskServiceTest.java) | Spring Boot test for TaskService (H2 + Flyway) including singleton-vs-DI behavior coverage. |
 | [`../src/test/java/contactapp/service/AppointmentServiceTest.java`](../src/test/java/contactapp/service/AppointmentServiceTest.java) | Spring Boot test for AppointmentService validating shared state with legacy singleton access. |
-| [`../src/test/java/contactapp/service/ContactServiceLegacyTest.java`](../src/test/java/contactapp/service/ContactServiceLegacyTest.java) | Legacy singleton tests ensuring `getInstance()` still works outside Spring. |
-| [`../src/test/java/contactapp/service/TaskServiceLegacyTest.java`](../src/test/java/contactapp/service/TaskServiceLegacyTest.java) | Legacy TaskService singleton tests. |
-| [`../src/test/java/contactapp/service/AppointmentServiceLegacyTest.java`](../src/test/java/contactapp/service/AppointmentServiceLegacyTest.java) | Legacy AppointmentService singleton tests. |
+| [`../src/test/java/contactapp/service/ContactServiceLegacyTest.java`](../src/test/java/contactapp/service/ContactServiceLegacyTest.java) | Legacy singleton tests ensuring `getInstance()` still works outside Spring and copies data into the first Spring-managed bean. |
+| [`../src/test/java/contactapp/service/TaskServiceLegacyTest.java`](../src/test/java/contactapp/service/TaskServiceLegacyTest.java) | Legacy TaskService singleton tests covering data migration into Spring-managed stores. |
+| [`../src/test/java/contactapp/service/AppointmentServiceLegacyTest.java`](../src/test/java/contactapp/service/AppointmentServiceLegacyTest.java) | Legacy AppointmentService singleton tests covering fallback migration. |
+| [`../src/test/java/contactapp/service/ServiceSingletonBridgeTest.java`](../src/test/java/contactapp/service/ServiceSingletonBridgeTest.java) | Regression tests using Mockito to ensure {@code getInstance()} defers to the Spring ApplicationContext when it is available. |
 | [`../src/test/java/contactapp/service/ContactServiceIT.java`](../src/test/java/contactapp/service/ContactServiceIT.java) | Testcontainers-backed integration test hitting real Postgres. |
 | [`../src/test/java/contactapp/service/TaskServiceIT.java`](../src/test/java/contactapp/service/TaskServiceIT.java) | TaskService integration tests with Testcontainers. |
 | [`../src/test/java/contactapp/service/AppointmentServiceIT.java`](../src/test/java/contactapp/service/AppointmentServiceIT.java) | AppointmentService integration tests with Testcontainers. |
@@ -72,8 +74,10 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/persistence/mapper`](../src/main/java/contactapp/persistence/mapper) | Mapper components converting between domain objects and entities. |
 | [`../src/main/java/contactapp/persistence/repository`](../src/main/java/contactapp/persistence/repository) | Spring Data repositories plus in-memory fallback implementations. |
 | [`../src/main/java/contactapp/persistence/store`](../src/main/java/contactapp/persistence/store) | `DomainDataStore` abstraction and JPA-backed store implementations. |
+| [`../src/test/java/contactapp/persistence/entity`](../src/test/java/contactapp/persistence/entity) | Entity tests ensuring protected constructors/setters support Hibernate proxies and PIT coverage. |
 | [`../src/test/java/contactapp/persistence/mapper`](../src/test/java/contactapp/persistence/mapper) | Mapper unit tests ensuring conversions re-use domain validation. |
 | [`../src/test/java/contactapp/persistence/repository`](../src/test/java/contactapp/persistence/repository) | `@DataJpaTest` slices for each repository (H2 + Flyway). |
+| [`../src/test/java/contactapp/persistence/store`](../src/test/java/contactapp/persistence/store) | Regression tests proving the in-memory fallback stores keep defensive copies and delete semantics. |
 
 ### API Layer (`contactapp.api`)
 | Path | Description |
@@ -104,7 +108,32 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/config/JacksonConfig.java`](../src/main/java/contactapp/config/JacksonConfig.java) | Disables Jackson type coercion for strict schema compliance (ADR-0023). |
 | [`../src/main/java/contactapp/config/JsonErrorReportValve.java`](../src/main/java/contactapp/config/JsonErrorReportValve.java) | Tomcat valve for JSON error responses at container level (ADR-0022). |
 | [`../src/main/java/contactapp/config/TomcatConfig.java`](../src/main/java/contactapp/config/TomcatConfig.java) | Registers JsonErrorReportValve with embedded Tomcat. |
+| [`../src/test/java/contactapp/config/JacksonConfigTest.java`](../src/test/java/contactapp/config/JacksonConfigTest.java) | Verifies the ObjectMapper bean rejects boolean/numeric coercion per ADR-0023. |
+| [`../src/test/java/contactapp/config/TomcatConfigTest.java`](../src/test/java/contactapp/config/TomcatConfigTest.java) | Ensures Tomcat customizer installs the JSON error valve and guards non-host parents. |
 | [`../src/test/java/contactapp/config/JsonErrorReportValveTest.java`](../src/test/java/contactapp/config/JsonErrorReportValveTest.java) | Unit tests for JsonErrorReportValve (17 tests). |
+
+### React UI Layer (`ui/contact-app`)
+| Path | Description |
+|------|-------------|
+| [`../ui/contact-app/src/App.tsx`](../ui/contact-app/src/App.tsx) | Root component with React Router and TanStack Query setup. |
+| [`../ui/contact-app/src/index.css`](../ui/contact-app/src/index.css) | Tailwind CSS v4 imports + theme CSS variables (5 themes). |
+| [`../ui/contact-app/src/components/layout/AppShell.tsx`](../ui/contact-app/src/components/layout/AppShell.tsx) | Main layout with sidebar, topbar, and content outlet. |
+| [`../ui/contact-app/src/components/layout/Sidebar.tsx`](../ui/contact-app/src/components/layout/Sidebar.tsx) | Navigation sidebar with collapsible behavior. |
+| [`../ui/contact-app/src/components/layout/TopBar.tsx`](../ui/contact-app/src/components/layout/TopBar.tsx) | Top bar with title, theme switcher, dark mode toggle. |
+| [`../ui/contact-app/src/components/ui/`](../ui/contact-app/src/components/ui/) | shadcn/ui components (Button, Card, Table, Sheet, etc.). |
+| [`../ui/contact-app/src/hooks/useTheme.ts`](../ui/contact-app/src/hooks/useTheme.ts) | Theme switching hook with localStorage persistence. |
+| [`../ui/contact-app/src/hooks/useMediaQuery.ts`](../ui/contact-app/src/hooks/useMediaQuery.ts) | Responsive breakpoint detection hook. |
+| [`../ui/contact-app/src/lib/api.ts`](../ui/contact-app/src/lib/api.ts) | Typed fetch wrapper for backend API calls. |
+| [`../ui/contact-app/src/lib/schemas.ts`](../ui/contact-app/src/lib/schemas.ts) | Zod schemas matching backend Validation.java constants. |
+| [`../ui/contact-app/src/lib/utils.ts`](../ui/contact-app/src/lib/utils.ts) | `cn()` utility for class name merging. |
+| [`../ui/contact-app/src/pages/OverviewPage.tsx`](../ui/contact-app/src/pages/OverviewPage.tsx) | Dashboard with summary cards for all entities. |
+| [`../ui/contact-app/src/pages/ContactsPage.tsx`](../ui/contact-app/src/pages/ContactsPage.tsx) | Contacts table with detail sheet. |
+| [`../ui/contact-app/src/pages/TasksPage.tsx`](../ui/contact-app/src/pages/TasksPage.tsx) | Tasks table with detail sheet. |
+| [`../ui/contact-app/src/pages/AppointmentsPage.tsx`](../ui/contact-app/src/pages/AppointmentsPage.tsx) | Appointments table with detail sheet. |
+| [`../ui/contact-app/vite.config.ts`](../ui/contact-app/vite.config.ts) | Vite config with Tailwind plugin and API proxy. |
+| [`../ui/contact-app/components.json`](../ui/contact-app/components.json) | shadcn/ui configuration file. |
+| [`../ui/contact-app/package.json`](../ui/contact-app/package.json) | npm dependencies (React 19, Tailwind v4, TanStack Query). |
+| [`../ui/contact-app/tsconfig.app.json`](../ui/contact-app/tsconfig.app.json) | TypeScript config with @/* path alias. |
 
 ### Build & Configuration
 | Path | Description |
@@ -117,7 +146,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../scripts/api_fuzzing.py`](../scripts/api_fuzzing.py) | API fuzzing helper for local Schemathesis runs (starts app, fuzzes, exports OpenAPI spec). |
 | [`architecture/2025-11-19-task-entity-and-service.md`](architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`architecture/2025-11-24-appointment-entity-and-service.md`](architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record. |
-| [`adrs/README.md`](adrs/README.md) | ADR index summarizing ADR-0001 through ADR-0024. |
+| [`adrs/README.md`](adrs/README.md) | ADR index (ADR-0001..0028 covering validation, persistence, API, UI). |
 | [`design-notes/README.md`](design-notes/README.md) | Landing page for informal design notes (individual topics in `design-notes/notes/`). |
 | [`logs/backlog.md`](logs/backlog.md) | Backlog for reporting and domain enhancements. |
 | [`logs/CHANGELOG.md`](logs/CHANGELOG.md) | Project changelog. |

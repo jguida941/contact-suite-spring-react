@@ -23,13 +23,16 @@ class LegacySingletonUsageTest {
     private static final Map<String, Set<String>> ALLOWED = Map.of(
             "ContactService.getInstance(", Set.of(
                     "src/test/java/contactapp/service/ContactServiceTest.java",
-                    "src/test/java/contactapp/service/ContactServiceLegacyTest.java"),
+                    "src/test/java/contactapp/service/ContactServiceLegacyTest.java",
+                    "src/test/java/contactapp/service/ServiceSingletonBridgeTest.java"),
             "TaskService.getInstance(", Set.of(
                     "src/test/java/contactapp/service/TaskServiceTest.java",
-                    "src/test/java/contactapp/service/TaskServiceLegacyTest.java"),
+                    "src/test/java/contactapp/service/TaskServiceLegacyTest.java",
+                    "src/test/java/contactapp/service/ServiceSingletonBridgeTest.java"),
             "AppointmentService.getInstance(", Set.of(
                     "src/test/java/contactapp/service/AppointmentServiceTest.java",
-                    "src/test/java/contactapp/service/AppointmentServiceLegacyTest.java"));
+                    "src/test/java/contactapp/service/AppointmentServiceLegacyTest.java",
+                    "src/test/java/contactapp/service/ServiceSingletonBridgeTest.java"));
 
     @Test
     void legacySingletonUsageRestrictedToApprovedFiles() throws IOException {
@@ -37,27 +40,29 @@ class LegacySingletonUsageTest {
 
         final String self = "src/test/java/contactapp/LegacySingletonUsageTest.java";
 
-        Files.walk(Path.of("src"))
-                .filter(Files::isRegularFile)
-                .filter(path -> path.toString().endsWith(".java"))
-                .forEach(path -> {
-                    final String normalizedPath = path.toString().replace('\\', '/');
-                    if (normalizedPath.equals(self)) {
-                        return;
-                    }
-                    final String content;
-                    try {
-                        content = Files.readString(path);
-                    } catch (final IOException ex) {
-                        throw new UncheckedIOException(ex);
-                    }
-                    ALLOWED.forEach((pattern, allowedPaths) -> {
-                        if (content.contains(pattern) && !allowedPaths.contains(normalizedPath)) {
-                            violations.computeIfAbsent(pattern, unused -> new ArrayList<>())
-                                    .add(normalizedPath);
+        try (var paths = Files.walk(Path.of("src"))) {
+            paths
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.toString().endsWith(".java"))
+                    .forEach(path -> {
+                        final String normalizedPath = path.toString().replace('\\', '/');
+                        if (normalizedPath.equals(self)) {
+                            return;
                         }
+                        final String content;
+                        try {
+                            content = Files.readString(path);
+                        } catch (final IOException ex) {
+                            throw new UncheckedIOException(ex);
+                        }
+                        ALLOWED.forEach((pattern, allowedPaths) -> {
+                            if (content.contains(pattern) && !allowedPaths.contains(normalizedPath)) {
+                                violations.computeIfAbsent(pattern, unused -> new ArrayList<>())
+                                        .add(normalizedPath);
+                            }
+                        });
                     });
-                });
+        }
 
         assertThat(violations)
                 .withFailMessage("Legacy getInstance() references outside approved files: %s", violations)

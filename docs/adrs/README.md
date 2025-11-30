@@ -24,3 +24,9 @@
 | [ADR-0020](ADR-0020-spring-boot-scaffold.md)                        | Spring Boot Scaffold                            | Accepted |
 | [ADR-0021](ADR-0021-rest-api-implementation.md)                     | REST API Implementation                         | Accepted |
 | [ADR-0022](ADR-0022-custom-error-controller.md)                     | Custom Error Controller for JSON Errors         | Accepted |
+| [ADR-0023](ADR-0023-api-fuzzing-schema-compliance.md)              | API Fuzzing Findings & Schema Compliance        | Accepted |
+| [ADR-0024](ADR-0024-persistence-implementation.md)                 | Persistence Implementation Strategy             | Accepted |
+| [ADR-0025](ADR-0025-ui-component-library.md)                       | UI Component Library Selection                  | Accepted |
+| [ADR-0026](ADR-0026-theme-system-and-design-tokens.md)             | Theme System and Design Tokens                  | Accepted |
+| [ADR-0027](ADR-0027-application-shell-layout.md)                   | Application Shell Layout Pattern                | Accepted |
+| [ADR-0028](ADR-0028-frontend-backend-build-integration.md)         | Frontend-Backend Build Integration              | Accepted |

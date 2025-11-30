@@ -36,11 +36,12 @@
 - DTOs with Bean Validation (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) mapped to domain objects.
 - Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 404, 409).
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors.
-- Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and H2/Testcontainers (tests). Application profiles (`dev`, `test`, `integration`, `prod`) are handled via multi-document `application.yml`.
+- Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and H2/Testcontainers (tests). The default (no profile) run uses in-memory H2 in PostgreSQL compatibility mode so `mvn spring-boot:run` works out of the box; `dev`/`integration`/`prod` profiles point at Postgres.
 - Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres.
+- Mapper/unit suites now include null-guard coverage plus JPA entity accessor tests to keep persistence mutation-safe even when Hibernate instantiates proxies through the protected constructors.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: 310 tests passing (unit + slice + Testcontainers integration), 100% mutation score, 100% line coverage, SpotBugs clean.
+- Latest CI: 345 tests passing (unit + slice + Testcontainers integration), 100% mutation score, 99% line coverage on mutated classes, SpotBugs clean.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
 - Exception handler tests (5 tests): GlobalExceptionHandlerTest validates direct handler coverage (including ConstraintViolationException for path variable validation).
 - Error controller tests (34 tests): CustomErrorControllerTest (17) + JsonErrorReportValveTest (17) validate container-level error handling.

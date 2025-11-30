@@ -24,6 +24,8 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 - [Architecture Overview](#architecture-overview)
 - [Validation & Error Handling](#validation--error-handling)
 - [Testing Strategy](#testing-strategy)
+- [REST API Layer](#rest-api-layer-phase-2)
+- [React UI Layer](#react-ui-layer-phase-4)
 - [Spring Boot Infrastructure](#applicationjava--spring-boot-infrastructure)
 - [Static Analysis & Quality Gates](#static-analysis--quality-gates)
 - [Backlog](#backlog)
@@ -34,13 +36,34 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 ## Getting Started
 1. Install Java 17 and Apache Maven (3.9+).
 2. Run `mvn verify` from the project root to compile everything, execute the JUnit suite, and run Checkstyle/SpotBugs/JaCoCo quality gates.
-3. Start the application with `mvn spring-boot:run`:
+3. **Development mode** (backend only): `mvn spring-boot:run` (base profile uses an in-memory H2 database in PostgreSQL compatibility mode so you can try the API without installing Postgres; use `--spring.profiles.active=dev` or `prod` to connect to a real Postgres instance)
    - Health/info actuator endpoints at `http://localhost:8080/actuator/health`
    - **Swagger UI** at `http://localhost:8080/swagger-ui.html`
    - **OpenAPI spec** at `http://localhost:8080/v3/api-docs`
    - REST APIs at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
-4. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-5. Planning note: Phases 0-3 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer) with **310 tests** (100% mutation score). The roadmap for UI, security, and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0024 capture the selected stack and implementation decisions.
+4. **Frontend development** (hot reload):
+   ```bash
+   cd ui/contact-app
+   npm install
+   npm run dev        # Starts Vite at http://localhost:5173
+   ```
+   The Vite dev server proxies `/api/v1` requests to `localhost:8080` (run Spring Boot in a separate terminal).
+
+   > **Development URLs** (when running both servers):
+   > | URL | Purpose |
+   > |-----|---------|
+   > | **http://localhost:5173** | React UI (use this for the web app) |
+   > | http://localhost:8080/api/v1/* | REST API (JSON responses only) |
+   > | http://localhost:8080/swagger-ui.html | API documentation |
+   > | http://localhost:8080/actuator/health | Health check endpoint |
+5. **Production build** (single JAR with UI):
+   ```bash
+   mvn package -DskipTests
+   java -jar target/cs320-contact-service-junit-1.0.0-SNAPSHOT.jar
+   ```
+   Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
+6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
+7. Planning note: Phases 0-4 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI) with **344 tests** covering both the JPA path and the legacy singleton fallbacks (PIT mutation coverage 100% with 99% line coverage on mutated classes). The roadmap for security and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0028 capture the selected stack and implementation decisions.
 
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
@@ -97,7 +120,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                       | Task assignment requirements and checklist (same format as Contact).                            |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach.                    |
 | [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record.                                               |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0023).                                         |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0028).                                         |
 | [`docs/ci-cd/`](docs/ci-cd/)                                                                                         | CI/CD design notes (pipeline plan + badge automation).                                          |
 | [`docs/design-notes/`](docs/design-notes/)                                                                           | Informal design notes hub; individual write-ups live under `docs/design-notes/notes/`.          |
 | [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)                                                                       | **Master document**: scope, architecture, phased plan, checklist, and code examples.            |
@@ -340,6 +363,12 @@ graph TD
 - `testGetContactByIdReturnsDefensiveCopy` verifies getContactById returns a defensive copy.
 - `testGetAllContactsReturnsEmptyList` verifies getAllContacts returns empty list when no contacts exist.
 - `testGetAllContactsReturnsAllContacts` verifies getAllContacts returns all contacts.
+
+### Persistence & Mapper Coverage
+- Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
+- New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
+- Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
+- Combined with the existing controller/service suites this brings the repo to **345 tests** with **100% mutation kills** and **99% line coverage on mutated classes**.
 
 <br>
 
@@ -599,6 +628,149 @@ void setUp() throws Exception {
 - `report_withThrowable_stillWritesJson` - Verifies throwable parameter doesn't affect JSON output.
 - `report_statusBelowThreshold_doesNotWriteBody` - Verifies 399 status (below threshold) is not processed.
 - `report_exactlyAtThreshold_writesBody` - Verifies 400 status (exactly at threshold) is processed.
+
+<br>
+
+## React UI Layer (Phase 4)
+
+### UI Snapshot
+- **React 19 + Vite + TypeScript** powers the frontend with fast HMR and type safety.
+- **Tailwind CSS v4** provides utility-first styling via the `@theme` directive for CSS-native design tokens.
+- **shadcn/ui** components (Button, Card, Table, Sheet, Dialog, etc.) offer accessible, copy-paste primitives built on Radix UI.
+- **TanStack Query** handles server state with automatic caching, refetching, and error handling.
+- **React Router v7** manages client-side navigation with a nested route structure.
+- **Zod schemas** mirror backend `Validation.java` constants for consistent client-side validation.
+
+### Stack Architecture
+```mermaid
+flowchart TD
+    A[React 19] --> B[Vite Dev Server]
+    B --> C{Request Path}
+    C -->|/api/*| D[Proxy to Spring Boot :8080]
+    C -->|Static| E[Serve from dist/]
+    F[TanStack Query] --> G[lib/api.ts]
+    G --> D
+    H[React Hook Form] --> I[Zod Schemas]
+    I --> J[lib/schemas.ts]
+    J --> K[Mirrors Validation.java]
+```
+
+### App Shell Layout
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ┌──────────┐ ┌─────────────────────────────────────────────────┐│
+│ │  Logo    │ │ TopBar: [Title]              [🔍] [🌙] [👤]    ││
+│ ├──────────┤ └─────────────────────────────────────────────────┘│
+│ │ Overview │ ┌──────────────────────────────────┬──────────────┐│
+│ │ Contacts │ │                                  │              ││
+│ │ Tasks    │ │   Content Area                   │   Sheet      ││
+│ │ Appts    │ │   (list/table/cards)             │   (details)  ││
+│ │          │ │                                  │              ││
+│ ├──────────┤ │                                  │              ││
+│ │ Settings │ │                                  │              ││
+│ │ Help     │ │                                  │              ││
+│ └──────────┘ └──────────────────────────────────┴──────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+```
+- **Sidebar** (desktop/tablet): Navigation with icons and labels, collapsible on tablet.
+- **TopBar**: Page title, search trigger (Ctrl+K), dark mode toggle, theme switcher, user avatar.
+- **Content**: Route-specific views (Overview dashboard, entity tables).
+- **Sheet**: Right-hand drawer for viewing/editing entity details without losing list context.
+
+### Responsive Breakpoints
+| Breakpoint | Sidebar | Navigation | Drawer |
+|------------|---------|------------|--------|
+| Desktop (≥1024px) | Full width with labels | Left sidebar | Right sheet |
+| Tablet (768-1023px) | Icons only | Left sidebar (narrow) | Right sheet |
+| Mobile (<768px) | Hidden | Bottom nav (future) | Full-screen sheet |
+
+### Theme System
+- **5 professional themes**: Slate (default), Ocean (fintech), Forest (productivity), Violet (startup), Zinc (developer tools).
+- **Light/dark variants** controlled via `.dark` class on `<html>`.
+- **CSS variable architecture** with Tailwind v4 `@theme` directive for semantic tokens.
+- **WCAG 2.1 AA compliant** contrast ratios verified for all theme combinations.
+
+### Theme Switching Flow
+```mermaid
+flowchart LR
+    A[User selects theme] --> B[useTheme hook]
+    B --> C[Remove old theme-* classes]
+    C --> D[Add new theme-* class]
+    B --> E[Toggle dark class]
+    D --> F[CSS variables update]
+    E --> F
+    F --> G[UI re-renders with new colors]
+```
+
+### File Structure
+```
+ui/contact-app/
+├── src/
+│   ├── components/
+│   │   ├── layout/           # AppShell, Sidebar, TopBar
+│   │   └── ui/               # shadcn/ui components
+│   ├── hooks/                # useTheme, useMediaQuery
+│   ├── lib/                  # api.ts, schemas.ts, utils.ts
+│   ├── pages/                # OverviewPage, ContactsPage, etc.
+│   ├── App.tsx               # Router + QueryClient setup
+│   ├── index.css             # Tailwind + theme CSS variables
+│   └── main.tsx              # React DOM entry
+├── components.json           # shadcn/ui configuration
+├── package.json              # Dependencies (React 19, Tailwind v4)
+├── tsconfig.app.json         # TypeScript config with @/* alias
+└── vite.config.ts            # Vite + Tailwind plugin + API proxy
+```
+
+### API Integration
+```typescript
+// lib/api.ts - Typed fetch wrapper with error normalization
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw { message: body.message || response.statusText, status: response.status };
+  }
+  return response.status === 204 ? undefined as T : response.json();
+}
+
+export const contactsApi = {
+  getAll: () => fetch('/api/contacts').then(handleResponse<Contact[]>),
+  getById: (id: string) => fetch(`/api/contacts/${encodeURIComponent(id)}`).then(handleResponse<Contact>),
+  // ... create, update, delete
+};
+```
+
+### Validation Alignment
+```typescript
+// lib/schemas.ts - Zod schemas matching Validation.java constants
+export const ValidationLimits = {
+  MAX_ID_LENGTH: 10,        // Validation.MAX_ID_LENGTH
+  MAX_NAME_LENGTH: 10,      // Validation.MAX_NAME_LENGTH
+  MAX_ADDRESS_LENGTH: 30,   // Validation.MAX_ADDRESS_LENGTH
+  MAX_TASK_NAME_LENGTH: 20, // Validation.MAX_TASK_NAME_LENGTH
+  MAX_DESCRIPTION_LENGTH: 50, // Validation.MAX_DESCRIPTION_LENGTH
+  PHONE_LENGTH: 10,         // Validation.PHONE_LENGTH
+} as const;
+
+export const contactSchema = z.object({
+  id: z.string().min(1).max(ValidationLimits.MAX_ID_LENGTH),
+  firstName: z.string().min(1).max(ValidationLimits.MAX_NAME_LENGTH),
+  // ...
+});
+```
+
+### Build Integration
+- **Development**: `npm run dev` starts Vite with API proxy to `localhost:8080`.
+- **Production**: Maven's `frontend-maven-plugin` runs `npm ci && npm run build` during `prepare-package` phase.
+- **Single JAR**: Built UI assets copy to `target/classes/static/` so Spring Boot serves them at `/`.
+- **Fast feedback**: `mvn test` runs backend tests only; `mvn package` includes full UI build.
+
+### Related ADRs
+| ADR | Title | Summary |
+|-----|-------|---------|
+| [ADR-0025](docs/adrs/ADR-0025-ui-component-library.md) | UI Component Library | shadcn/ui + Tailwind v4 selection rationale |
+| [ADR-0026](docs/adrs/ADR-0026-theme-system-and-design-tokens.md) | Theme System | CSS variable architecture, 5 themes, WCAG compliance |
+| [ADR-0027](docs/adrs/ADR-0027-application-shell-layout.md) | App Shell Layout | Sidebar + TopBar + Sheet pattern, responsive breakpoints |
+| [ADR-0028](docs/adrs/ADR-0028-frontend-backend-build-integration.md) | Build Integration | Maven plugin config, phase binding, single JAR output |
 
 <br>
 

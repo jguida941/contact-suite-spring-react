@@ -14,6 +14,10 @@ import static contactapp.domain.Validation.MAX_TASK_NAME_LENGTH;
  * validation via {@link contactapp.domain.Validation} acts as a backup layer
  * when the Task constructor is called.
  *
+ * <p><strong>Note:</strong> Bean Validation runs before the domain layer trims
+ * values. Inputs consisting solely of whitespace are rejected by the API layer;
+ * once validation passes, the domain constructors trim and re-validate.
+ *
  * <h2>Field Constraints</h2>
  * <ul>
  *   <li>id: required, 1-10 characters</li>
@@ -26,17 +30,17 @@ import static contactapp.domain.Validation.MAX_TASK_NAME_LENGTH;
  * @param description task description
  */
 public record TaskRequest(
-        @Schema(pattern = ".*\\S.*", description = "Task ID (must contain non-whitespace)")
+        @Schema(description = "Task ID")
         @NotBlank(message = "id must not be null or blank")
         @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
         String id,
 
-        @Schema(pattern = ".*\\S.*", description = "Task name (must contain non-whitespace)")
+        @Schema(description = "Task name")
         @NotBlank(message = "name must not be null or blank")
         @Size(min = 1, max = MAX_TASK_NAME_LENGTH, message = "name length must be between {min} and {max}")
         String name,
 
-        @Schema(pattern = ".*\\S.*", description = "Task description (must contain non-whitespace)")
+        @Schema(description = "Task description")
         @NotBlank(message = "description must not be null or blank")
         @Size(min = 1, max = MAX_DESCRIPTION_LENGTH, message = "description length must be between {min} and {max}")
         String description

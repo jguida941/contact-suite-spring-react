@@ -137,12 +137,19 @@ public class TaskController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Task found",
                     content = @Content(schema = @Schema(implementation = TaskResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Task not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/{id}")
     public TaskResponse getById(
-            @Parameter(description = "Task ID", schema = @Schema(minLength = 1, maxLength = MAX_ID_LENGTH, pattern = ".*\\S.*"))
+            @Parameter(
+                    description = "Task ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
             @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id) {
         return taskService.getTaskById(id)
                 .map(TaskResponse::from)
@@ -169,7 +176,12 @@ public class TaskController {
     })
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public TaskResponse update(
-            @Parameter(description = "Task ID", schema = @Schema(minLength = 1, maxLength = MAX_ID_LENGTH, pattern = ".*\\S.*"))
+            @Parameter(
+                    description = "Task ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
             @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id,
             @Valid @RequestBody final TaskRequest request) {
 
@@ -192,13 +204,20 @@ public class TaskController {
     @Operation(summary = "Delete a task")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Task deleted"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Task not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(
-            @Parameter(description = "Task ID", schema = @Schema(minLength = 1, maxLength = MAX_ID_LENGTH, pattern = ".*\\S.*"))
+            @Parameter(
+                    description = "Task ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
             @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id) {
         if (!taskService.deleteTask(id)) {
             throw new ResourceNotFoundException("Task not found: " + id);

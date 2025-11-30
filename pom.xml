@@ -74,6 +74,38 @@
         </dependency>
 
         <!--
+            Spring Data JPA: Provides Hibernate + repository support so we can
+            persist domain aggregates in Postgres while keeping services simple.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!--
+            Flyway Core + Postgres extension: Versioned SQL migrations stand up
+            schema consistently across dev/test/prod environments (Phase 3).
+        -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!--
+            PostgreSQL JDBC driver used by dev/prod profiles.
+            Scope runtime so it isn't required for compilation.
+        -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
             SpringDoc OpenAPI: Auto-generates OpenAPI 3.0 specification from
             Spring MVC controllers. Provides Swagger UI at /swagger-ui.html
             and OpenAPI JSON at /v3/api-docs. Required for Phase 2 API docs.
@@ -93,6 +125,16 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.20.0</version>
+        </dependency>
+
+        <!--
+            Force commons-compress to 1.26.2 to remediate CVE-2024-25710/CVE-2024-26308
+            flagged by OWASP Dependency-Check (transitive dependency via SpringDoc).
+        -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.26.2</version>
         </dependency>
 
         <!--
@@ -116,6 +158,30 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- H2 in-memory database used by fast test slices/profile -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Testcontainers + Spring Boot integration for Postgres-backed tests -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -280,6 +346,77 @@
                     </features>
                     <skip>${pit.skip}</skip>
                 </configuration>
+            </plugin>
+
+            <!--
+                Frontend Maven Plugin: Builds the React UI during prepare-package phase.
+                This keeps 'mvn test' fast (no UI build) while 'mvn package' produces
+                a single JAR with both backend and static frontend assets.
+                See ADR-0028 for design rationale.
+            -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.1</version>
+                <configuration>
+                    <workingDirectory>ui/contact-app</workingDirectory>
+                    <nodeVersion>v20.10.0</nodeVersion>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-npm</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>npm-install</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>ci</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-build</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                Maven Resources Plugin: Copies built UI assets to static/ so Spring Boot
+                serves them at the root path. Runs after npm build in prepare-package.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-frontend</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>ui/contact-app/dist</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!--

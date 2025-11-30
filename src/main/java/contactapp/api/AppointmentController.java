@@ -141,12 +141,19 @@ public class AppointmentController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Appointment found",
                     content = @Content(schema = @Schema(implementation = AppointmentResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Appointment not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/{id}")
     public AppointmentResponse getById(
-            @Parameter(description = "Appointment ID", schema = @Schema(minLength = 1, maxLength = MAX_ID_LENGTH, pattern = ".*\\S.*"))
+            @Parameter(
+                    description = "Appointment ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
             @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id) {
         return appointmentService.getAppointmentById(id)
                 .map(AppointmentResponse::from)
@@ -173,7 +180,12 @@ public class AppointmentController {
     })
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public AppointmentResponse update(
-            @Parameter(description = "Appointment ID", schema = @Schema(minLength = 1, maxLength = MAX_ID_LENGTH, pattern = ".*\\S.*"))
+            @Parameter(
+                    description = "Appointment ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
             @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id,
             @Valid @RequestBody final AppointmentRequest request) {
 
@@ -196,13 +208,20 @@ public class AppointmentController {
     @Operation(summary = "Delete an appointment")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Appointment deleted"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Appointment not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(
-            @Parameter(description = "Appointment ID", schema = @Schema(minLength = 1, maxLength = MAX_ID_LENGTH, pattern = ".*\\S.*"))
+            @Parameter(
+                    description = "Appointment ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
             @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id) {
         if (!appointmentService.deleteAppointment(id)) {
             throw new ResourceNotFoundException("Appointment not found: " + id);

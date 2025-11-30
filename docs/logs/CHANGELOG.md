@@ -4,7 +4,42 @@ All notable changes to this project will be documented here. Follow the
 [Semantic Versioning](https://semver.org/) once formal releases begin.
 
 ## [Unreleased]
+### Fixed
+- **Race condition in add methods**: Fixed check-then-insert race condition in `ContactService.addContact()`, `TaskService.addTask()`, and `AppointmentService.addAppointment()` using a hybrid approach: fast-path `existsById()` check for immediate rejection plus `DataIntegrityViolationException` catch for race condition safety in JPA stores. This provides optimal performance (no DB round-trip for obvious duplicates) while ensuring atomicity via database UNIQUE constraints. See ADR-0024 for details.
+- **UI API endpoint mismatch**: Changed API base from `/api` to `/api/v1` to match backend controller mappings.
+- **Appointment date field name**: Fixed `date` → `appointmentDate` to match backend `AppointmentRequest` DTO.
+- **Missing ID fields in forms**: Added ID input field to Contact, Task, and Appointment create forms (backend requires ID in request body).
+- **Vite proxy configuration**: Updated proxy to forward `/api/v1`, `/actuator`, `/swagger-ui`, and `/v3/api-docs` to backend.
+
 ### Added
+- **Settings page** (`SettingsPage.tsx`): Profile management (name, email with localStorage persistence), appearance settings (dark mode toggle, 5 color themes), and data management (clear settings).
+- **Help page** (`HelpPage.tsx`): Getting started guide, feature documentation, developer resources (Swagger UI, OpenAPI spec, health check links), keyboard shortcuts.
+- **Profile hook** (`useProfile.ts`): Manages user profile (name, email, initials) in localStorage with auto-computed initials.
+- **TopBar navigation**: Avatar dropdown now links to Settings and Help pages, shows user initials from profile.
+- **README Development URLs table**: Clear distinction between `:5173` (React UI) and `:8080` (API/Swagger).
+
+- **Phase 4 React UI (complete)**:
+  - Scaffolded `ui/contact-app/` with Vite + React 19 + TypeScript + Tailwind CSS v4.
+  - Installed shadcn/ui components (Button, Card, Table, Sheet, Dialog, Input, Label, etc.) with Radix UI primitives.
+  - Created app shell layout: `AppShell.tsx` (main layout), `Sidebar.tsx` (collapsible navigation), `TopBar.tsx` (title, theme switcher, dark mode toggle).
+  - Implemented 5 professional themes (Slate, Ocean, Forest, Violet, Zinc) with light/dark variants via CSS variables.
+  - Built `useTheme` and `useMediaQuery` hooks for theme switching and responsive breakpoints.
+  - Created `lib/api.ts` (typed fetch wrapper with error normalization), `lib/schemas.ts` (Zod schemas matching `Validation.java` constants), `lib/utils.ts` (`cn()` class merger).
+  - Built full CRUD pages: `OverviewPage` (dashboard), `ContactsPage`, `TasksPage`, `AppointmentsPage` with create/edit forms and delete confirmation dialogs.
+  - Created form components (`ContactForm`, `TaskForm`, `AppointmentForm`) using React Hook Form + Zod validation mirroring backend constraints.
+  - Added `DeleteConfirmDialog` component for delete confirmations.
+  - Set up React Router v7 with nested routes and TanStack Query for server state (queries + mutations).
+  - Configured Vite dev server proxy (`/api` → `localhost:8080`).
+  - Added `frontend-maven-plugin` and `maven-resources-plugin` to `pom.xml` for integrated build.
+  - `mvn package` now builds UI and packages into single executable JAR with static assets at `/`.
+  - Authored ADR-0025 (UI Component Library), ADR-0026 (Theme System), ADR-0027 (App Shell Layout), ADR-0028 (Build Integration).
+  - Updated README with React UI Layer section, Getting Started commands for dev/prod modes.
+  - Updated INDEX.md with UI files section, ROADMAP.md marking Phase 4 complete.
+- Mapper null-guard tests, fresh JPA entity accessor suites, and additional `findById` Optional-empty assertions in the legacy `InMemory*Store` tests so persistence and fallback layers cover both branches, pushing the suite to **345 tests** with **100% mutation kills** and **99% line coverage on mutated classes**.
+- Legacy singleton regression coverage ensuring `registerInstance` migrates in-memory data into the Spring-managed services (Contact/Task/Appointment).
+- Unit tests for `InMemoryContactStore`, `InMemoryTaskStore`, and `InMemoryAppointmentStore` that prove defensive copies and delete semantics so PIT can mutate those branches safely.
+- Added fallback tests calling `ContactService.getInstance()` (and Task/Appointment variants) with both Spring context and legacy cold-start scenarios so PIT's null-return mutants are exercised, resulting in **100% mutation score (307/307)** with 93% line coverage on mutated classes.
+- Added `ServiceSingletonBridgeTest` to prove `getInstance()` delegates to the Spring `ApplicationContext`, plus configuration tests (`JacksonConfigTest`, `TomcatConfigTest`) so PIT exercises the strict JSON wiring and valve registration.
 - **Phase 3 Persistence Stack**:
   - Added Spring Data JPA, Flyway (core + Postgres), PostgreSQL JDBC driver, H2, and Testcontainers dependencies to `pom.xml`.
   - Introduced `contactapp.persistence.entity|mapper|repository|store` packages. Services now depend on `ContactStore`/`TaskStore`/`AppointmentStore`, which delegate to Spring Data JPA under normal operation and in-memory stores for legacy `getInstance()` callers.
@@ -87,11 +122,14 @@ All notable changes to this project will be documented here. Follow the
 - **Dependency vulnerabilities resolved**:
   - Upgraded springdoc-openapi from 2.7.0 to 2.8.7 to fix CVE-2025-26791 (DOMPurify in swagger-ui).
   - Added explicit commons-lang3 3.20.0 dependency to override Spring Boot's 3.17.0 and fix CVE-2025-48924.
+  - Overrode transitive commons-compress to 1.26.2 to remediate CVE-2024-25710 / CVE-2024-26308 reported by OWASP Dependency-Check.
 - **SpotBugs issues fixed (7 issues → 0)**:
   - `AppointmentRequest`/`AppointmentResponse`: Added compact constructors and overridden accessors for defensive Date copies.
   - Controllers: Added `@SuppressFBWarnings` for intentional Spring DI singleton service storage (false positive).
 
 ### Changed
+- `ApplicationTest.mainMethodCoverage` now launches `Application` with `--server.port=0` so PIT/CI runs pick an ephemeral port instead of colliding with another JVM on the agent.
+- README/REQUIREMENTS/agents/Roadmap now document the expanded **319-test** suite and PIT's **96% mutation / 93% line coverage** after the new regression tests.
 - Simplified legacy singleton compatibility: `getInstance()` in Contact/Task/Appointment services now returns the Spring-managed proxy when the context is ready (or the in-memory fallback before boot) without any manual `Advised` proxy unwrapping. Updated the corresponding Spring Boot service tests to assert shared persistence behavior between DI and legacy access instead of relying on brittle object identity checks.
 - Updated `docs/logs/backlog.md` to mark CVE dependencies as fixed.
 

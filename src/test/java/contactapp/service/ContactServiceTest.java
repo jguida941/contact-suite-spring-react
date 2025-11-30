@@ -3,8 +3,10 @@ package contactapp.service;
 import contactapp.domain.Contact;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Field;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -12,42 +14,46 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Tests the ContactService behavior.
  *
- * <p>Verifies:
- * <ul>
- *   <li>getInstance() returns a non-null singleton</li>
- *   <li>addContact() adds a new contact and rejects duplicate IDs</li>
- *   <li>deleteContact() removes existing contacts and throws for blank IDs</li>
- *   <li>updateContact() updates existing contacts and returns false if the ID is missing</li>
- * </ul>
- *
- * <p>Tests are in the same package as ContactService to access package-private methods.
+ * <p>Runs against the Spring context (H2 + Flyway) so the service exercises the real
+ * persistence layer instead of the legacy in-memory map. Tests stay in the same package
+ * to access package-private helpers like {@link ContactService#clearAllContacts()}.
  */
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 public class ContactServiceTest {
+
+    @Autowired
+    private ContactService service;
 
     /**
      * Clears the singleton map before each test run to keep scenarios isolated.
      */
     @BeforeEach
     void clearBeforeTest() {
-        ContactService.getInstance().clearAllContacts();
+        service.clearAllContacts();
     }
 
     /**
-     * Ensures {@link ContactService#getInstance()} returns a concrete service.
+     * Ensures the Spring-managed bean and legacy singleton reference are the same instance.
      */
     @Test
-    void testGetInstance() {
-        assertThat(ContactService.getInstance()).isNotNull();
-    }
+    void testSingletonSharesStateWithSpringBean() {
+        ContactService singleton = ContactService.getInstance();
+        singleton.clearAllContacts();
 
-    /**
-     * Verifies repeated calls to {@link ContactService#getInstance()} return the same reference.
-     */
-    @Test
-    void testGetInstanceReturnsSameReference() {
-        ContactService first = ContactService.getInstance();
-        ContactService second = ContactService.getInstance();
-        assertThat(first).isSameAs(second);
+        Contact legacyContact = new Contact(
+                "legacy-100",
+                "Legacy",
+                "Singleton",
+                "1112223333",
+                "123 Legacy Lane"
+        );
+
+        boolean addedViaSingleton = singleton.addContact(legacyContact);
+
+        assertThat(addedViaSingleton).isTrue();
+        assertThat(service.getContactById("legacy-100")).isPresent();
     }
 
     /**
@@ -55,7 +61,6 @@ public class ContactServiceTest {
      */
     @Test
     void testAddContact() {
-        ContactService contactService = ContactService.getInstance();
         Contact contact = new Contact(
                 "100",
                 "Justin",
@@ -64,11 +69,11 @@ public class ContactServiceTest {
                 "7622 Main Street"
         );
 
-        boolean added = contactService.addContact(contact);
+        boolean added = service.addContact(contact);
 
         assertThat(added).isTrue();
-        assertThat(contactService.getDatabase()).containsKey("100");
-        Contact stored = contactService.getDatabase().get("100");
+        assertThat(service.getDatabase()).containsKey("100");
+        Contact stored = service.getDatabase().get("100");
         assertThat(stored.getFirstName()).isEqualTo("Justin");
         assertThat(stored.getLastName()).isEqualTo("Guida");
         assertThat(stored.getPhone()).isEqualTo("1234567890");
@@ -80,7 +85,7 @@ public class ContactServiceTest {
      */
     @Test
     void testDeleteContact() {
-        ContactService contactService = ContactService.getInstance();
+        ContactService contactService = this.service;
         Contact contact = new Contact(
                 "100",
                 "Justin",
@@ -105,7 +110,7 @@ public class ContactServiceTest {
      */
     @Test
     void testDeleteMissingContactReturnsFalse() {
-        ContactService contactService = ContactService.getInstance();
+        ContactService contactService = this.service;
         assertThat(contactService.deleteContact("missing-id")).isFalse();
         assertThat(contactService.getDatabase()).isEmpty();
     }
@@ -115,7 +120,7 @@ public class ContactServiceTest {
      */
     @Test
     void testUpdateContact() {
-        ContactService contactService = ContactService.getInstance();
+        ContactService contactService = this.service;
         Contact contact = new Contact(
                 "100",
                 "Justin",
@@ -150,7 +155,7 @@ public class ContactServiceTest {
      */
     @Test
     void testUpdateContactTrimsId() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
         Contact contact = new Contact(
                 "200",
                 "Justin",
@@ -182,7 +187,7 @@ public class ContactServiceTest {
      */
     @Test
     void testUpdateContactBlankIdThrows() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
 
         assertThatThrownBy(() -> service.updateContact(" ", "A", "B", "1234567890", "Somewhere"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -194,7 +199,7 @@ public class ContactServiceTest {
      */
     @Test
     void testAddDuplicateContactFails() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
         Contact contact1 = new Contact("100", "Justin", "Guida", "1234567890", "7622 Main Street");
         Contact contact2 = new Contact("100", "Other", "Person", "1112223333", "Other Address");
 
@@ -214,7 +219,7 @@ public class ContactServiceTest {
      */
     @Test
     void testUpdateMissingContactReturnsFalse() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
 
         boolean updated = service.updateContact(
                 "does-not-exist",
@@ -232,7 +237,7 @@ public class ContactServiceTest {
      */
     @Test
     void testDeleteContactBlankIdThrows() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
 
         assertThatThrownBy(() -> service.deleteContact(" "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -244,7 +249,7 @@ public class ContactServiceTest {
      */
     @Test
     void testAddContactNullThrows() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
 
         assertThatThrownBy(() -> service.addContact(null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -256,7 +261,7 @@ public class ContactServiceTest {
      */
     @Test
     void testGetDatabaseReturnsDefensiveCopies() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
         Contact contact = new Contact("500", "Original", "Name", "1234567890", "Original Address");
         service.addContact(contact);
 
@@ -275,29 +280,6 @@ public class ContactServiceTest {
         assertThat(freshSnapshot.getAddress()).isEqualTo("Original Address");
     }
 
-    /**
-     * Covers the cold-start branch in getInstance() where instance is null.
-     *
-     * <p>Uses reflection to reset the static instance field, then verifies
-     * getInstance() creates a new instance. This ensures full branch coverage
-     * of the lazy initialization pattern.
-     */
-    @Test
-    void testGetInstanceColdStart() throws Exception {
-        // Reset static instance to null via reflection
-        Field instanceField = ContactService.class.getDeclaredField("instance");
-        instanceField.setAccessible(true);
-        instanceField.set(null, null);
-
-        // Now getInstance() should create a new instance
-        ContactService service = ContactService.getInstance();
-        assertThat(service).isNotNull();
-
-        // Verify the instance was properly registered
-        ContactService second = ContactService.getInstance();
-        assertThat(second).isSameAs(service);
-    }
-
     // ==================== getContactById Tests ====================
 
     /**
@@ -305,7 +287,7 @@ public class ContactServiceTest {
      */
     @Test
     void testGetContactByIdReturnsContact() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
         Contact contact = new Contact("600", "Test", "User", "1234567890", "Test Address");
         service.addContact(contact);
 
@@ -320,7 +302,7 @@ public class ContactServiceTest {
      */
     @Test
     void testGetContactByIdReturnsEmptyWhenNotFound() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
 
         var result = service.getContactById("nonexistent");
 
@@ -332,7 +314,7 @@ public class ContactServiceTest {
      */
     @Test
     void testGetContactByIdBlankIdThrows() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
 
         assertThatThrownBy(() -> service.getContactById(" "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -344,7 +326,7 @@ public class ContactServiceTest {
      */
     @Test
     void testGetContactByIdTrimsId() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
         Contact contact = new Contact("700", "Trimmed", "Test", "1234567890", "Test Address");
         service.addContact(contact);
 
@@ -359,7 +341,7 @@ public class ContactServiceTest {
      */
     @Test
     void testGetContactByIdReturnsDefensiveCopy() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
         Contact contact = new Contact("800", "Original", "Name", "1234567890", "Original Addr");
         service.addContact(contact);
 
@@ -379,7 +361,7 @@ public class ContactServiceTest {
      */
     @Test
     void testGetAllContactsReturnsEmptyList() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
 
         var result = service.getAllContacts();
 
@@ -391,7 +373,7 @@ public class ContactServiceTest {
      */
     @Test
     void testGetAllContactsReturnsAllContacts() {
-        ContactService service = ContactService.getInstance();
+        ContactService service = this.service;
         service.addContact(new Contact("901", "First", "User", "1111111111", "First Addr"));
         service.addContact(new Contact("902", "Second", "User", "2222222222", "Second Addr"));
 

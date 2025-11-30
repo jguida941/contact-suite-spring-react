@@ -18,6 +18,22 @@
 spring:
   application:
     name: contact-service
+  datasource:
+    url: jdbc:h2:mem:contacts;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Flyway owns schema management
+    open-in-view: false   # Prevents long-lived entity managers on web threads
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 # -----------------------------------------------------------------------------
 # Actuator Configuration (applies to all profiles unless overridden)
@@ -75,6 +91,12 @@ spring:
   config:
     activate:
       on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/contactapp
+    username: ${DB_USERNAME:contactapp}
+    password: ${DB_PASSWORD:contactapp}
+  jpa:
+    show-sql: true
 
 management:
   endpoint:
@@ -89,18 +111,40 @@ logging:
 # =============================================================================
 # Test Profile
 # =============================================================================
-# Optimized for fast test execution in CI/CD pipelines. Minimal logging
-# reduces noise in test output. Health probes remain enabled for
-# integration tests that verify actuator behavior.
+# Uses in-memory H2 (PostgreSQL compatibility mode) so Flyway migrations run
+# quickly during unit/integration tests without external dependencies.
 # =============================================================================
 spring:
   config:
     activate:
       on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+  flyway:
+    enabled: true
 
 logging:
   level:
     root: WARN
+    contactapp: INFO
+
+---
+# =============================================================================
+# Integration Test Profile
+# =============================================================================
+# Activated automatically by Spring Boot Testcontainers (@ServiceConnection)
+# to run against ephemeral Postgres instances.
+# =============================================================================
+spring:
+  config:
+    activate:
+      on-profile: integration
+  flyway:
+    enabled: true
+
+logging:
+  level:
     contactapp: INFO
 
 ---
@@ -115,6 +159,13 @@ spring:
   config:
     activate:
       on-profile: prod
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
 
 management:
   endpoint:
