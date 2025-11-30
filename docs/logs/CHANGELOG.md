@@ -29,7 +29,7 @@ All notable changes to this project will be documented here. Follow the
   - **All Schemathesis phases now pass** (Coverage, Fuzzing, Stateful): 18,288 test cases generated, 18,288 passed.
 - **Phase 2.5 complete**: API security testing foundation implemented.
 - **Path variable validation** on controllers:
-  - Added `@Size(min=1, max=MAX_ID_LENGTH)` to all `{id}` path parameters to enforce non-empty, 10-char limit.
+  - Added `@NotBlank @Size(min=1, max=MAX_ID_LENGTH)` to all `{id}` path parameters to reject whitespace-only and enforce 10-char limit.
   - Added `@Parameter(schema=@Schema(minLength=1, maxLength=10))` for proper OpenAPI spec documentation.
   - Eliminates Schemathesis "schema validation mismatch" warnings by documenting actual API constraints (empty strings rejected).
 - **OpenAPI spec improvements** for better tooling compatibility:
