@@ -39,7 +39,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    - **OpenAPI spec** at `http://localhost:8080/v3/api-docs`
    - REST APIs at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
 4. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-5. Planning note: Phases 0-2.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing) with 295 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0022 capture the selected stack and implementation decisions.
+5. Planning note: Phases 0-2.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing) with 296 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0022 capture the selected stack and implementation decisions.
 
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
@@ -75,7 +75,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/test/java/contactapp/ContactControllerTest.java`](src/test/java/contactapp/ContactControllerTest.java)         | MockMvc integration tests for Contact API (30 tests).                                           |
 | [`src/test/java/contactapp/TaskControllerTest.java`](src/test/java/contactapp/TaskControllerTest.java)               | MockMvc integration tests for Task API (21 tests).                                              |
 | [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests).                                       |
-| [`src/test/java/contactapp/GlobalExceptionHandlerTest.java`](src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (4 tests).                                      |
+| [`src/test/java/contactapp/GlobalExceptionHandlerTest.java`](src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (5 tests).                                      |
 | [`src/test/java/contactapp/CustomErrorControllerTest.java`](src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (17 tests).                                              |
 | [`src/test/java/contactapp/config/JsonErrorReportValveTest.java`](src/test/java/contactapp/config/JsonErrorReportValveTest.java) | Unit tests for JsonErrorReportValve (17 tests).                                         |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)                                 | Contact assignment requirements and checklist.                                                  |
@@ -621,7 +621,7 @@ flowchart TD
     E --> F[200/201/204 Response]
 ```
 - **Bean Validation** (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) catches invalid input early with user-friendly error messages.
-- **Path variable validation**: `@Size(max=10)` on `{id}` path parameters enforces ID length limits documented in OpenAPI spec via `@Parameter(schema=@Schema(maxLength=10))`.
+- **Path variable validation**: `@Size(max=10)` on `{id}` path parameters enforces ID length limits. Controllers are annotated with `@Validated` (required for Spring to enforce method-level constraints on `@PathVariable`). OpenAPI spec documents this via `@Parameter(schema=@Schema(maxLength=10))`.
 - **Domain validation** (`Validation.validateLength`, `validateDigits`, `validateDateNotPast`) acts as a backup layer—same rules, same constants.
 - DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules.
 
@@ -629,7 +629,7 @@ flowchart TD
 - **ContactControllerTest** (30 tests): Happy path CRUD, validation errors, boundary tests, 404/409 scenarios.
 - **TaskControllerTest** (21 tests): Same patterns adapted for Task entity.
 - **AppointmentControllerTest** (20 tests): Date validation, past-date rejection, ISO 8601 format handling.
-- **GlobalExceptionHandlerTest** (4 tests): Direct unit tests for exception handler methods (`handleIllegalArgument`, `handleNotFound`, `handleDuplicate`).
+- **GlobalExceptionHandlerTest** (5 tests): Direct unit tests for exception handler methods (`handleIllegalArgument`, `handleNotFound`, `handleDuplicate`, `handleConstraintViolation`).
 - **CustomErrorControllerTest** (17 tests): Unit tests for container-level error handling (status codes, JSON content type, message mapping).
 - **JsonErrorReportValveTest** (17 tests): Unit tests for Tomcat valve JSON error handling (Content-Length, buffer reset, committed response guards).
 

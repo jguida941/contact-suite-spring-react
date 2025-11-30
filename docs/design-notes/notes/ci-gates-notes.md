@@ -1,6 +1,6 @@
 # CI gates and quality checks
 
-(Related: [ADR-0004](../../adrs/ADR-0004-ci-gates-and-thresholds.md), [.github/workflows/java-ci.yml](../../.github/workflows/java-ci.yml))
+(Related: [ADR-0004](../../adrs/ADR-0004-ci-gates-and-thresholds.md), [.github/workflows/java-ci.yml](../../../.github/workflows/java-ci.yml))
 
 File: docs/design-notes/notes/ci-gates-notes.md
 

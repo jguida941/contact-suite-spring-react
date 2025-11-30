@@ -77,7 +77,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/ContactControllerTest.java`](../src/test/java/contactapp/ContactControllerTest.java) | MockMvc integration tests for Contact API (30 tests). |
 | [`../src/test/java/contactapp/TaskControllerTest.java`](../src/test/java/contactapp/TaskControllerTest.java) | MockMvc integration tests for Task API (21 tests). |
 | [`../src/test/java/contactapp/AppointmentControllerTest.java`](../src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests). |
-| [`../src/test/java/contactapp/GlobalExceptionHandlerTest.java`](../src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (4 tests). |
+| [`../src/test/java/contactapp/GlobalExceptionHandlerTest.java`](../src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (5 tests). |
 | [`../src/test/java/contactapp/CustomErrorControllerTest.java`](../src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (17 tests). |
 
 ### Config Layer (`contactapp.config`)

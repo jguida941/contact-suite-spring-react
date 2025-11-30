@@ -1,6 +1,6 @@
 # SpotBugs runtime support and JDK issues
 
-(Related: [ADR-0005](../../adrs/ADR-0005-spotbugs-runtime-support.md), [pom.xml](../../pom.xml))
+(Related: [ADR-0005](../../adrs/ADR-0005-spotbugs-runtime-support.md), [pom.xml](../../../pom.xml))
 
 File: docs/design-notes/notes/spotbugs-notes.md
 

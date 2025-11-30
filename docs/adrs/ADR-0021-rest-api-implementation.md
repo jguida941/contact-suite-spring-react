@@ -22,6 +22,8 @@ Three `@RestController` classes expose CRUD endpoints at `/api/v1/{resource}`:
 
 Each controller injects the corresponding service via constructor injection and delegates to domain objects.
 
+**Important**: All controllers are annotated with `@Validated` (from `org.springframework.validation.annotation`). This is required for Spring to enforce Bean Validation constraints (`@Size`, `@NotBlank`, etc.) on method parameters like `@PathVariable`. Without `@Validated`, constraints on path variables are ignored at runtime.
+
 ### DTOs with Bean Validation
 Request DTOs use Jakarta Bean Validation annotations:
 - `@NotBlank` for required strings
@@ -33,9 +35,10 @@ Request DTOs use Jakarta Bean Validation annotations:
 
 ### Two-Layer Validation Strategy
 ```
-HTTP Request → Bean Validation (DTO) → Domain Constructor → Service Layer
+HTTP Request → Bean Validation (DTO + @PathVariable) → Domain Constructor → Service Layer
 ```
 - Bean Validation catches invalid input early with user-friendly messages
+- Path variables validated via `@Size` constraints (requires `@Validated` on controller)
 - Domain validation acts as a backup layer (same rules, same constants)
 - Controllers construct domain objects directly, not duplicate validation logic
 
@@ -73,14 +76,14 @@ Test isolation uses reflection to access package-private `clearAll*()` methods.
 - Bean Validation provides user-friendly error messages at HTTP boundary
 - Domain validation remains source of truth (no rule duplication)
 - Swagger UI enables API exploration and testing
-- 71 controller tests (30 Contact + 21 Task + 20 Appointment) provide comprehensive coverage
+- 76 controller/handler tests (30 Contact + 21 Task + 20 Appointment + 5 GlobalExceptionHandler) provide comprehensive coverage
 
 ### Negative
 - Controller tests require reflection hack for test isolation
 - Two validation layers mean some checks run twice (acceptable trade-off for defense-in-depth)
 
 ### Neutral
-- Total test count: 261 (including 4 GlobalExceptionHandlerTest, 13 service lookup method tests)
+- Total test count: 296 (including 5 GlobalExceptionHandlerTest, 17 CustomErrorControllerTest, 17 JsonErrorReportValveTest)
 - Build time unchanged (tests run quickly)
 - Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) instead of `getDatabase()` for better encapsulation
 

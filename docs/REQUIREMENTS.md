@@ -38,10 +38,10 @@
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: 275 tests passing, 100% mutation score, 100% line coverage, SpotBugs clean.
+- Latest CI: 296 tests passing, 100% mutation score, 100% line coverage, SpotBugs clean.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
-- Exception handler tests (4 tests): GlobalExceptionHandlerTest validates direct handler coverage.
-- Error controller tests (14 tests): CustomErrorControllerTest validates container-level error handling.
+- Exception handler tests (5 tests): GlobalExceptionHandlerTest validates direct handler coverage (including ConstraintViolationException for path variable validation).
+- Error controller tests (34 tests): CustomErrorControllerTest (17) + JsonErrorReportValveTest (17) validate container-level error handling.
 - Service tests include lookup method coverage: getAllContacts/getContactById, getAllTasks/getTaskById, getAllAppointments/getAppointmentById.
 - Data is still volatile (ConcurrentHashMap only); no database, migrations, or persistence abstraction yet (Phase 3).
 - `ui/qa-dashboard` is a sample Vite/React metrics console, not a product UI.
@@ -140,7 +140,7 @@ Implementation details:
   - Date validation (past date rejection, null date)
   - Malformed JSON handling
 - All 261 tests pass, 100% mutation score maintained (159/159 killed).
-- Added `GlobalExceptionHandlerTest` (4 tests) for direct exception handler coverage.
+- Added `GlobalExceptionHandlerTest` (4 tests initially, now 5 with `handleConstraintViolation`) for direct exception handler coverage.
 - Added service lookup method tests (13 tests) covering `getAllXxx()` and `getXxxById()` methods.
 
 ### Phase 2.5: API Security Testing Foundation (Completed)

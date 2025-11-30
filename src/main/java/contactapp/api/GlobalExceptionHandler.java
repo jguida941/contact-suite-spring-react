@@ -3,6 +3,7 @@ package contactapp.api;
 import contactapp.api.dto.ErrorResponse;
 import contactapp.api.exception.DuplicateResourceException;
 import contactapp.api.exception.ResourceNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,7 +20,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * <h2>Exception Mapping</h2>
  * <ul>
  *   <li>{@link IllegalArgumentException} → 400 Bad Request (domain validation)</li>
- *   <li>{@link MethodArgumentNotValidException} → 400 Bad Request (Bean Validation)</li>
+ *   <li>{@link MethodArgumentNotValidException} → 400 Bad Request (Bean Validation on @RequestBody)</li>
+ *   <li>{@link ConstraintViolationException} → 400 Bad Request (Bean Validation on @PathVariable)</li>
  *   <li>{@link HttpMessageNotReadableException} → 400 Bad Request (malformed JSON)</li>
  *   <li>{@link ResourceNotFoundException} → 404 Not Found</li>
  *   <li>{@link DuplicateResourceException} → 409 Conflict</li>
@@ -58,6 +60,25 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidation(final MethodArgumentNotValidException ex) {
         final String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .findFirst()
+                .orElse("Validation failed");
+        return ResponseEntity.badRequest().body(new ErrorResponse(message));
+    }
+
+    /**
+     * Handles Bean Validation errors from @Validated method parameters.
+     *
+     * <p>This handles constraint violations on @PathVariable and @RequestParam
+     * parameters when the controller is annotated with @Validated.
+     * Extracts the first violation message for a simple response.
+     *
+     * @param ex the constraint violation exception
+     * @return 400 Bad Request with the first validation error
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(final ConstraintViolationException ex) {
+        final String message = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
                 .findFirst()
                 .orElse("Validation failed");
         return ResponseEntity.badRequest().body(new ErrorResponse(message));

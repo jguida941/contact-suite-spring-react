@@ -1,6 +1,6 @@
 # CI metrics summary script
 
-(Related: [ADR-0008](../../adrs/ADR-0008-ci-metrics-summary-script.md), [scripts/ci_metrics_summary.py](../../scripts/ci_metrics_summary.py))
+(Related: [ADR-0008](../../adrs/ADR-0008-ci-metrics-summary-script.md), [scripts/ci_metrics_summary.py](../../../scripts/ci_metrics_summary.py))
 
 File: docs/design-notes/notes/ci-metrics-script-notes.md
 

@@ -4,13 +4,20 @@ import contactapp.api.GlobalExceptionHandler;
 import contactapp.api.dto.ErrorResponse;
 import contactapp.api.exception.DuplicateResourceException;
 import contactapp.api.exception.ResourceNotFoundException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link GlobalExceptionHandler}.
@@ -72,5 +79,25 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Contact with id '123' already exists", response.getBody().message());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void handleConstraintViolation_returnsStatusBadRequest() {
+        // Mock a ConstraintViolation for path variable validation
+        final ConstraintViolation<Object> violation = mock(ConstraintViolation.class);
+        final Path path = mock(Path.class);
+        when(path.toString()).thenReturn("getById.id");
+        when(violation.getPropertyPath()).thenReturn(path);
+        when(violation.getMessage()).thenReturn("size must be between 0 and 10");
+
+        final ConstraintViolationException ex =
+                new ConstraintViolationException("Validation failed", Set.of(violation));
+
+        final ResponseEntity<ErrorResponse> response = handler.handleConstraintViolation(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("getById.id: size must be between 0 and 10", response.getBody().message());
     }
 }

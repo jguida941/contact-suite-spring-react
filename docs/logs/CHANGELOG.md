@@ -4,6 +4,14 @@ All notable changes to this project will be documented here. Follow the
 [Semantic Versioning](https://semver.org/) once formal releases begin.
 
 ## [Unreleased]
+### Fixed
+- **Path variable validation now enforced at runtime**:
+  - Added `@Validated` annotation to `ContactController`, `TaskController`, and `AppointmentController`.
+  - Without `@Validated`, Spring ignores `@Size` and other Bean Validation constraints on `@PathVariable` parameters.
+  - The existing `@Size(max = MAX_ID_LENGTH)` constraints on `{id}` path variables are now actually enforced.
+  - Added `ConstraintViolationException` handler to `GlobalExceptionHandler` for proper error responses when path variable validation fails.
+  - Fixed import order in all three controllers to satisfy Checkstyle rules (static imports last, no extra blank lines).
+
 ### Added
 - **CustomErrorController** for production-grade JSON error responses (ADR-0022):
   - Implements Spring Boot's `ErrorController` interface to intercept `/error` path.
