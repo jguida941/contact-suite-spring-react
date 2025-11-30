@@ -9,12 +9,15 @@ import contactapp.domain.Contact;
 import contactapp.service.ContactService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
+import static contactapp.domain.Validation.MAX_ID_LENGTH;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -138,7 +141,9 @@ public class ContactController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/{id}")
-    public ContactResponse getById(@PathVariable final String id) {
+    public ContactResponse getById(
+            @Parameter(description = "Contact ID", schema = @Schema(maxLength = MAX_ID_LENGTH))
+            @Size(max = MAX_ID_LENGTH) @PathVariable final String id) {
         return contactService.getContactById(id)
                 .map(ContactResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -164,7 +169,8 @@ public class ContactController {
     })
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ContactResponse update(
-            @PathVariable final String id,
+            @Parameter(description = "Contact ID", schema = @Schema(maxLength = MAX_ID_LENGTH))
+            @Size(max = MAX_ID_LENGTH) @PathVariable final String id,
             @Valid @RequestBody final ContactRequest request) {
 
         if (!contactService.updateContact(
@@ -193,7 +199,9 @@ public class ContactController {
     })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable final String id) {
+    public void delete(
+            @Parameter(description = "Contact ID", schema = @Schema(maxLength = MAX_ID_LENGTH))
+            @Size(max = MAX_ID_LENGTH) @PathVariable final String id) {
         if (!contactService.deleteContact(id)) {
             throw new ResourceNotFoundException("Contact not found: " + id);
         }

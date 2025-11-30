@@ -621,6 +621,7 @@ flowchart TD
     E --> F[200/201/204 Response]
 ```
 - **Bean Validation** (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) catches invalid input early with user-friendly error messages.
+- **Path variable validation**: `@Size(max=10)` on `{id}` path parameters enforces ID length limits documented in OpenAPI spec via `@Parameter(schema=@Schema(maxLength=10))`.
 - **Domain validation** (`Validation.validateLength`, `validateDigits`, `validateDateNotPast`) acts as a backup layer—same rules, same constants.
 - DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules.
 

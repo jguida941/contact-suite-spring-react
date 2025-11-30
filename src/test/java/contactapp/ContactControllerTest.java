@@ -168,9 +168,9 @@ class ContactControllerTest {
 
     @Test
     void deleteContact_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/contacts/nonexistent"))
+        mockMvc.perform(delete("/api/v1/contacts/notfound"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Contact not found: nonexistent"));
+                .andExpect(jsonPath("$.message").value("Contact not found: notfound"));
     }
 
     // ==================== Duplicate Tests ====================

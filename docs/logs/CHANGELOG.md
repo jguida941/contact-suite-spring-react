@@ -20,6 +20,10 @@ All notable changes to this project will be documented here. Follow the
   - Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used.
   - **All Schemathesis phases now pass** (Coverage, Fuzzing, Stateful): 8,245 test cases generated, 8,245 passed.
 - **Phase 2.5 complete**: API security testing foundation implemented.
+- **Path variable validation** on controllers:
+  - Added `@Size(max=MAX_ID_LENGTH)` to all `{id}` path parameters to enforce 10-char limit.
+  - Added `@Parameter(schema=@Schema(maxLength=10))` for proper OpenAPI spec documentation.
+  - Eliminates Schemathesis "schema validation mismatch" warnings by documenting actual API constraints.
 - **OpenAPI spec improvements** for better tooling compatibility:
   - Added `@Tag`, `@Operation`, `@ApiResponses` annotations to all controllers.
   - Changed content type from `*/*` to `application/json` via `produces`/`consumes` attributes.
