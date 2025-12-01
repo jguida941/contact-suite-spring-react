@@ -13,7 +13,7 @@
 
 ## Decision
 - Use React with Vite and TypeScript for the product UI (separate from the QA dashboard).
-- Structure under `ui/app` with routing, shared layout, and feature modules for Contacts/Tasks/Appointments.
+- Structure under `ui/contact-app` with routing, shared layout, and feature modules for Contacts/Tasks/Appointments.
 - Use a thin API client wrapper on `fetch` plus TanStack Query for data fetching/state.
 - Keep styling lightweight with a small design system (CSS variables + utility classes) rather than a heavy component library.
 - Add unit/component tests with Vitest + React Testing Library and E2E with Playwright.

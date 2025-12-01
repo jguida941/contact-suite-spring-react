@@ -17,9 +17,11 @@ Phase 6   → Docker packaging + CI
 Phase 7   → UX polish
 ```
 
-Phase 4 note: Full CRUD UI with React Hook Form + Zod validation. `mvn package` builds UI via frontend-maven-plugin and packages into single JAR. Run with `java -jar target/*.jar`. See ADR-0025..0028 for design decisions.
+Phase 4 note: Full CRUD UI with React Hook Form + Zod validation. `mvn package` builds UI via frontend-maven-plugin and packages into single JAR. Run with `java -jar target/*.jar`. Frontend tests: Vitest + RTL (22 tests) and Playwright E2E (5 tests). See ADR-0025..0028 for design decisions.
 
 Phase 3 note: legacy `getInstance()` access now reuses the Spring-managed proxies (or the in-memory fallback pre-boot) without proxy unwrapping; behavior tests verify both entry points stay in sync.
+
+Phase 5 focus: End-to-end authentication/authorization, per-tenant data isolation, Docker/compose deployment with health probes, structured logging/metrics, rate limiting, threat modeling, and a documented ZAP baseline scan. See `docs/REQUIREMENTS.md` for the full checklist (JWT login, SPA-only CORS, security headers, bucket4j throttling, Prometheus/Actuator exposure, CI health checks, and runbook updates).
 
 ## CI/CD Security Stages
 

@@ -16,7 +16,7 @@
 - Use Spring Data JPA/Hibernate for persistence; keep existing domain validation as the source of truth.
 - Use Flyway for database migrations and schema management.
 - Keep environment-specific profiles (`dev`, `test`, `prod`) to isolate configs.
-- Stick with a single Maven module for the backend; UI remains in `ui/app` as a separate frontend build.
+- Stick with a single Maven module for the backend; UI remains in `ui/contact-app` as a separate frontend build.
 
 ## Consequences
 - Gains mature ecosystem, auto-configured REST stack, and first-class observability hooks.

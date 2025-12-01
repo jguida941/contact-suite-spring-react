@@ -21,7 +21,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`requirements/appointment-requirements/`](requirements/appointment-requirements/) | Appointment assignment requirements (object/service specs + checklist). |
 | [`requirements/task-requirements/`](requirements/task-requirements/) | Task assignment requirements (task object/service specs + checklist). |
 | [`architecture/`](architecture/) | Feature design briefs (e.g., Task entity/service plan with Definition of Done). |
-| [`adrs/`](adrs/) | Architecture Decision Records index plus individual ADR files (ADR-0001..0028). |
+| [`adrs/`](adrs/) | Architecture Decision Records index plus individual ADR files (ADR-0001..0035). |
 | [`design-notes/`](design-notes/) | Personal design note hub with supporting explanations under `design-notes/notes/`. |
 | [`logs/`](logs/) | Changelog and backlog. |
 
@@ -134,6 +134,14 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../ui/contact-app/components.json`](../ui/contact-app/components.json) | shadcn/ui configuration file. |
 | [`../ui/contact-app/package.json`](../ui/contact-app/package.json) | npm dependencies (React 19, Tailwind v4, TanStack Query). |
 | [`../ui/contact-app/tsconfig.app.json`](../ui/contact-app/tsconfig.app.json) | TypeScript config with @/* path alias. |
+| [`../ui/contact-app/vitest.config.ts`](../ui/contact-app/vitest.config.ts) | Vitest configuration for component tests. |
+| [`../ui/contact-app/playwright.config.ts`](../ui/contact-app/playwright.config.ts) | Playwright configuration for E2E tests. |
+| [`../ui/contact-app/src/test/setup.ts`](../ui/contact-app/src/test/setup.ts) | Test setup for Vitest (jest-dom, mocks). |
+| [`../ui/contact-app/src/test/test-utils.tsx`](../ui/contact-app/src/test/test-utils.tsx) | Custom render with providers (QueryClient, Router). |
+| [`../ui/contact-app/src/lib/schemas.test.ts`](../ui/contact-app/src/lib/schemas.test.ts) | Zod schema validation tests (10 tests). |
+| [`../ui/contact-app/src/components/forms/ContactForm.test.tsx`](../ui/contact-app/src/components/forms/ContactForm.test.tsx) | ContactForm component tests (6 tests). |
+| [`../ui/contact-app/src/pages/ContactsPage.test.tsx`](../ui/contact-app/src/pages/ContactsPage.test.tsx) | ContactsPage component tests (6 tests). |
+| [`../ui/contact-app/e2e/contacts.spec.ts`](../ui/contact-app/e2e/contacts.spec.ts) | Playwright E2E tests for Contacts CRUD (5 tests). |
 
 ### Build & Configuration
 | Path | Description |
@@ -146,7 +154,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../scripts/api_fuzzing.py`](../scripts/api_fuzzing.py) | API fuzzing helper for local Schemathesis runs (starts app, fuzzes, exports OpenAPI spec). |
 | [`architecture/2025-11-19-task-entity-and-service.md`](architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`architecture/2025-11-24-appointment-entity-and-service.md`](architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record. |
-| [`adrs/README.md`](adrs/README.md) | ADR index (ADR-0001..0028 covering validation, persistence, API, UI). |
+| [`adrs/README.md`](adrs/README.md) | ADR index (ADR-0001..0035 covering validation, persistence, API, UI, engineering principles). |
 | [`design-notes/README.md`](design-notes/README.md) | Landing page for informal design notes (individual topics in `design-notes/notes/`). |
 | [`logs/backlog.md`](logs/backlog.md) | Backlog for reporting and domain enhancements. |
 | [`logs/CHANGELOG.md`](logs/CHANGELOG.md) | Project changelog. |

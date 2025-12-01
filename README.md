@@ -64,7 +64,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    ```
    Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-7. Planning note: Phases 0-4 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI) with **345 tests** covering both the JPA path and the legacy singleton fallbacks (PIT mutation coverage 99% with 99% line coverage on mutated classes). Three remaining PIT mutants correspond to the constant `return true` statements inside the `add*` methods—tests already exercise those success paths, but this mutator replaces the return with `true` again so PIT reports them as uncovered. The roadmap for security and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0028 capture the selected stack and implementation decisions.
+7. Planning note: Phases 0-4 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI) with **345 tests** covering both the JPA path and the legacy singleton fallbacks (PIT mutation coverage 99% with 99% line coverage on mutated classes). Three remaining PIT mutants correspond to the constant `return true` statements inside the `add*` methods—tests already exercise those success paths, but this mutator replaces the return with `true` again so PIT reports them as uncovered. The roadmap for security and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0035 capture the selected stack, implementation decisions, and engineering principles.
 
 ## React UI Highlights
 - Built with **Vite + React 19 + TypeScript + Tailwind CSS v4** plus shadcn/ui components for a professional look.
@@ -135,7 +135,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                       | Task assignment requirements and checklist (same format as Contact).                            |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach.                    |
 | [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record.                                               |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0028).                                         |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0035).                                         |
 | [`docs/ci-cd/`](docs/ci-cd/)                                                                                         | CI/CD design notes (pipeline plan + badge automation).                                          |
 | [`docs/design-notes/`](docs/design-notes/)                                                                           | Informal design notes hub; individual write-ups live under `docs/design-notes/notes/`.          |
 | [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)                                                                       | **Master document**: scope, architecture, phased plan, checklist, and code examples.            |
@@ -785,6 +785,17 @@ export const contactSchema = z.object({
 - **Production**: Maven's `frontend-maven-plugin` runs `npm ci && npm run build` during `prepare-package` phase.
 - **Single JAR**: Built UI assets copy to `target/classes/static/` so Spring Boot serves them at `/`.
 - **Fast feedback**: `mvn test` runs backend tests only; `mvn package` includes full UI build.
+
+### Frontend Testing ✅
+- [x] **Vitest + React Testing Library** - 22 component tests (schemas, forms, pages)
+- [x] **Playwright E2E** - 5 tests covering CRUD happy path (list/create/edit/delete)
+
+```bash
+cd ui/contact-app
+npm run test:run       # Vitest unit/component tests (22 tests)
+npm run test:e2e       # Playwright E2E tests (5 tests, starts dev server automatically)
+npm run test:coverage  # Vitest with coverage report
+```
 
 ### Related ADRs
 | ADR | Title | Summary |

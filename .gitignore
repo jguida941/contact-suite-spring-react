@@ -43,3 +43,8 @@ leftoff.md
 **/node_modules/
 ui/contact-app/node/
 **/dist/
+
+# Test output artifacts
+ui/contact-app/test-results/
+ui/contact-app/playwright-report/
+ui/contact-app/coverage/

@@ -58,7 +58,7 @@
 - **Backend**: Spring Boot REST service layered as controller → application/service → domain → persistence; keep domain validation as the single source of truth.
 - **Persistence**: JPA/Hibernate with Flyway migrations; Postgres in prod, H2/Testcontainers for tests.
 - **API contract**: JSON REST with request/response DTOs, Bean Validation, and OpenAPI/Swagger UI for consumers.
-- **Frontend**: React + Vite SPA (TypeScript) in `ui/app` (separate from QA dashboard) with router, form validation, and API client abstraction.
+- **Frontend**: React + Vite SPA (TypeScript) in `ui/contact-app` (separate from QA dashboard) with router, form validation, and API client abstraction.
 - **Security**: JWT auth, CORS policy for the SPA, input/output sanitization, security headers, and rate limiting in front of the API.
 - **Packaging**: Dockerfile + docker-compose for app + DB; CI builds/publishes images and runs integration/E2E suites.
 
@@ -180,7 +180,7 @@ Implementation details:
   - Testcontainers-based Postgres integration tests verifying persistence wiring and DB constraints.
 
 ### Phase 4: UI
-- Scaffold `ui/app` (React + TypeScript) with routing for Contacts/Tasks/Appointments.
+- Scaffold `ui/contact-app` (React + TypeScript) with routing for Contacts/Tasks/Appointments.
 - Build list + filter/sort views; create/edit forms with inline validation; delete confirmations; optimistic updates.
 - Add API client wrapper (env-based base URL), loading/error states, and component + E2E smoke tests (Vitest/RTL + Playwright/Cypress).
 
@@ -228,7 +228,7 @@ Implementation details:
 - Manage schema with Flyway migrations; keep environment-specific profiles (dev/test/prod).
 
 ### Frontend UI
-- Create a React + Vite + TypeScript app under `ui/app`.
+- Create a React + Vite + TypeScript app under `ui/contact-app`.
 - Provide pages for Contact, Task, and Appointment:
   - List with basic filtering/sorting.
   - Create/edit forms with inline validation messages.
@@ -307,31 +307,37 @@ Implementation details:
 - [x] Profile documentation updated across README/agents/REQUIREMENTS.
 - [x] Integration tests with Testcontainers covering all three services + DB constraints.
 
-### Phase 4: Frontend UI
-- [ ] React + Vite + TypeScript app scaffolded under `ui/app`
-- [ ] TanStack Query wired for data fetching
-- [ ] List + filter/sort views for Contact/Task/Appointment
-- [ ] Create/edit forms with inline validation
-- [ ] Delete confirmation flow
-- [ ] Loading and error states handled
-- [ ] Responsive layout verified
-- [ ] UI component tests (Vitest/RTL)
-- [ ] UI E2E smoke test (Playwright/Cypress)
+### Phase 4: Frontend UI ✅
+- [x] React + Vite + TypeScript app scaffolded under `ui/contact-app`
+- [x] TanStack Query wired for data fetching
+- [x] List + filter/sort views for Contact/Task/Appointment
+- [x] Create/edit forms with inline validation (React Hook Form + Zod)
+- [x] Delete confirmation flow
+- [x] Loading and error states handled
+- [x] Responsive layout verified
+- [x] UI component tests (Vitest/RTL) — 22 tests covering schemas, forms, pages
+- [x] UI E2E smoke test (Playwright) — 5 tests covering CRUD happy path
 
 ### Phase 5: Security + Observability
-- [ ] Authentication (JWT per ADR-0018) implemented
-- [ ] Role-based authorization on mutating endpoints (@PreAuthorize)
-- [ ] CORS configured for SPA origin
-- [ ] Security headers applied (CSP, HSTS, X-Content-Type-Options, X-Frame-Options)
-- [ ] Rate limiting configured (if exposed publicly)
-- [ ] Secrets management strategy documented
-- [ ] Structured logging with correlation IDs
-- [ ] Metrics/tracing via Actuator/Micrometer enabled
+- [ ] Authentication (JWT per ADR-0018) implemented with login endpoint + SPA integration
+- [ ] Role-based authorization on mutating endpoints (@PreAuthorize with ADMIN vs USER)
+- [ ] Per-user/tenant data isolation (add `user_id`/`account_id` to aggregates; repositories/services filter automatically)
+- [ ] CORS configured exclusively for the SPA origin; document threat model in `docs/architecture/threat-model.md`
+- [ ] Security headers applied (CSP, HSTS, X-Content-Type-Options, Referrer-Policy, X-Frame-Options)
+- [ ] Rate limiting configured (bucket4j or similar) for high-risk API paths
+- [ ] Structured logging with correlation IDs + PII masking for phone/address
+- [ ] Actuator metrics + Prometheus scrape endpoint enabled; basic readiness/liveness probes
+- [ ] Dockerfile + docker-compose stack (Spring Boot + Postgres + optional pgAdmin) with CI health check (`curl http://localhost:8080/actuator/health`)
+- [ ] ADR updates for authentication/authorization and observability strategy
+- [ ] ZAP baseline/API scan run (document findings + fixes or suppressions)
+- [ ] README + runbooks updated with deployment, security, and operational notes
+- [ ] Secrets management strategy documented (env vars locally, vault/secret manager in prod)
 
 ### Phase 5.5: DAST + Runtime Security
 - [ ] DAST (OWASP ZAP baseline/API scan) running in CI
 - [ ] Auth/role integration tests asserting 401/403 and allowed roles
 - [ ] Security scan documentation/checks repeatable in CI
+- [ ] Dependency-Check/CodeQL suppressions tracked with reasoning; coverage/mutation thresholds enforced in CI
 
 ### Phase 6: Packaging + CI
 - [ ] Dockerfiles for backend and UI
@@ -339,6 +345,7 @@ Implementation details:
 - [ ] Makefile/task runner for local dev
 - [ ] Environment variables documented (sample `.env`)
 - [ ] CI builds/tests images and publishes artifacts
+- [ ] Health check step in CI to curl `/actuator/health` after startup to ensure container wiring works
 
 ### Phase 7: UX Polish + Backlog
 - [ ] Search/pagination/sorting for large datasets
@@ -409,7 +416,7 @@ class GlobalErrors {
 
 ### API Client + TanStack Query (Phase 4)
 ```ts
-// ui/app/src/api.ts — low-level fetch helpers
+// ui/contact-app/src/lib/api.ts — low-level fetch helpers
 const base = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api/v1";
 
 export async function fetchContacts(): Promise<ContactResponse[]> {
@@ -430,7 +437,7 @@ export async function createContact(payload: ContactRequest): Promise<ContactRes
 ```
 
 ```ts
-// ui/app/src/hooks/useContacts.ts — TanStack Query wrappers (per ADR-0017)
+// ui/contact-app/src/hooks/useContacts.ts — TanStack Query wrappers (per ADR-0017)
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchContacts, createContact } from "../api";
 

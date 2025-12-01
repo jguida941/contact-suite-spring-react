@@ -75,7 +75,7 @@ See `docs/REQUIREMENTS.md` for the full checklist. Definition of done for each p
 - **Phase 2 ✅ (complete)**: CRUD endpoints for all 3 entities, OpenAPI accessible, 71 controller tests, Bean Validation on DTOs
 - **Phase 2.5 ✅ (complete)**: Schemathesis runs in CI against spec, workflow hardened (pyyaml, jq, JAR validation)
 - **Phase 3 ✅ (complete)**: Data persists in Postgres, Flyway migrations work
-- **Phase 4**: React UI can CRUD all entities
+- **Phase 4 ✅ (complete)**: React UI can CRUD all entities; Vitest (22 tests) + Playwright E2E (5 tests) added
 - **Phase 5**: JWT auth protects endpoints, security headers applied
 - **Phase 5.5**: ZAP runs in CI, auth tests assert 401/403
 - **Phase 6**: Docker images build, compose works

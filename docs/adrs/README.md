@@ -30,3 +30,10 @@
 | [ADR-0026](ADR-0026-theme-system-and-design-tokens.md)             | Theme System and Design Tokens                  | Accepted |
 | [ADR-0027](ADR-0027-application-shell-layout.md)                   | Application Shell Layout Pattern                | Accepted |
 | [ADR-0028](ADR-0028-frontend-backend-build-integration.md)         | Frontend-Backend Build Integration              | Accepted |
+| [ADR-0029](ADR-0029-ci-as-quality-gate.md)                         | CI as Quality Gate Philosophy                   | Accepted |
+| [ADR-0030](ADR-0030-pattern-first-development.md)                  | Pattern-First Development with AI Assistance    | Accepted |
+| [ADR-0031](ADR-0031-mutation-testing-for-test-quality.md)          | Mutation Testing to Validate Test Strength      | Accepted |
+| [ADR-0032](ADR-0032-two-layer-validation.md)                       | Two-Layer Validation Strategy                   | Accepted |
+| [ADR-0033](ADR-0033-transaction-management.md)                     | Transaction Management with @Transactional      | Accepted |
+| [ADR-0034](ADR-0034-mapper-pattern.md)                             | Mapper Pattern for Entity-Domain Separation     | Accepted |
+| [ADR-0035](ADR-0035-boolean-return-api.md)                         | Boolean Return API for Service Methods          | Accepted |

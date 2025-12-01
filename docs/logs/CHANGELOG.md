@@ -39,6 +39,12 @@ All notable changes to this project will be documented here. Follow the
   - Authored ADR-0025 (UI Component Library), ADR-0026 (Theme System), ADR-0027 (App Shell Layout), ADR-0028 (Build Integration).
   - Updated README with React UI Layer section, Getting Started commands for dev/prod modes.
   - Updated INDEX.md with UI files section, ROADMAP.md marking Phase 4 complete.
+- **Phase 4 Frontend Tests (complete)**:
+  - Added Vitest + React Testing Library with 22 component/unit tests: `schemas.test.ts` (10 tests), `ContactForm.test.tsx` (6 tests), `ContactsPage.test.tsx` (6 tests).
+  - Added Playwright E2E tests with 5 happy-path tests covering Contacts CRUD: list, create, edit, delete, validation errors.
+  - Created `vitest.config.ts`, `playwright.config.ts`, `src/test/setup.ts`, and `src/test/test-utils.tsx` for test infrastructure.
+  - Added npm scripts: `npm run test:run` (Vitest), `npm run test:e2e` (Playwright), `npm run test:coverage`.
+  - Updated `.gitignore` with `test-results/`, `playwright-report/`, `coverage/` directories.
 - Mapper null-guard tests, fresh JPA entity accessor suites, and additional `findById` Optional-empty assertions in the legacy `InMemory*Store` tests so persistence and fallback layers cover both branches, pushing the suite to **345 tests** with **99% mutation kills** (PIT still reports the three constant `return true` success-path mutants in the `add*` methods as uncovered) and **99% line coverage on mutated classes**.
 - Legacy singleton regression coverage ensuring `registerInstance` migrates in-memory data into the Spring-managed services (Contact/Task/Appointment).
 - Unit tests for `InMemoryContactStore`, `InMemoryTaskStore`, and `InMemoryAppointmentStore` that prove defensive copies and delete semantics so PIT can mutate those branches safely.
