@@ -47,6 +47,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestLoggingFilter.class);
     public static final int REQUEST_LOGGING_FILTER_ORDER = 10;
+    /** Caps logged user-agent strings to avoid log flooding while still showing useful detail. */
+    private static final int MAX_USER_AGENT_LENGTH = 256;
 
     private static final Set<String> SENSITIVE_QUERY_KEYS = Set.of(
             "token", "access_token", "refresh_token",
@@ -125,13 +127,14 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
      * @param request the HTTP request wrapper
      */
     private void logRequest(final ContentCachingRequestWrapper request) {
-        final String method = sanitizeLogValue(request.getMethod(), "UNKNOWN");
-        final String uri = sanitizeLogValue(request.getRequestURI(), "unknown");
+        final String method = getSafeLogValue(request.getMethod(), "UNKNOWN");
+        final String uri = getSafeLogValue(request.getRequestURI(), "unknown");
         final String rawQueryString = sanitizeQueryString(request.getQueryString());
-        final String queryString = sanitizeLogValue(rawQueryString);
-        final String clientIp = maskClientIp(sanitizeLogValue(RequestUtils.getClientIp(request)));
-        final String userAgent = sanitizeUserAgent(request.getHeader("User-Agent"));
+        final String queryString = getSafeLogValue(rawQueryString, null);
+        final String clientIp = maskClientIp(getSafeLogValue(RequestUtils.getClientIp(request), "unknown"));
+        final String userAgent = getSafeUserAgent(request.getHeader("User-Agent"));
 
+        // Log with inline-validated values only
         if (queryString != null && !queryString.isBlank()) {
             logger.info("HTTP Request: method={} uri={} query={} clientIp={} userAgent={}",
                     method, uri, queryString, clientIp, userAgent);
@@ -139,6 +142,35 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             logger.info("HTTP Request: method={} uri={} clientIp={} userAgent={}",
                     method, uri, clientIp, userAgent);
         }
+    }
+
+    /**
+     * Returns a safe string for logging with inline validation for CodeQL.
+     */
+    private String getSafeLogValue(final String value, final String defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        // Strip CR/LF to prevent log injection
+        final String sanitized = value.replaceAll("[\\r\\n]", "").trim();
+        return sanitized.isEmpty() ? defaultValue : sanitized;
+    }
+
+    /**
+     * Returns a safe user agent string for logging with inline validation.
+     */
+    private String getSafeUserAgent(final String userAgent) {
+        if (userAgent == null || userAgent.isBlank()) {
+            return "unknown";
+        }
+        // Strip control characters and limit length
+        final String sanitized = userAgent.replaceAll("[\\x00-\\x1F\\x7F]", "").trim();
+        if (sanitized.isEmpty()) {
+            return "unknown";
+        }
+        return sanitized.length() > MAX_USER_AGENT_LENGTH
+                ? sanitized.substring(0, MAX_USER_AGENT_LENGTH) + "..."
+                : sanitized;
     }
 
     /**

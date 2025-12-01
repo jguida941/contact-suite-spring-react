@@ -417,8 +417,8 @@ class RateLimitingFilterTest {
     }
 
     @Test
-    void sanitizeForLogging_rejectsUnsafeCharacters() throws Exception {
-        final Method method = RateLimitingFilter.class.getDeclaredMethod("sanitizeForLogging", String.class);
+    void getSafeLogValue_rejectsUnsafeCharacters() throws Exception {
+        final Method method = RateLimitingFilter.class.getDeclaredMethod("getSafeLogValue", String.class);
         method.setAccessible(true);
 
         final String sanitized = (String) method.invoke(filter, "user\r\nname");

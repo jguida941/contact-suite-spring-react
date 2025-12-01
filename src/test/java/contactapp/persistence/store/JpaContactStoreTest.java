@@ -40,8 +40,9 @@ class JpaContactStoreTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void existsById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] Validate the deprecated no-user method still throws to force callers to migrate.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.existsById("c-1"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -66,8 +67,9 @@ class JpaContactStoreTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void findById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] Guard rail for deprecated findById(String) until it is removed.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.findById("c-3"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -84,8 +86,9 @@ class JpaContactStoreTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void deleteById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] Legacy delete path intentionally throws to enforce tenant scoping.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.deleteById("c-5"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -156,7 +159,7 @@ class JpaContactStoreTest {
     @SuppressWarnings("deprecation")
     void save_withoutUserThrowsUnsupportedOperation() {
         final Contact contact = new Contact("c-1", "Amy", "Lee", "1234567890", "Addr");
-        // codeql[java/avoid-deprecated-apis] Validate the deprecated no-user method still throws.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.save(contact))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

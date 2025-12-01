@@ -40,8 +40,9 @@ class JpaAppointmentStoreTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void existsById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] Deprecated existsById(String) should keep throwing until legacy callers migrate.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.existsById("a-1"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -66,8 +67,9 @@ class JpaAppointmentStoreTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void findById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] Confirms the legacy overload still throws, deterring tenant bypasses.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.findById("a-3"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -86,8 +88,9 @@ class JpaAppointmentStoreTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void deleteById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] We intentionally keep this deprecated method throwing to enforce scoping.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.deleteById("a-5"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -160,7 +163,7 @@ class JpaAppointmentStoreTest {
     void save_withoutUserThrowsUnsupportedOperation() {
         final Appointment appt = new Appointment("a-1",
                 new Date(System.currentTimeMillis() + 1_000), "Desc");
-        // codeql[java/avoid-deprecated-apis] Validate the deprecated no-user method still throws.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.save(appt))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

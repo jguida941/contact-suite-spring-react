@@ -85,7 +85,7 @@ class AppointmentMapperTest {
     @Test
     @SuppressWarnings("deprecation")
     void deprecatedToEntityReturnsNullWhenDomainNull() {
-        // codeql[java/avoid-deprecated-apis] Verifies the deprecated overload remains safe for null callers.
+        // Intentionally testing deprecated method - verifies null handling
         assertThat(mapper.toEntity((Appointment) null)).isNull();
     }
 
@@ -96,7 +96,7 @@ class AppointmentMapperTest {
                 "legacy",
                 new Date(System.currentTimeMillis() + 1_000),
                 "Desc");
-        // codeql[java/avoid-deprecated-apis] Confirm legacy overload keeps throwing so callers migrate to user-aware API.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> mapper.toEntity(appointment))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

@@ -82,7 +82,7 @@ class ContactMapperTest {
     @Test
     @SuppressWarnings("deprecation")
     void deprecatedToEntityReturnsNullWhenDomainNull() {
-        // codeql[java/avoid-deprecated-apis] Legacy mapper overload kept so we verify it still returns null.
+        // Intentionally testing deprecated method - verifies null handling
         assertThat(mapper.toEntity((Contact) null)).isNull();
     }
 
@@ -90,7 +90,7 @@ class ContactMapperTest {
     @SuppressWarnings("deprecation")
     void deprecatedToEntityThrowsWhenDomainProvided() {
         Contact contact = new Contact("legacy", "Amy", "Lee", "1234567890", "Addr");
-        // codeql[java/avoid-deprecated-apis] Intentional invocation to assert the legacy overload still throws.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> mapper.toEntity(contact))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

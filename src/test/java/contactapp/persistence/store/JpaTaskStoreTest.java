@@ -41,22 +41,25 @@ class JpaTaskStoreTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void existsById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] Deprecated path must keep throwing until all callers supply a user.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.existsById("task-1"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void findById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] Exercise the legacy overload so we know it continues throwing.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.findById("task-2"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void deleteById_withoutUserThrowsUnsupportedOperation() {
-        // codeql[java/avoid-deprecated-apis] De-scoped delete overload remains intentionally unsupported.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.deleteById("task-3"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -157,7 +160,7 @@ class JpaTaskStoreTest {
     @SuppressWarnings("deprecation")
     void save_withoutUserThrowsUnsupportedOperation() {
         final Task task = new Task("t-1", "Name", "Desc");
-        // codeql[java/avoid-deprecated-apis] Validate the deprecated no-user method still throws.
+        // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.save(task))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

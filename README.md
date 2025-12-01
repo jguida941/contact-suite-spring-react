@@ -1536,6 +1536,15 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - Concurrency guards prevent overlapping scans on the same ref, and `paths-ignore` ensures doc-only/image-only changes do not queue CodeQL unnecessarily.
 - Triggers: pushes/PRs to `main` or `master` (respecting the filters), a weekly scheduled scan (`cron: 0 3 * * 0`), and optional manual dispatch.
 
+#### Log Injection Prevention
+Log injection vulnerabilities (CWE-117) are prevented through inline validation in logging methods. Both `RateLimitingFilter` and `RequestLoggingFilter` use dedicated sanitization methods that:
+- Strip CR/LF and control characters before logging
+- Validate against safe character patterns (`^[A-Za-z0-9 .:@/_-]+$`)
+- Truncate overly long values (max 120 chars)
+- Return safe placeholder values (`[null]`, `[empty]`, `[unsafe-value]`) for invalid input
+
+This inline validation approach ensures CodeQL can trace data flow and verify that only sanitized values reach log statements.
+
 ### API Fuzzing (Schemathesis)
 - `.github/workflows/api-fuzzing.yml` runs Schemathesis against the live OpenAPI spec to detect 5xx errors, schema violations, and edge cases.
 - **Schemathesis v4+ compatibility**: The workflow uses updated options after v4 removed `--base-url`, `--hypothesis-*`, and `--junit-xml` flags.

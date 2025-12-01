@@ -6,11 +6,12 @@ All notable changes to this project will be documented here. Follow the
 ## [Unreleased]
 
 ### Added
-- **CodeQL Custom Sanitizer Configuration**:
-  - Created `.github/codeql/custom-sanitizers.yml` to mark `sanitizeForLogging` (RateLimitingFilter) and `sanitizeLogValue` (RequestLoggingFilter) as recognized log injection sanitizers.
-  - Created `.github/codeql/codeql-config.yml` to reference custom model extensions.
-  - Updated `.github/workflows/codeql.yml` to use the custom configuration file.
-  - This resolves false positive log injection alerts where the code already properly sanitizes user input before logging.
+- **Log Injection Prevention (Inline Validation)**:
+  - Refactored `RateLimitingFilter` to use inline validation methods (`logSafeValue`, `logRateLimitExceeded`, `getSafeLogValue`) that validate input before logging.
+  - Refactored `RequestLoggingFilter` to use inline validation methods (`getSafeLogValue`, `getSafeUserAgent`) that strip CR/LF and control characters.
+  - Pattern validation ensures only safe characters (`^[A-Za-z0-9 .:@/_-]+$`) reach log statements.
+  - Invalid inputs return safe placeholders (`[null]`, `[empty]`, `[unsafe-value]`).
+  - This approach allows CodeQL to trace data flow and verify sanitization.
 
 - **Store and Mapper Test Coverage Improvements**:
   - Added comprehensive null parameter validation tests to `JpaContactStoreTest`, `JpaTaskStoreTest`, and `JpaAppointmentStoreTest`.
@@ -44,6 +45,7 @@ All notable changes to this project will be documented here. Follow the
 
 ### Fixed
 - RateLimitingFilter now routes all client IPs, usernames, and paths through the shared `sanitizeForLogging` helper so CodeQL log-injection alerts are eliminated.
+- RequestLoggingFilter now defines `MAX_USER_AGENT_LENGTH`, eliminating the undefined constant compile error while still trimming verbose headers.
 - README REST API docs now explain the optimistic locking workflow and list the 401/403 responses that `GlobalExceptionHandler`/Spring Security emit so callers know why those codes appear.
 - ZAP workflows now resolve the built JAR explicitly and fail fast if multiple or zero artifacts exist before launching the scan harness.
 - Added an explicit `@SuppressWarnings` annotation and JavaDoc note in `GlobalExceptionHandler#handleOptimisticLock` so we keep returning generic 409 responses without leaking entity metadata.

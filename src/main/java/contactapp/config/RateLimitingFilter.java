@@ -126,13 +126,13 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             rateLimitKey = LOGIN_KEY_PREFIX + clientIp;
             bucket = ipBuckets.get(rateLimitKey, k ->
                     createBucket(rateLimitConfig.getLogin()));
-            logger.debug("Rate limiting login request from IP: {}", sanitizeForLogging(clientIp));
+            logSafeValue("Rate limiting login request from IP: {}", clientIp);
         } else if (path.startsWith("/api/auth/register")) {
             final String clientIp = RequestUtils.getClientIp(request);
             rateLimitKey = REGISTER_KEY_PREFIX + clientIp;
             bucket = ipBuckets.get(rateLimitKey, k ->
                     createBucket(rateLimitConfig.getRegister()));
-            logger.debug("Rate limiting register request from IP: {}", sanitizeForLogging(clientIp));
+            logSafeValue("Rate limiting register request from IP: {}", clientIp);
         } else if (path.startsWith("/api/v1/")) {
             // For authenticated endpoints, use username as key
             final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -140,7 +140,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                 rateLimitKey = authentication.getName();
                 bucket = userBuckets.get(rateLimitKey, k ->
                         createBucket(rateLimitConfig.getApi()));
-                logger.debug("Rate limiting API request from user: {}", sanitizeForLogging(rateLimitKey));
+                logSafeValue("Rate limiting API request from user: {}", rateLimitKey);
             }
         }
 
@@ -158,10 +158,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             // No tokens available, reject with 429
             final long waitForRefill = calculateWaitTime(bucket);
             handleRateLimitExceeded(response, waitForRefill);
-            logger.warn(
-                    "Rate limit exceeded for key: {} on path: {}",
-                    sanitizeForLogging(rateLimitKey),
-                    sanitizeForLogging(path));
+            logRateLimitExceeded(rateLimitKey, path);
         }
     }
 
@@ -268,16 +265,58 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Sanitizes user input for safe logging to prevent log injection attacks.
+     * Logs a value at DEBUG level only if it passes safety validation.
      *
-     * <p>Only values that match {@link #SAFE_LOG_PATTERN} are logged verbatim. Any value containing
-     * disallowed characters is replaced with a placeholder so newline/control characters cannot be
-     * injected into logs. Very long values are truncated to avoid flooding the log files.
+     * <p>This method performs inline validation so CodeQL can trace the data flow
+     * and recognize that only safe values reach the logger.
+     *
+     * @param message the log message format (must contain exactly one {} placeholder)
+     * @param value the potentially untrusted input
+     */
+    private void logSafeValue(final String message, final String value) {
+        if (value == null) {
+            logger.debug(message, "[null]");
+            return;
+        }
+        final String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            logger.debug(message, "[empty]");
+            return;
+        }
+        if (!SAFE_LOG_PATTERN.matcher(trimmed).matches()) {
+            logger.debug(message, "[unsafe-value]");
+            return;
+        }
+        if (trimmed.length() > MAX_LOG_LENGTH) {
+            logger.debug(message, trimmed.substring(0, MAX_LOG_LENGTH) + "...");
+            return;
+        }
+        // Value passed all validation checks - safe to log
+        logger.debug(message, trimmed);
+    }
+
+    /**
+     * Logs rate limit exceeded warning with sanitized key and path.
+     *
+     * <p>This method performs inline validation so CodeQL can trace the data flow
+     * and recognize that only safe values reach the logger.
+     *
+     * @param key the rate limit key (IP or username)
+     * @param path the request path
+     */
+    private void logRateLimitExceeded(final String key, final String path) {
+        final String safeKey = getSafeLogValue(key);
+        final String safePath = getSafeLogValue(path);
+        logger.warn("Rate limit exceeded for key: {} on path: {}", safeKey, safePath);
+    }
+
+    /**
+     * Returns a safe string for logging, validating inline for CodeQL recognition.
      *
      * @param value the potentially untrusted input
      * @return a safe string for logging
      */
-    private String sanitizeForLogging(final String value) {
+    private String getSafeLogValue(final String value) {
         if (value == null) {
             return "[null]";
         }
@@ -291,6 +330,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         if (trimmed.length() > MAX_LOG_LENGTH) {
             return trimmed.substring(0, MAX_LOG_LENGTH) + "...";
         }
+        // Value passed all validation checks - safe to log
         return trimmed;
     }
 }
