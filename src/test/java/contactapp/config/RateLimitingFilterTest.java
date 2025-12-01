@@ -416,6 +416,16 @@ class RateLimitingFilterTest {
         assertThat(invokeCalculateWaitTime(bucket)).isEqualTo(1);
     }
 
+    @Test
+    void sanitizeForLogging_rejectsUnsafeCharacters() throws Exception {
+        final Method method = RateLimitingFilter.class.getDeclaredMethod("sanitizeForLogging", String.class);
+        method.setAccessible(true);
+
+        final String sanitized = (String) method.invoke(filter, "user\r\nname");
+
+        assertThat(sanitized).isEqualTo("[unsafe-value]");
+    }
+
     /**
      * Invokes the private {@code calculateWaitTime} helper via reflection to
      * keep PIT from mutating the Retry-After math unchecked.

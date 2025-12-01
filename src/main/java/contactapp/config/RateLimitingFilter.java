@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -59,6 +60,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(RateLimitingFilter.class);
+
+    /** Allowed characters when logging user-provided values. */
+    private static final Pattern SAFE_LOG_PATTERN = Pattern.compile("^[A-Za-z0-9 .:@/_-]+$");
+
+    /** Maximum length for sanitized log values to prevent log flooding. */
+    private static final int MAX_LOG_LENGTH = 120;
 
     private static final String LOGIN_KEY_PREFIX = "LOGIN:";
     private static final String REGISTER_KEY_PREFIX = "REGISTER:";
@@ -261,11 +268,30 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         return userBuckets.estimatedSize();
     }
 
+    /**
+     * Sanitizes user input for safe logging to prevent log injection attacks.
+     *
+     * <p>Only values that match {@link #SAFE_LOG_PATTERN} are logged verbatim. Any value containing
+     * disallowed characters is replaced with a placeholder so newline/control characters cannot be
+     * injected into logs. Very long values are truncated to avoid flooding the log files.
+     *
+     * @param value the potentially untrusted input
+     * @return a safe string for logging
+     */
     private String sanitizeForLogging(final String value) {
         if (value == null) {
-            return "unknown";
+            return "[null]";
         }
-        final String sanitized = value.replaceAll("[\\r\\n]", "").trim();
-        return sanitized.isEmpty() ? "unknown" : sanitized;
+        final String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return "[empty]";
+        }
+        if (!SAFE_LOG_PATTERN.matcher(trimmed).matches()) {
+            return "[unsafe-value]";
+        }
+        if (trimmed.length() > MAX_LOG_LENGTH) {
+            return trimmed.substring(0, MAX_LOG_LENGTH) + "...";
+        }
+        return trimmed;
     }
 }
