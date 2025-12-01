@@ -64,6 +64,12 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
 7. Planning note: Phases 0-4 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI) with **345 tests** covering both the JPA path and the legacy singleton fallbacks (PIT mutation coverage 99% with 99% line coverage on mutated classes). Three remaining PIT mutants correspond to the constant `return true` statements inside the `add*` methods—tests already exercise those success paths, but this mutator replaces the return with `true` again so PIT reports them as uncovered. The roadmap for security and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0028 capture the selected stack and implementation decisions.
 
+## Branches & History
+- `master` (this branch) – the Spring Boot + React suite with persistence, CI, and the full UI.
+- `original-cs320` – the unmodified CS320 milestone (HashMap-backed services + the original requirements/tests). Browse it at [`original-cs320`](https://github.com/jguida941/contact-suite-spring-react/tree/original-cs320) to compare the baseline against this modern implementation.
+
+We tag releases from both branches so GitHub’s “Releases” view exposes the original assignment snapshot alongside the current platform.
+
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
 |----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
