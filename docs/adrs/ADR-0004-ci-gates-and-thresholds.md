@@ -23,6 +23,7 @@
 - Every workflow artifact (JaCoCo HTML, SpotBugs HTML, Dependency-Check report, PITest HTML) is bundled for download, simplifying triage.
 - Developers occasionally need to update suppression files or adjust timeouts (e.g., `nvdApiDelay` for Dependency-Check) to keep pipelines stable, but the `dependency.check.skip` flag gives CI a controlled retry path instead of stalling on rate limits.
 - Raising thresholds later (e.g., JaCoCo > 90%, PITest > 85%) will be straightforward because the infrastructure already exists.
+- **Windows runners skip Testcontainers integration tests** (`-DskipITs`) because GitHub-hosted Windows runners only support Windows containers, not the Linux containers required by Testcontainers/Postgres. The full integration test suite runs on Ubuntu runners, which have native Docker support for Linux containers.
 
 ## Alternatives considered
 - **Only run tests in CI** - rejected because silent coverage/mutation regressions would go unnoticed until grading.
