@@ -55,6 +55,8 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    > | http://localhost:8080/api/v1/* | REST API (JSON responses only) |
    > | http://localhost:8080/swagger-ui.html | API documentation |
    > | http://localhost:8080/actuator/health | Health check endpoint |
+   > 
+   > **One-command option**: `python scripts/dev_stack.py` starts `mvn spring-boot:run`, waits for `http://localhost:8080/actuator/health`, installs UI deps if needed, and launches `npm run dev -- --port 5173`. Press Ctrl+C once to shut down both services.
 5. **Production build** (single JAR with UI):
    ```bash
    mvn package -DskipTests
@@ -146,6 +148,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`scripts/ci_metrics_summary.py`](scripts/ci_metrics_summary.py)                                                     | Helper that parses JaCoCo/PITest/Dependency-Check reports and posts the QA summary table in CI. |
 | [`scripts/serve_quality_dashboard.py`](scripts/serve_quality_dashboard.py)                                           | Tiny HTTP server that opens `target/site/qa-dashboard` locally after downloading CI artifacts.  |
 | [`scripts/api_fuzzing.py`](scripts/api_fuzzing.py)                                                                   | API fuzzing helper for local Schemathesis runs (starts app, fuzzes, exports OpenAPI spec).      |
+| [`scripts/dev_stack.py`](scripts/dev_stack.py)                                                                       | Runs the Spring Boot API and Vite UI together with health checks and dependency bootstrapping.  |
 | [`.github/workflows`](.github/workflows)                                                                             | CI/CD pipelines (tests, quality gates, release packaging, CodeQL, API fuzzing).                 |
 
 ## Design Decisions & Highlights
@@ -667,6 +670,12 @@ flowchart TD
     I --> J[lib/schemas.ts]
     J --> K[Mirrors Validation.java]
 ```
+
+### Local Dev Script
+- Use `python scripts/dev_stack.py` to launch Spring Boot (`mvn spring-boot:run`) and the Vite UI (`npm run dev -- --port 5173`) in one terminal.
+- The helper polls `http://localhost:8080/actuator/health` before starting the frontend, installs `ui/contact-app` dependencies if `node_modules` is missing, and shuts everything down on Ctrl+C.
+- Flags: `--frontend-port 4000`, `--backend-goal spring-boot:run -Dspring.profiles.active=dev`, or `--skip-frontend-install` keep it flexible for custom setups.
+
 
 ### App Shell Layout
 ```
