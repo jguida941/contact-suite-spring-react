@@ -161,8 +161,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             logger.warn(
                     "Rate limit exceeded for key: {} on path: {}",
                     sanitizeForLogging(rateLimitKey),
-                    sanitizeForLogging(path)
-            );
+                    sanitizeForLogging(path));
         }
     }
 

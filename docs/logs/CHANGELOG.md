@@ -28,6 +28,7 @@ All notable changes to this project will be documented here. Follow the
 - **RequestLoggingFilter query string tests**: Added tests verifying query string inclusion/exclusion in logs.
 
 ### Fixed
+- RateLimitingFilter now routes all client IPs, usernames, and paths through the shared `sanitizeForLogging` helper so CodeQL log-injection alerts are eliminated.
 - README REST API docs now explain the optimistic locking workflow and list the 401/403 responses that `GlobalExceptionHandler`/Spring Security emit so callers know why those codes appear.
 - ZAP workflows now resolve the built JAR explicitly and fail fast if multiple or zero artifacts exist before launching the scan harness.
 - Added an explicit `@SuppressWarnings` annotation and JavaDoc note in `GlobalExceptionHandler#handleOptimisticLock` so we keep returning generic 409 responses without leaking entity metadata.
