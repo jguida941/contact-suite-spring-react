@@ -94,4 +94,48 @@ class JwtServiceTest {
 
         assertThat(expired).isFalse();
     }
+
+    // ==================== Token Refresh Eligibility Tests ====================
+
+    @Test
+    void isTokenEligibleForRefresh_returnsTrueForValidToken() {
+        ReflectionTestUtils.setField(jwtService, "refreshWindow", 300000L); // 5 min
+        String token = jwtService.generateToken(userDetails);
+
+        assertThat(jwtService.isTokenEligibleForRefresh(token, userDetails)).isTrue();
+    }
+
+    @Test
+    void isTokenEligibleForRefresh_returnsTrueForRecentlyExpiredToken() {
+        // Create a token that will expire immediately
+        ReflectionTestUtils.setField(jwtService, "jwtExpiration", 1L); // 1ms
+        ReflectionTestUtils.setField(jwtService, "refreshWindow", 300000L); // 5 min
+        String token = jwtService.generateToken(userDetails);
+
+        // Wait a tiny bit for it to expire
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Should still be eligible within refresh window
+        assertThat(jwtService.isTokenEligibleForRefresh(token, userDetails)).isTrue();
+    }
+
+    @Test
+    void isTokenEligibleForRefresh_returnsFalseForDifferentUser() {
+        ReflectionTestUtils.setField(jwtService, "refreshWindow", 300000L);
+        String token = jwtService.generateToken(userDetails);
+        UserDetails otherUser = User.withUsername("other").password("ignored").roles("USER").build();
+
+        assertThat(jwtService.isTokenEligibleForRefresh(token, otherUser)).isFalse();
+    }
+
+    @Test
+    void getRefreshWindow_returnsConfiguredValue() {
+        ReflectionTestUtils.setField(jwtService, "refreshWindow", 600000L);
+
+        assertThat(jwtService.getRefreshWindow()).isEqualTo(600000L);
+    }
 }

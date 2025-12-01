@@ -89,24 +89,25 @@ The Contact Suite is a multi-tenant contact management application with:
 | **User Enumeration** | Information Disclosure | Low | Generic "invalid credentials" message | Implemented |
 
 #### PII Retention and Masking Policy
-- **Scope**: All application logs flow through `PiiMaskingConverter` so we mask phone numbers,
-  postal addresses, email addresses, usernames, device IDs, and IP addresses before they leave the
-  JVM. Structured audit logs follow the same policy except where regulators require full fidelity.
-- **Strategy**: Phone numbers and postal addresses are partially masked (`***-***-1234`,
-  `Portland, OR`). Emails and usernames keep only the first and last character (`j***@example.com`).
-  Device IDs/IPs are hashed with a per-day salt to support analytics without retaining identifiers.
+- **Scope**: Application logs flow through `PiiMaskingConverter` which currently masks phone numbers
+  and postal addresses. Email/username/IP masking is planned for a future release.
+- **Strategy (Implemented)**:
+  - Phone numbers: Shows only last 4 digits (`***-***-1234`)
+  - Addresses: Preserves city and state, masks street and zip (`*** Cambridge, MA ***`)
+- **Strategy (Planned)**:
+  - Emails: First and last character of local-part preserved (`j***n@example.com` for `jenny.rosen@example.com`)
+  - Usernames: First and last character preserved (`j***n` for `jrosen`)
+  - IPs: Hashed with per-day salt (`hash:d7042d2f`)
 - **Exceptions**: Security/audit logs that must capture exact values are written to an isolated
   index behind RBAC; retention is 30 days and requires SOC approval to access.
 - **Retention**: Application logs retain 14 days online, 30 days in cold storage. Users can request
   erasure via support; delete jobs scrub entries from cold storage as well.
-- **Monitoring**: CI enforces usage of the masking converter; automated tests assert masking on new
-  loggers. We also run weekly log sampling to ensure no new fields bypass redaction.
 
-Example log redaction:
+Example log redaction (current implementation):
 
 ```
-Before: phone=555-867-5309, address=123 Main St, Portland, OR 97214, email=jenny.rosen@example.com, ip=203.0.113.10
-After:  phone=***-***-5309, address=Portland, OR, email=j***n@example.com, ip=hash:d7042d2f
+Before: phone=555-867-5309, address=123 Main St, Portland, OR 97214
+After:  phone=***-***-5309, address=*** Portland, OR ***
 ```
 
 ### 4.6 Availability Threats

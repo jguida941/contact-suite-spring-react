@@ -39,6 +39,9 @@ public class JwtService {
     @Value("${jwt.expiration:1800000}")
     private long jwtExpiration;
 
+    @Value("${jwt.refresh-window:300000}")
+    private long refreshWindow;
+
     /**
      * Extracts the username (subject) from a JWT token.
      *
@@ -102,6 +105,51 @@ public class JwtService {
     public boolean isTokenValid(final String token, final UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    /**
+     * Checks if a token is eligible for refresh.
+     * A token is eligible if it's still valid OR expired within the refresh window.
+     *
+     * @param token the JWT token to check
+     * @param userDetails the user details to validate against
+     * @return true if the token can be refreshed
+     */
+    public boolean isTokenEligibleForRefresh(final String token, final UserDetails userDetails) {
+        try {
+            final String username = extractUsername(token);
+            if (!username.equals(userDetails.getUsername())) {
+                return false;
+            }
+            final Date expiration = extractExpiration(token);
+            final long now = System.currentTimeMillis();
+            final long expirationTime = expiration.getTime();
+            // Token is valid OR expired within the refresh window
+            return expirationTime > now || (now - expirationTime) <= refreshWindow;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // Token is expired - check if within refresh window
+            final Claims claims = e.getClaims();
+            if (claims == null) {
+                return false;
+            }
+            final String username = claims.getSubject();
+            if (!username.equals(userDetails.getUsername())) {
+                return false;
+            }
+            final Date expiration = claims.getExpiration();
+            final long now = System.currentTimeMillis();
+            final long expirationTime = expiration.getTime();
+            return (now - expirationTime) <= refreshWindow;
+        }
+    }
+
+    /**
+     * Returns the configured refresh window.
+     *
+     * @return refresh window in milliseconds
+     */
+    public long getRefreshWindow() {
+        return refreshWindow;
     }
 
     private String buildToken(

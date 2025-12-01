@@ -52,18 +52,26 @@ sequenceDiagram
 ### 2. Rate Limiting with Bucket4j
 
 **Configuration**:
-| Endpoint | Limit | Window | Key |
-|----------|-------|--------|-----|
-| /api/auth/login | 5 requests/username **and** 100/IP | 60 seconds | Username + IP |
-| /api/auth/register | 3 requests | 60 seconds | IP address |
-| /api/v1/** | 100 requests | 60 seconds | Username |
+| Endpoint | Limit | Window | Window Type | Key |
+|----------|-------|--------|-------------|-----|
+| /api/auth/login | 5/username, 100/IP | 60 sec | Sliding | Username + IP |
+| /api/auth/register | 3 requests | 60 sec | Sliding | IP address |
+| /api/v1/** | 100 requests | 60 sec | Sliding | Username |
+
+**Window Type**: All rate limits use a **sliding window** (token bucket algorithm). Tokens replenish
+continuously, so a user blocked at T=0 can make 1 request at T=12s (1/5 of the window).
 
 **Design Rationale**:
 - Login: Username buckets allow 5 attempts/min so users can fix typos while IP buckets (100/min) detect distributed attacks; repeated failures trigger a 15-minute account lockout.
 - Register: 3 attempts/min prevents automated account creation.
 - API: 100 req/min supports typical CRUD workflows while preventing resource exhaustion.
 
-**Account lockout**: When a username accumulates 5 failed logins in 15 minutes we flip a lock flag stored alongside the user record for 15 minutes. Successful logins reset the counters; admin tooling can clear locks manually (all actions are audited).
+**Account Lockout Details**:
+- **Trigger**: 5 failed logins for the same username within any rolling 15-minute window
+- **Duration**: 15 minutes from the 5th failure
+- **HTTP Response**: `401 Unauthorized` with `{"error": "Account temporarily locked", "lockoutUntil": "<ISO timestamp>"}`
+- **Counter Reset**: Successful login resets the failed-login counter only; rate-limit buckets refill independently
+- **Admin Override**: Support staff can clear locks via audited tooling
 
 **Response Format**:
 ```json
@@ -127,6 +135,14 @@ sequenceDiagram
 - `form-action 'self'`: Restrict form submissions to same origin
 - `base-uri 'self'`: Prevent base tag hijacking
 - `object-src 'none'`: Block plugins (Flash, Java applets, etc.)
+
+**Permissions-Policy Rationale**:
+All browser features are disabled by default because the current application does not require them.
+This maximizes security by reducing attack surface. If future features require specific capabilities:
+- Create a feature request documenting the business need
+- Security team reviews and approves the change
+- Update `SecurityConfig.java` to enable only the required feature (e.g., `payment=(self)`)
+- Document the change in this ADR with rationale
 
 ### 6. Docker Packaging
 

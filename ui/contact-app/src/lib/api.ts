@@ -199,6 +199,10 @@ async function fetchWithCsrf(input: RequestInfo | URL, init: RequestInit = {}): 
 
 // ==================== Auth API ====================
 
+// Token refresh configuration
+const REFRESH_MARGIN_MS = 5 * 60 * 1000; // Refresh 5 minutes before expiry
+let refreshTimerId: ReturnType<typeof setTimeout> | null = null;
+
 export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     const response = await fetchWithCsrf(`${AUTH_BASE}/login`, {
@@ -210,6 +214,7 @@ export const authApi = {
     // Token is in HttpOnly cookie, just store user info in session
     tokenStorage.setUser(result);
     syncProfileFromAuth(result);
+    scheduleTokenRefresh(result.expiresIn);
     return result;
   },
 
@@ -223,10 +228,40 @@ export const authApi = {
     // Token is in HttpOnly cookie, just store user info in session
     tokenStorage.setUser(result);
     syncProfileFromAuth(result);
+    scheduleTokenRefresh(result.expiresIn);
     return result;
   },
 
+  /**
+   * Refresh the JWT token. Called automatically before expiry.
+   * Returns new auth response if successful, null if refresh failed.
+   */
+  refresh: async (): Promise<AuthResponse | null> => {
+    try {
+      const response = await fetchWithCsrf(`${AUTH_BASE}/refresh`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        // Token expired or invalid - clear session
+        cancelTokenRefresh();
+        tokenStorage.clear();
+        return null;
+      }
+      const result = await response.json() as AuthResponse;
+      tokenStorage.setUser(result);
+      syncProfileFromAuth(result);
+      scheduleTokenRefresh(result.expiresIn);
+      return result;
+    } catch {
+      // Network error or other failure - don't clear session yet
+      // The next API call will trigger 401 if token is truly expired
+      return null;
+    }
+  },
+
   logout: async (): Promise<void> => {
+    // Cancel any pending refresh
+    cancelTokenRefresh();
     // Call backend to clear the HttpOnly cookie
     try {
       await fetchWithCsrf(`${AUTH_BASE}/logout`, {
@@ -258,7 +293,43 @@ export const authApi = {
   getCurrentUser: (): AuthResponse | null => {
     return tokenStorage.getUser();
   },
+
+  /**
+   * Initialize token refresh on app load if user is authenticated.
+   * Call this from App.tsx to restore refresh scheduling after page reload.
+   */
+  initializeRefresh: (): void => {
+    const user = tokenStorage.getUser();
+    if (user) {
+      // Schedule refresh based on stored expiration
+      // Since we don't know exact time remaining, refresh soon to be safe
+      scheduleTokenRefresh(user.expiresIn);
+    }
+  },
 };
+
+/**
+ * Schedule a token refresh before expiry.
+ * @param expiresIn Token lifetime in milliseconds
+ */
+function scheduleTokenRefresh(expiresIn: number): void {
+  cancelTokenRefresh();
+  // Refresh 5 minutes before expiry, or immediately if less than 5 min left
+  const refreshIn = Math.max(expiresIn - REFRESH_MARGIN_MS, 1000);
+  refreshTimerId = setTimeout(async () => {
+    await authApi.refresh();
+  }, refreshIn);
+}
+
+/**
+ * Cancel any pending token refresh.
+ */
+function cancelTokenRefresh(): void {
+  if (refreshTimerId !== null) {
+    clearTimeout(refreshTimerId);
+    refreshTimerId = null;
+  }
+}
 
 function syncProfileFromAuth(response: AuthResponse) {
   const initials = computeInitials(response.username);

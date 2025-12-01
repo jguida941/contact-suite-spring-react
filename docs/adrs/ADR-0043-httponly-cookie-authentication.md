@@ -152,6 +152,29 @@ All other `/api/**` endpoints require valid CSRF token.
 - Implementation steps, manual test scripts, and on-call alerts are tracked in
   `docs/ci-cd/ci_cd_plan.md#phase-5-5-cookie-rollout`.
 
+### 4. Rollback and Contingency Plan
+If 401 `LegacyTokenDisabled` errors spike unexpectedly:
+
+1. **Immediate Response** (< 15 min):
+   - Set feature flag `LEGACY_TOKEN_ALLOWED=true` in environment config
+   - This re-enables Authorization header fallback without a deploy
+   - Monitor error rates return to baseline
+
+2. **Root Cause Analysis**:
+   - Check CORS misconfiguration (missing `Access-Control-Allow-Credentials`)
+   - Verify SPA clients have updated to cookie-based auth
+   - Review `LegacyTokenUsed` metrics to identify remaining legacy clients
+
+3. **Extended Rollback** (if needed):
+   - Revert to `v5.5.0-migration` tag which supports dual-mode
+   - Extend deprecation timeline by 30 days
+   - Notify affected customers via support channels
+
+4. **Timeline Flexibility**:
+   - Dates are targets, not hard deadlines
+   - Enforcement can be deferred via `JWT_LEGACY_CUTOFF_DATE` env var
+   - Enterprise customers may request extended support windows
+
 ## References
 
 - OWASP JWT Best Practices: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html

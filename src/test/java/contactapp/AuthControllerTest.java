@@ -379,6 +379,57 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.token").isNotEmpty());
     }
 
+    // ==================== Token Refresh Tests ====================
+
+    @Test
+    void refresh_withValidToken_returns200WithNewToken() throws Exception {
+        // First, login to get a valid auth cookie
+        createTestUser("refreshuser", "refresh@example.com", "Password123");
+
+        final var loginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "username": "refreshuser",
+                                "password": "Password123"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Extract the auth cookie from login response
+        final var authCookie = loginResult.getResponse().getCookie("auth_token");
+        assertThat(authCookie).isNotNull();
+
+        // Now call refresh with the valid cookie
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf())
+                        .cookie(authCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("refreshuser"))
+                .andExpect(jsonPath("$.email").value("refresh@example.com"))
+                .andExpect(jsonPath("$.expiresIn").value(greaterThan(0)))
+                .andExpect(cookie().exists("auth_token"));
+    }
+
+    @Test
+    void refresh_withoutToken_returns401() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refresh_withInvalidToken_returns401() throws Exception {
+        final var invalidCookie = new jakarta.servlet.http.Cookie("auth_token", "invalid.token.here");
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf())
+                        .cookie(invalidCookie))
+                .andExpect(status().isUnauthorized());
+    }
+
     // ==================== Helper Methods ====================
 
     private void createTestUser(

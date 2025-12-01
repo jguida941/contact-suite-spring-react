@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for authentication operations (login and registration).
+ * REST controller for authentication operations (login, registration, token refresh).
  *
  * <p>Provides endpoints at {@code /api/auth} for user authentication per ADR-0018 and ADR-0043.
  *
@@ -46,7 +46,17 @@ import org.springframework.web.bind.annotation.RestController;
  * <ul>
  *   <li>POST /api/auth/login - Authenticate user, set HttpOnly cookie, return user info (200 OK)</li>
  *   <li>POST /api/auth/register - Register new user, set HttpOnly cookie, return user info (201 Created)</li>
+ *   <li>POST /api/auth/refresh - Refresh token (sliding session), return new token (200 OK)</li>
  *   <li>POST /api/auth/logout - Clear auth cookie (204 No Content)</li>
+ * </ul>
+ *
+ * <h2>Token Refresh (Sliding Session)</h2>
+ * <p>The refresh endpoint allows extending sessions without re-authentication:
+ * <ul>
+ *   <li>Access tokens expire after 30 minutes (configurable via jwt.expiration)</li>
+ *   <li>Refresh is allowed if token is valid OR expired within refresh window (default 5 min)</li>
+ *   <li>Frontend should call /refresh proactively ~5 min before expiry</li>
+ *   <li>If refresh fails (token too old), user must re-authenticate</li>
  * </ul>
  *
  * <h2>Security</h2>
@@ -221,6 +231,71 @@ public class AuthController {
     }
 
     /**
+     * Refreshes the JWT token if the current token is valid or within the refresh window.
+     *
+     * <p>This endpoint implements sliding session behavior:
+     * <ul>
+     *   <li>If the token is still valid, a new token is issued</li>
+     *   <li>If the token expired within the refresh window (default 5 min), a new token is issued</li>
+     *   <li>If the token is too old, 401 Unauthorized is returned</li>
+     * </ul>
+     *
+     * <p>Frontend clients should call this endpoint proactively (e.g., 5 minutes before expiry)
+     * to maintain a seamless user session without requiring re-authentication.
+     *
+     * @param request HTTP request containing the auth cookie
+     * @param response HTTP response for setting the new auth cookie
+     * @return authentication response with refreshed token info
+     */
+    @Operation(summary = "Refresh JWT token (sliding session)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Token refreshed successfully",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Token expired or invalid",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/refresh")
+    public AuthResponse refresh(
+            final jakarta.servlet.http.HttpServletRequest request,
+            final HttpServletResponse response) {
+        // Extract token from cookie
+        final String token = extractTokenFromCookies(request);
+        if (token == null) {
+            throw new BadCredentialsException("No authentication token found");
+        }
+
+        // Extract username and load user
+        final String username;
+        try {
+            username = jwtService.extractUsername(token);
+        } catch (Exception e) {
+            throw new BadCredentialsException("Invalid token");
+        }
+
+        final User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BadCredentialsException("User not found"));
+
+        // Check if token is eligible for refresh
+        if (!jwtService.isTokenEligibleForRefresh(token, user)) {
+            throw new BadCredentialsException("Token expired - please log in again");
+        }
+
+        // Generate new token
+        final String newToken = jwtService.generateToken(user);
+
+        // Set new cookie
+        setAuthCookie(response, newToken, jwtService.getExpirationTime());
+
+        return new AuthResponse(
+                null, // Token is in HttpOnly cookie, not response body
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole().name(),
+                jwtService.getExpirationTime()
+        );
+    }
+
+    /**
      * Logs out the current user by clearing the auth cookie.
      *
      * <p>Clears the HttpOnly auth cookie and provides a hook for:
@@ -239,6 +314,24 @@ public class AuthController {
         // Clear the auth cookie by setting it with maxAge=0
         clearAuthCookie(response);
         // Future: Add token to blacklist if implementing token revocation
+    }
+
+    /**
+     * Extracts the JWT token from request cookies.
+     *
+     * @param request the HTTP request
+     * @return the token value or null if not found
+     */
+    private String extractTokenFromCookies(final jakarta.servlet.http.HttpServletRequest request) {
+        final jakarta.servlet.http.Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (final jakarta.servlet.http.Cookie cookie : cookies) {
+                if (AUTH_COOKIE_NAME.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     /**

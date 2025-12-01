@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
+import { authApi } from '@/lib/api';
 import { AppShell } from '@/components/layout/AppShell';
 import { OverviewPage } from '@/pages/OverviewPage';
 import { ContactsPage } from '@/pages/ContactsPage';
@@ -12,6 +14,11 @@ import { LoginPage } from '@/pages/LoginPage';
 import { PublicOnlyRoute, RequireAuth } from '@/components/auth/RequireAuth';
 
 function App() {
+  // Initialize token refresh on app load (handles page refresh with existing session)
+  useEffect(() => {
+    authApi.initializeRefresh();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
