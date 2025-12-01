@@ -341,6 +341,7 @@
                     <skip>${spotbugs.skip}</skip>
                     <htmlOutput>true</htmlOutput>
                     <xmlOutput>true</xmlOutput>
+                    <excludeFilterFile>config/spotbugs-exclude.xml</excludeFilterFile>
                 </configuration>
                 <executions>
                     <execution>

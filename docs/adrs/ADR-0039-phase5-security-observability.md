@@ -27,7 +27,7 @@
 - Updated JPA entities with `@ManyToOne User` relationship.
 - Updated repositories with user-aware query methods (`findByUser`, `findByIdAndUser`, `existsByIdAndUser`, `deleteByIdAndUser`).
 - Services automatically filter by authenticated user from `SecurityContextHolder`.
-- ADMIN users can access all records via `?all=true` query parameter.
+- ADMIN-only exports now use a dedicated `POST /api/v1/admin/query` endpoint with `{"includeAll": true}` in the JSON body plus the `X-Admin-Override: true` header so overrides are explicit, CSRF-protected, and fully auditable. Legacy `?all=true` support exists only during the migration window (target removal: **2026-02-01**) to avoid breaking older clients.
 
 **Data Flow**:
 ```mermaid
@@ -54,14 +54,16 @@ sequenceDiagram
 **Configuration**:
 | Endpoint | Limit | Window | Key |
 |----------|-------|--------|-----|
-| /api/auth/login | 5 requests | 60 seconds | IP address |
+| /api/auth/login | 5 requests/username **and** 100/IP | 60 seconds | Username + IP |
 | /api/auth/register | 3 requests | 60 seconds | IP address |
 | /api/v1/** | 100 requests | 60 seconds | Username |
 
 **Design Rationale**:
-- Login: 5 attempts/min allows typos while blocking credential stuffing.
+- Login: Username buckets allow 5 attempts/min so users can fix typos while IP buckets (100/min) detect distributed attacks; repeated failures trigger a 15-minute account lockout.
 - Register: 3 attempts/min prevents automated account creation.
 - API: 100 req/min supports typical CRUD workflows while preventing resource exhaustion.
+
+**Account lockout**: When a username accumulates 5 failed logins in 15 minutes we flip a lock flag stored alongside the user record for 15 minutes. Successful logins reset the counters; admin tooling can clear locks manually (all actions are audited).
 
 **Response Format**:
 ```json
@@ -108,7 +110,8 @@ sequenceDiagram
 **Implemented Headers** (in `SecurityConfig.java`):
 | Header | Value | Purpose |
 |--------|-------|---------|
-| Content-Security-Policy | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'` | Prevents XSS, clickjacking, and data injection attacks |
+| Content-Security-Policy | `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | Prevents XSS, clickjacking, and data injection attacks |
+| Permissions-Policy | `geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()` | Disables browser features to reduce attack surface |
 | X-Content-Type-Options | `nosniff` | Prevents MIME-type sniffing |
 | X-Frame-Options | `SAMEORIGIN` | Prevents clickjacking |
 | Referrer-Policy | `strict-origin-when-cross-origin` | Controls referrer header leakage |
@@ -116,11 +119,14 @@ sequenceDiagram
 **CSP Policy Breakdown**:
 - `default-src 'self'`: Only load resources from same origin by default
 - `script-src 'self'`: Only execute scripts from same origin (blocks inline scripts)
-- `style-src 'self' 'unsafe-inline'`: Allow styles from same origin + inline styles (needed for some UI frameworks)
+- `style-src 'self'`: Only allow stylesheet files from same origin (no inline styles) to maximize CSP effectiveness
 - `img-src 'self' data:`: Allow images from same origin + data URIs
 - `font-src 'self'`: Only load fonts from same origin
 - `connect-src 'self'`: Only allow API calls to same origin
 - `frame-ancestors 'self'`: Prevent embedding in iframes from other origins
+- `form-action 'self'`: Restrict form submissions to same origin
+- `base-uri 'self'`: Prevent base tag hijacking
+- `object-src 'none'`: Block plugins (Flash, Java applets, etc.)
 
 ### 6. Docker Packaging
 
@@ -201,6 +207,6 @@ sequenceDiagram
 - All entity classes (added user relationship)
 - All repository classes (added user-aware methods)
 - All service classes (added user isolation logic)
-- All controllers (added ?all=true support for ADMIN)
+- All controllers (wired ADMIN overrides through a POST `/api/v1/admin/query` flow with JSON flags + headers instead of `?all=true`)
 - `pom.xml` (bucket4j, micrometer-prometheus, logstash-encoder)
 - `application.yml` (rate-limit, prometheus, logging config)

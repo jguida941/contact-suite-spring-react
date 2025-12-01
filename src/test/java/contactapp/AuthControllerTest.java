@@ -237,6 +237,7 @@ class AuthControllerTest {
             final String fieldName,
             final String jsonBody,
             final String expectedMessageContains) throws Exception {
+        assertThat(fieldName).isNotBlank();
         mockMvc.perform(post("/api/auth/register")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -293,6 +294,7 @@ class AuthControllerTest {
             final String fieldName,
             final String jsonBody,
             final String expectedMessageContains) throws Exception {
+        assertThat(fieldName).isNotBlank();
         mockMvc.perform(post("/api/auth/login")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)

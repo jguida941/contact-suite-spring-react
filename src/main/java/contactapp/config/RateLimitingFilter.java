@@ -5,7 +5,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -110,7 +109,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             @NonNull final FilterChain filterChain
     ) throws ServletException, IOException {
         final String path = request.getRequestURI();
-        final String safePathForLog = sanitizeForLogging(path);
 
         // Determine rate limit configuration and key based on path
         Bucket bucket = null;
@@ -156,7 +154,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             logger.warn(
                     "Rate limit exceeded for key: {} on path: {}",
                     sanitizeForLogging(rateLimitKey),
-                    safePathForLog
+                    sanitizeForLogging(path)
             );
         }
     }
@@ -172,10 +170,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
      * @return a new bucket configured with the specified limits
      */
     private Bucket createBucket(final RateLimitConfig.EndpointLimit limit) {
-        final Bandwidth bandwidth = Bandwidth.classic(
-                limit.getRequests(),
-                Refill.greedy(limit.getRequests(), Duration.ofSeconds(limit.getDurationSeconds()))
-        );
+        final long capacity = limit.getRequests();
+        final Duration refillPeriod = Duration.ofSeconds(limit.getDurationSeconds());
+        final Bandwidth bandwidth = Bandwidth.builder()
+                .capacity(capacity)
+                .refillGreedy(capacity, refillPeriod)
+                .build();
         return Bucket.builder()
                 .addLimit(bandwidth)
                 .build();

@@ -11,18 +11,26 @@ jobs:
   zap-baseline:
     name: ZAP Baseline Scan
     runs-on: ubuntu-latest
+    env:
+      # CI-only test credentials - these are NOT used in production deployments.
+      # Fallbacks allow the workflow to run without repository secrets configured.
+      # For enhanced security, configure actual secrets in repo settings.
+      POSTGRES_DB: ${{ vars.POSTGRES_DB || 'contactapp' }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER || 'contactapp' }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'contactapp' }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'zap-scan-test-jwt-secret-not-for-prod' }}
 
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: contactapp
-          POSTGRES_USER: contactapp
-          POSTGRES_PASSWORD: contactapp
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U contactapp"
+          --health-cmd "pg_isready -U ${{ env.POSTGRES_USER }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -43,12 +51,21 @@ jobs:
 
       - name: Start application
         run: |
-          java -jar target/cs320-contact-service-junit-1.0.0-SNAPSHOT.jar \
+          JARS=(target/*.jar)
+          if [ "${JARS[0]}" = "target/*.jar" ]; then
+            echo "ERROR: No JAR files found in target/"
+            exit 1
+          fi
+          if [ "${#JARS[@]}" -ne 1 ]; then
+            echo "ERROR: Expected exactly one JAR in target/, found ${#JARS[@]}"
+            exit 1
+          fi
+          java -jar "${JARS[0]}" \
             --spring.profiles.active=dev \
-            --spring.datasource.url=jdbc:postgresql://localhost:5432/contactapp \
-            --spring.datasource.username=contactapp \
-            --spring.datasource.password=contactapp \
-            --jwt.secret=dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5LWRvLW5vdC11c2UtaW4tcHJvZHVjdGlvbg== &
+            --spring.datasource.url=jdbc:postgresql://localhost:5432/${POSTGRES_DB} \
+            --spring.datasource.username="${POSTGRES_USER}" \
+            --spring.datasource.password="${POSTGRES_PASSWORD}" \
+            --jwt.secret="${JWT_SECRET}" &
           echo "Waiting for application to start..."
           for i in {1..30}; do
             if curl -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
@@ -58,14 +75,19 @@ jobs:
             echo "Waiting... ($i/30)"
             sleep 2
           done
+          if ! curl -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+            echo "Application failed to start"
+            exit 1
+          fi
 
       - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.12.0
+        uses: zaproxy/action-baseline@v0.14.0
         with:
           target: 'http://localhost:8080'
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a -j -l WARN'
           allow_issue_writing: false
+          artifact_name: 'zap-baseline-internal'
 
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
@@ -78,18 +100,26 @@ jobs:
   zap-api-scan:
     name: ZAP API Scan
     runs-on: ubuntu-latest
+    env:
+      # CI-only test credentials - these are NOT used in production deployments.
+      # Fallbacks allow the workflow to run without repository secrets configured.
+      # For enhanced security, configure actual secrets in repo settings.
+      POSTGRES_DB: ${{ vars.POSTGRES_DB || 'contactapp' }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER || 'contactapp' }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'contactapp' }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'zap-scan-test-jwt-secret-not-for-prod' }}
 
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: contactapp
-          POSTGRES_USER: contactapp
-          POSTGRES_PASSWORD: contactapp
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U contactapp"
+          --health-cmd "pg_isready -U ${{ env.POSTGRES_USER }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -110,12 +140,21 @@ jobs:
 
       - name: Start application
         run: |
-          java -jar target/cs320-contact-service-junit-1.0.0-SNAPSHOT.jar \
+          JARS=(target/*.jar)
+          if [ "${JARS[0]}" = "target/*.jar" ]; then
+            echo "ERROR: No JAR files found in target/"
+            exit 1
+          fi
+          if [ "${#JARS[@]}" -ne 1 ]; then
+            echo "ERROR: Expected exactly one JAR in target/, found ${#JARS[@]}"
+            exit 1
+          fi
+          java -jar "${JARS[0]}" \
             --spring.profiles.active=dev \
-            --spring.datasource.url=jdbc:postgresql://localhost:5432/contactapp \
-            --spring.datasource.username=contactapp \
-            --spring.datasource.password=contactapp \
-            --jwt.secret=dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5LWRvLW5vdC11c2UtaW4tcHJvZHVjdGlvbg== &
+            --spring.datasource.url=jdbc:postgresql://localhost:5432/${POSTGRES_DB} \
+            --spring.datasource.username="${POSTGRES_USER}" \
+            --spring.datasource.password="${POSTGRES_PASSWORD}" \
+            --jwt.secret="${JWT_SECRET}" &
           echo "Waiting for application to start..."
           for i in {1..30}; do
             if curl -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
@@ -125,15 +164,20 @@ jobs:
             echo "Waiting... ($i/30)"
             sleep 2
           done
+          if ! curl -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+            echo "Application failed to start"
+            exit 1
+          fi
 
       - name: ZAP API Scan
-        uses: zaproxy/action-api-scan@v0.7.0
+        uses: zaproxy/action-api-scan@v0.9.0
         with:
           target: 'http://localhost:8080/v3/api-docs'
           format: openapi
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a -j -l WARN'
           allow_issue_writing: false
+          artifact_name: 'zap-api-internal'
 
       - name: Upload ZAP API Report
         uses: actions/upload-artifact@v4

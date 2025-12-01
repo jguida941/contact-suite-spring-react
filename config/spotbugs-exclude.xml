@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- User constructor intentionally validates inputs and throws IllegalArgumentException.
+         Suppress CT_CONSTRUCTOR_THROW because the entity never escapes partially initialized state. -->
+    <Match>
+        <Class name="contactapp.security.User"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+</FindBugsFilter>

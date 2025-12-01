@@ -6,6 +6,16 @@ All notable changes to this project will be documented here. Follow the
 ## [Unreleased]
 
 ### Added
+- **Phase 5.5 DAST + Runtime Security** (complete):
+  - Added password strength validation to `RegisterRequest` via `@Pattern` regex (uppercase, lowercase, digit required).
+  - Added Content-Security-Policy (CSP) header to `SecurityConfig` (default-src 'self', script-src 'self', etc.).
+  - Created `docs/architecture/threat-model.md` with STRIDE analysis, CORS/JWT/rate-limiting security model, and known mitigations.
+  - Added `.github/workflows/zap-scan.yml` for OWASP ZAP baseline and API scanning in CI.
+  - Created `.zap/rules.tsv` for ZAP rule configuration.
+  - Added 4 new auth controller tests for password strength validation (no uppercase, no lowercase, no digit).
+  - Added CSP header integration test in `SecurityConfigIntegrationTest`.
+  - Total tests now at 580 (586 with ITs), mutation coverage at 94% (615/656 mutants killed).
+
 - **README System Requirements**: Added a toolchain/hardware table plus OS guidance, and documented Node.js 22+ to match the frontend-maven-plugin + CI workflow.
 - **ADR-0040**: Request Tracing and Logging Infrastructure – detailed documentation for CorrelationIdFilter, RequestLoggingFilter, and RequestUtils with test coverage.
 - **ADR-0041**: PII Masking in Log Output – phone number and address masking patterns with Logback configuration.
@@ -18,11 +28,15 @@ All notable changes to this project will be documented here. Follow the
 - **RequestLoggingFilter query string tests**: Added tests verifying query string inclusion/exclusion in logs.
 
 ### Fixed
+- README REST API docs now explain the optimistic locking workflow and list the 401/403 responses that `GlobalExceptionHandler`/Spring Security emit so callers know why those codes appear.
+- ZAP workflows now resolve the built JAR explicitly and fail fast if multiple or zero artifacts exist before launching the scan harness.
+- Added an explicit `@SuppressWarnings` annotation and JavaDoc note in `GlobalExceptionHandler#handleOptimisticLock` so we keep returning generic 409 responses without leaking entity metadata.
 - AuthController now issues/clears JWT cookies via `ResponseCookie` + `HttpHeaders.SET_COOKIE` so SameSite attributes are preserved without clobbering other Set-Cookie headers during login/logout.
 - Frontend `tokenStorage.getUser()` now guards `JSON.parse` with try/catch, purging corrupt sessionStorage entries instead of crashing on malformed data (aligns with SPA security notes).
 - CODEBASE_AUDIT duplicate heading removed and the Phase 5 checklist in `docs/REQUIREMENTS.md` now reflects the completed security/observability scope described elsewhere.
 - Removed the `final` modifier from `contactapp.security.User` so Hibernate can generate lazy-load proxies for the `@ManyToOne(fetch = LAZY)` relations in Contact/Task/Appointment entities.
 - Added `X-XSRF-TOKEN` to `Access-Control-Allow-Headers` so CSRF-protected mutating requests succeed when the SPA runs on `localhost:5173`.
+- Optimistic locking failures are now translated to HTTP 409 responses via `GlobalExceptionHandler` instead of bubbling up as 500 errors, giving clients a user-friendly “refresh and retry” message.
 - Configures `spring.flyway.placeholders.system_user_password_hash` (env override `SYSTEM_USER_PASSWORD_HASH`) so the V5 migration runs outside tests without Flyway placeholder failures.
 - SecurityConfig now allows `/actuator/health`, `/actuator/health/liveness`, and `/actuator/health/readiness` while keeping `/actuator/metrics/**` and `/actuator/prometheus` authenticated per ADR-0039 and `ActuatorEndpointsTest`.
 - Prometheus actuator endpoint now works in tests with `@AutoConfigureObservability`
@@ -33,6 +47,8 @@ All notable changes to this project will be documented here. Follow the
 - SPA deep links and browser refreshes now load without a pre-existing JWT by permitting non `/api/**` GET requests in `SecurityConfig`; `/login` can be visited directly.
 - Frontend no longer wipes tokens on legitimate 403 responses—only 401 Unauthorized forces logout so accidental forbidden calls do not drop the session.
 - Postgres V6 migration now initializes surrogate key sequences with a minimum of 1 (using `setval(..., false)` when the table is empty) to avoid `value 0 is out of bounds` errors during Testcontainers spins.
+- Reworked `contactapp.security.User` constructor to normalize/validate inputs before assigning fields and documented the intentional exceptions in a SpotBugs exclude filter so the `CT_CONSTRUCTOR_THROW` rule no longer fails builds.
+- Dev and test profiles now override `app.auth.cookie.secure` to `false`, so local/Test profile runs can still issue HttpOnly JWT cookies over HTTP while production keeps Secure cookies enforced.
 
 ### Added
 - `micrometer-registry-prometheus-simpleclient` for Micrometer 1.13+ compatibility
@@ -46,15 +62,22 @@ All notable changes to this project will be documented here. Follow the
 - V5 migration uses MERGE INTO and resets identity sequence to avoid conflicts
 
 ### Security
+- Tightened the Content-Security-Policy to remove `'unsafe-inline'` from `style-src`; the React app ships external stylesheets only, and all docs/meta tags now mirror the stricter header.
+- `CookieCsrfTokenRepository` now customizes the SPA-visible `XSRF-TOKEN` cookie with `SameSite=Lax` plus the `server.servlet.session.cookie.secure` flag so OWASP ZAP rule 10054 no longer fails missing-attribute checks.
+- Hardened the HttpOnly cookie rollout: documented credentialed CORS headers + migration plan
+  (ADR-0043, CI/CD plan), shortened JWT TTL to 30 minutes with a dedicated `app.auth.cookie.secure`
+  property, required secure cookies in the prod profile, updated the threat model with PII masking,
+  rate-limit lockouts, admin override auditing, and operational controls, and moved the ZAP workflow
+  plus startup CLI secrets into GitHub Secrets with a failing health-check guard.
 - **JWT cookie CSRF enforcement**: Re-enabled CSRF protection for `/api/v1/**`, added `/api/auth/csrf-token` plus SPA-side double-submit headers, and updated integration tests to include CSRF tokens now that JWTs live in HttpOnly cookies.
 - **Log injection fixes**: Sanitized HTTP method/URI/query logging plus rate-limit key/path logging to strip CR/LF characters before hitting Logback, and tightened integration tests to use tenant-scoped repository lookups while documenting intentional deprecated API coverage in the legacy store/mapper tests.
 - **react-router vulnerability**: Bumped `react-router` and `react-router-dom` from 7.0.2 to 7.9.6 to fix CVE for pre-render data spoofing.
-- **Per-user data isolation**: Added `user_id` column to contacts, tasks, and appointments tables (V5 migration). Services now filter all queries by authenticated user. ADMIN users can access all records via `?all=true` query parameter.
-- **Rate limiting**: Implemented bucket4j token-bucket rate limiting to protect against brute force and DoS attacks:
-  - `/api/auth/login`: 5 requests/minute per IP
+- **Per-user data isolation**: Added `user_id` column to contacts, tasks, and appointments tables (V5 migration). Services now filter all queries by authenticated user. ADMIN users access multi-tenant exports via a POST `/api/v1/admin/query` override (JSON body flag + `X-Admin-Override` header + CSRF token) with the legacy `?all=true` query parameter scheduled for removal after **2026-02-01**.
+- **Rate limiting**: Implemented bucket4j token-bucket rate limiting to protect against brute force and DoS attacks (login combines 5 requests/minute per username + 100/minute per IP with 15-minute lockouts after repeated failures):
+  - `/api/auth/login`: 5 requests/minute per username (plus 100/minute per IP)
   - `/api/auth/register`: 3 requests/minute per IP
   - `/api/v1/**`: 100 requests/minute per authenticated user
-- **PII masking in logs**: Phone numbers masked as `***-***-1234`, addresses show only city/state.
+- **PII masking in logs**: Phone numbers masked as `***-***-1234`, addresses show only city/state (e.g., `123 Main St, Portland, OR 97214` → `Portland, OR`).
 - **SPA login + sanitized logging**: React router now exposes `/login`, `RequireAuth`, and `PublicOnlyRoute` components so the SPA authenticates before calling `/api/v1/**`, with `AuthController` issued JWTs persisted via secure-cookie guidance. `RequestLoggingFilter` was rewritten to mask client IPs, redact token/password query parameters, include normalized user-agent strings, and leverage the shared `RequestUtils` helper for safe header parsing.
 - **Flyway secret placeholders**: H2/Postgres `V5__add_user_id_columns.sql` migrations now accept `${system_user_password_hash}` placeholders (no plaintext hashes in git) and wrap ALTER/CREATE statements in conditional guards so reruns remain idempotent. The migration directory split (`common`, `h2`, `postgresql`) mirrors production vs. test behaviors.
 

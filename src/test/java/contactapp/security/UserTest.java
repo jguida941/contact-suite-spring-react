@@ -264,6 +264,7 @@ class UserTest {
             "50, valid max length username"
     })
     void testUsernameBoundaryLengths(int length, String description) {
+        assertThat(description).isNotBlank();
         String username = "a".repeat(length);
         User user = new User(username, VALID_EMAIL, VALID_PASSWORD, Role.USER);
 

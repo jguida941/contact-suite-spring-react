@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.EstimationProbe;
-import io.github.bucket4j.Refill;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -365,8 +364,12 @@ class RateLimitingFilterTest {
      */
     @Test
     void calculateWaitTime_returnsAtLeastOneSecond() {
+        final Bandwidth bandwidth = Bandwidth.builder()
+                .capacity(1)
+                .refillGreedy(1, Duration.ofSeconds(2))
+                .build();
         final Bucket bucket = Bucket.builder()
-                .addLimit(Bandwidth.classic(1, Refill.greedy(1, Duration.ofSeconds(2))))
+                .addLimit(bandwidth)
                 .build();
         bucket.tryConsume(1);
 

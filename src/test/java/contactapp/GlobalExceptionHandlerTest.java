@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Set;
@@ -111,5 +112,17 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Only ADMIN users can access all contacts", response.getBody().message());
+    }
+
+    @Test
+    void handleOptimisticLock_returnsConflict() {
+        final ObjectOptimisticLockingFailureException ex =
+                new ObjectOptimisticLockingFailureException("contactapp.persistence.entity.ContactEntity", "123");
+
+        final ResponseEntity<ErrorResponse> response = handler.handleOptimisticLock(ex);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Resource was modified by another request. Refresh and try again.", response.getBody().message());
     }
 }

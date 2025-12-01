@@ -7,6 +7,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  *   <li>{@link AccessDeniedException} → 403 Forbidden (insufficient permissions)</li>
  *   <li>{@link ResourceNotFoundException} → 404 Not Found</li>
  *   <li>{@link DuplicateResourceException} → 409 Conflict</li>
+ *   <li>{@link ObjectOptimisticLockingFailureException} → 409 Conflict (concurrent update)</li>
  * </ul>
  *
  * @see ErrorResponse
@@ -126,6 +128,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(final DuplicateResourceException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /**
+     * Handles optimistic locking failures when concurrent updates occur.
+     *
+     * Returns a generic error message to avoid leaking entity names or version values.
+     * The exception parameter is required by Spring's {@link ExceptionHandler} contract
+     * but intentionally unused to prevent information disclosure.
+     *
+     * @param ex the optimistic locking exception (unused intentionally)
+     * @return 409 Conflict with a friendly message
+     */
+    @SuppressWarnings("java:S1172") // Parameter required by Spring @ExceptionHandler contract
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(final ObjectOptimisticLockingFailureException ex) {
+        // Avoid echoing entity/version info from the exception back to the client
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("Resource was modified by another request. Refresh and try again."));
     }
 
     /**

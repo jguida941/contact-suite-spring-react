@@ -113,7 +113,7 @@ Flyway automatically creates the schema on first run. Stop the database with `do
    ```
    Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-7. Planning note: Phases 0-5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability). **574 tests** (580 with integration tests via Failsafe) cover the JPA path, legacy singleton fallbacks, JWT auth components, and User entity validation (PIT mutation coverage 95% with 96% line coverage on mutated classes, 96% test strength). ADR-0014..0044 capture the selected stack, implementation decisions, and engineering principles. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list plus upcoming work.
+7. Planning note: Phases 0-5.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST). **580 tests** (586 with integration tests via Failsafe) cover the JPA path, legacy singleton fallbacks, JWT auth components, and User entity validation (PIT mutation coverage 94% with 95% line coverage on mutated classes). ADR-0014..0044 capture the selected stack, implementation decisions, and engineering principles. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list plus upcoming work.
 
 ## Phase Roadmap & Highlights
 
@@ -128,15 +128,17 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 | 3 | Complete | Persistence & storage | Spring Data JPA + Flyway migrations; Postgres dev/prod; H2/Testcontainers parity |
 | 4 | Complete | React SPA | CRUD UI with TanStack Query + Vite/Tailwind stack; Vitest + Playwright suites |
 | 5 | Complete | Security & observability | JWT auth, per-user tenancy, rate limiting, sanitized logging, Prometheus |
-| 5.5 | Planned | CI security gates | Add ZAP scans and explicit 401/403 regression tests |
+| 5.5 | Complete | CI security gates | ZAP DAST scans, password strength validation, CSP/Permissions-Policy headers |
 | 6 | Planned | Packaging | Production-ready Docker images + compose verification |
 
 ### Phase 5 Security & Observability Summary
 - **Per-user data isolation**: `user_id` foreign keys on contacts, tasks, and appointments enforce multi-tenancy while services scope queries to the authenticated user.
-- **Rate limiting**: Bucket4j with bounded Caffeine caches enforces login (5/min), register (3/min), and API (100/min per user) limits.
-- **CSRF double-submit tokens**: `/api/v1/**` endpoints now require `X-XSRF-TOKEN` headers generated via `CookieCsrfTokenRepository` and `/api/auth/csrf-token`, keeping the HttpOnly cookie flow resistant to cross-site requests.
+- **Rate limiting**: Bucket4j with bounded Caffeine caches enforces login safeguards (5 attempts/min per username + 100/min per IP with lockouts after repeated failures), register (3/min/IP), and API (100/min per authenticated user) limits.
+- **Admin override safety**: Bulk export requests now flow through `POST /api/v1/admin/query` with CSRF tokens, JSON body flags, and `X-Admin-Override` headers plus immutable audit logging; legacy `?all=true` query strings remain temporarily for backward compatibility but are scheduled for removal after **2026-02-01**.
+- **CSRF double-submit tokens**: `/api/v1/**` endpoints now require `X-XSRF-TOKEN` headers generated via `CookieCsrfTokenRepository` and `/api/auth/csrf-token`, keeping the HttpOnly cookie flow resistant to cross-site requests. The `XSRF-TOKEN` cookie explicitly sets `SameSite=Lax` and reuses `server.servlet.session.cookie.secure` (defaults to `true`; dev/test profiles override to `false` for localhost) so OWASP ZAP stops flagging missing attributes.
 - **Sanitized request logging**: `RequestLoggingFilter` records method/URI/status plus masked query strings, redacted sensitive parameters, obfuscated client IPs, and normalized user agents for safe audit trails.
-- **JWT authentication**: Spring Security + `JwtAuthenticationFilter` issues HttpOnly `auth_token` cookies (SameSite=Lax, Secure) and still honors `Authorization: Bearer` headers for API clients.
+- **JWT authentication**: Spring Security + `JwtAuthenticationFilter` issues HttpOnly `auth_token` cookies (SameSite=Lax, Secure) with a 30-minute default TTL (`jwt.expiration`) and a dedicated `app.auth.cookie.secure` flag so cookie security stays explicit per environment while still honoring `Authorization: Bearer` headers for API clients.
+- **Credentialed CORS**: Reverse proxy + Spring `CorsRegistry` ship with explicit origin lists, `Access-Control-Allow-Credentials: true`, and exposed `X-Request-ID`/`X-Trace-ID` headers so `fetch(..., { credentials: 'include' })` succeeds without resorting to wildcards.
 - **Structured logging**: Correlation IDs (`X-Correlation-ID`) flow through MDC for distributed tracing; `PiiMaskingConverter` redacts sensitive patterns in log output.
 - **Prometheus metrics**: `/actuator/prometheus` exposes Micrometer metrics with custom timers for API endpoints; liveness/readiness probes remain on `/actuator/health`.
 - **Production-ready Docker packaging**: Multi-stage build (Eclipse Temurin 17, non-root user, layered JAR extraction) keeps runtime images lean; detailed steps live in [`Dockerfile`](Dockerfile).
@@ -198,7 +200,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/main/java/contactapp/api/TaskController.java`](src/main/java/contactapp/api/TaskController.java)                               | REST controller for Task CRUD operations at `/api/v1/tasks`.                                                                      |
 | [`src/main/java/contactapp/api/AppointmentController.java`](src/main/java/contactapp/api/AppointmentController.java)                 | REST controller for Appointment CRUD operations at `/api/v1/appointments`.                                                        |
 | [`src/main/java/contactapp/api/AuthController.java`](src/main/java/contactapp/api/AuthController.java)                               | REST controller for authentication (login/register) at `/api/auth` (see ADR-0038).                                                |
-| [`src/main/java/contactapp/api/GlobalExceptionHandler.java`](src/main/java/contactapp/api/GlobalExceptionHandler.java)               | Maps exceptions to HTTP responses (400, 401, 404, 409).                                                                                |
+| [`src/main/java/contactapp/api/GlobalExceptionHandler.java`](src/main/java/contactapp/api/GlobalExceptionHandler.java)               | Maps exceptions to HTTP responses (400, 401, 403, 404, 409 including optimistic locking conflicts). The Contact/Task/Appointment entities each use a JPA `@Version` column, so stale PUT/DELETE requests surface `ObjectOptimisticLockingFailureException` errors that the handler converts to HTTP 409 responses with “refresh and retry” guidance. |
 | [`src/main/java/contactapp/api/CustomErrorController.java`](src/main/java/contactapp/api/CustomErrorController.java)                 | Ensures ALL errors return JSON (including Tomcat-level errors).                                                                   |
 | [`src/main/java/contactapp/config/JsonErrorReportValve.java`](src/main/java/contactapp/config/JsonErrorReportValve.java)             | Tomcat valve ensuring container-level errors return JSON (see ADR-0022).                                                          |
 | [`src/main/java/contactapp/config/TomcatConfig.java`](src/main/java/contactapp/config/TomcatConfig.java)                             | Registers JsonErrorReportValve with embedded Tomcat.                                                                              |
@@ -527,7 +529,7 @@ graph TD
 - Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
 - New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
-- Combined with the existing controller/service suites and the security additions above, this brings the repo to **574 tests** (580 with ITs) with **95% mutation kills** (594/626 mutants killed) and **96% line coverage on mutated classes**.
+- Combined with the existing controller/service suites and the security additions above, this brings the repo to **580 tests** (586 with ITs) with **94% mutation kills** (615/656 mutants killed) and **95% line coverage on mutated classes**.
 
 <br>
 
@@ -780,7 +782,7 @@ graph TD
 
 ### [JwtService.java](src/main/java/contactapp/security/JwtService.java)
 - JWT token generation and validation using HMAC-SHA256.
-- Configurable via `jwt.secret` (Base64-encoded, UTF-8 fallback) and `jwt.expiration` (default 24h).
+- Configurable via `jwt.secret` (Base64-encoded, UTF-8 fallback) and `jwt.expiration` (default 30 minutes).
 - Methods: `generateToken()`, `extractUsername()`, `isTokenValid()`, `extractClaim()`.
 
 ### [JwtAuthenticationFilter.java](src/main/java/contactapp/security/JwtAuthenticationFilter.java)
@@ -794,7 +796,7 @@ graph TD
 - Public endpoints: `/api/auth/**`, `/actuator/health`, `/actuator/info`, `/swagger-ui/**`, `/error`, static SPA files.
 - Protected endpoints: `/api/v1/**` require authenticated users with valid JWT.
 - CORS configured via `cors.allowed-origins` property for SPA development (default: `localhost:5173,localhost:8080`).
-- Security headers: `X-Content-Type-Options`, `X-Frame-Options` (SAMEORIGIN), `Referrer-Policy` (strict-origin-when-cross-origin).
+- Security headers: `Content-Security-Policy` (script/style/img/font/connect/frame-ancestors/form-action/base-uri/object-src), `Permissions-Policy` (disables geolocation, camera, microphone, etc.), `X-Content-Type-Options`, `X-Frame-Options` (SAMEORIGIN), `Referrer-Policy` (strict-origin-when-cross-origin).
 
 ### [CustomUserDetailsService.java](src/main/java/contactapp/security/CustomUserDetailsService.java)
 - Implements `UserDetailsService` for Spring Security authentication.
@@ -806,6 +808,7 @@ graph TD
 - Uses `AuthenticationManager` for credential verification and `JwtService` for token generation.
 - Duplicate username/email checks via `UserRepository` methods.
 - Exposes `GET /api/auth/csrf-token` so the SPA can fetch the `XSRF-TOKEN` value for double-submit protection now that JWTs live in HttpOnly cookies.
+- Uses a dedicated `app.auth.cookie.secure` configuration property (overridable via `APP_AUTH_COOKIE_SECURE`/`COOKIE_SECURE`) so the auth cookie can be forced to Secure=true in production without conflating it with the servlet session cookie settings.
 
 ### Auth Endpoint Summary
 | Endpoint | Method | Description | Success | Errors |
@@ -827,7 +830,7 @@ graph TD
 ### Role-Based Access Control
 - Controllers annotated with `@PreAuthorize("hasAnyRole('USER', 'ADMIN')")` require authenticated users.
 - `@SecurityRequirement(name = "bearerAuth")` documents JWT requirement in OpenAPI spec.
-- SPA relies on HttpOnly cookies for tokens while caching profile metadata in `sessionStorage` via `tokenStorage`/`useProfile`, so no JS-accessible token is stored.
+- SPA relies on HttpOnly cookies for tokens while caching profile metadata in `sessionStorage` via `tokenStorage`/`useProfile`, so no JS-accessible token is stored (profile cache clears when the browser ends the session—subject to browser restore/bfcache behavior).
 
 ### Security Tests
 
@@ -1027,14 +1030,18 @@ Request → CorrelationIdFilter(1) → RateLimitingFilter(5) → RequestLoggingF
 | Appointments | `/api/v1/appointments` | `/api/v1/appointments`, `/api/v1/appointments/{id}` | `/api/v1/appointments/{id}` | `/api/v1/appointments/{id}` |
 
 ### HTTP Status Codes
-| Status | Meaning                       | When Used                                    |
-|--------|-------------------------------|----------------------------------------------|
-| 200    | OK                            | GET by ID, PUT update success                |
-| 201    | Created                       | POST create success                          |
-| 204    | No Content                    | DELETE success                               |
-| 400    | Bad Request                   | Validation failure, malformed JSON           |
-| 404    | Not Found                     | Resource with given ID does not exist        |
-| 409    | Conflict                      | Duplicate ID on create                       |
+| Status | Meaning      | When Used                                                                                                                      |
+|--------|--------------|--------------------------------------------------------------------------------------------------------------------------------|
+| 200    | OK           | GET by ID, PUT update success                                                                                                  |
+| 201    | Created      | POST create success                                                                                                            |
+| 204    | No Content   | DELETE success                                                                                                                 |
+| 400    | Bad Request  | Validation failure, malformed JSON                                                                                             |
+| 401    | Unauthorized | Missing/expired JWT or no `auth_token` cookie                                                                                  |
+| 403    | Forbidden    | Authenticated user lacks access (per-user isolation, admin override checks on `POST /api/v1/admin/query` / legacy `?all=true`) |
+| 404    | Not Found    | Resource with given ID does not exist                                                                                          |
+| 409    | Conflict     | Duplicate ID on create or optimistic locking version mismatch                                                                  |
+
+GlobalExceptionHandler and the Spring Security filter chain surface the `401`/`403` rows even for controller methods that do not reference them directly, so API clients always see consistent JSON errors for authentication failures and per-user access violations.
 
 ### Validation Strategy (Two Layers)
 ```mermaid
@@ -1209,6 +1216,8 @@ export const contactsApi = {
 };
 ```
 
+> **CORS reminder:** Every environment needs explicit origins (no `*`) plus `Access-Control-Allow-Credentials: true`, `Access-Control-Allow-Origin: https://your-spa.example`, `Access-Control-Allow-Headers: Authorization, Content-Type, X-XSRF-TOKEN, X-Request-ID`, and `Access-Control-Expose-Headers: X-Request-ID, X-Trace-ID`. Keep the origin list in source control (nginx/ingress + Spring `CorsRegistry`) so UI deployments and backend configs stay synchronized.
+
 ### Validation Alignment
 ```typescript
 // lib/schemas.ts - Zod schemas matching Validation.java constants
@@ -1246,12 +1255,12 @@ npm run test:coverage  # Vitest with coverage report
 ```
 
 ### Related ADRs
-| ADR | Title | Summary |
-|-----|-------|---------|
-| [ADR-0025](docs/adrs/ADR-0025-ui-component-library.md) | UI Component Library | shadcn/ui + Tailwind v4 selection rationale |
-| [ADR-0026](docs/adrs/ADR-0026-theme-system-and-design-tokens.md) | Theme System | CSS variable architecture, 5 themes, WCAG compliance |
-| [ADR-0027](docs/adrs/ADR-0027-application-shell-layout.md) | App Shell Layout | Sidebar + TopBar + Sheet pattern, responsive breakpoints |
-| [ADR-0028](docs/adrs/ADR-0028-frontend-backend-build-integration.md) | Build Integration | Maven plugin config, phase binding, single JAR output |
+| ADR                                                                  | Title                | Summary                                                  |
+|----------------------------------------------------------------------|----------------------|----------------------------------------------------------|
+| [ADR-0025](docs/adrs/ADR-0025-ui-component-library.md)               | UI Component Library | shadcn/ui + Tailwind v4 selection rationale              |
+| [ADR-0026](docs/adrs/ADR-0026-theme-system-and-design-tokens.md)     | Theme System         | CSS variable architecture, 5 themes, WCAG compliance     |
+| [ADR-0027](docs/adrs/ADR-0027-application-shell-layout.md)           | App Shell Layout     | Sidebar + TopBar + Sheet pattern, responsive breakpoints |
+| [ADR-0028](docs/adrs/ADR-0028-frontend-backend-build-integration.md) | Build Integration    | Maven plugin config, phase binding, single JAR output    |
 
 <br>
 
@@ -1311,6 +1320,11 @@ management:
 - **Observability**: Health and info endpoints are essential for orchestrators (Kubernetes probes, load balancer health checks) and operational dashboards.
 - **Profiles**: Environment-specific behavior without code changes; `spring.profiles.active=dev` unlocks more verbose settings locally.
 
+#### Security Property Snapshot
+- `jwt.secret` is mandatory in production and pairs with `jwt.expiration=1800000` (30 minutes) to keep cookie-backed sessions short-lived by default.
+- `app.auth.cookie.secure` (env: `APP_AUTH_COOKIE_SECURE`) governs the custom `auth_token` cookie separately from the servlet session cookie; dev/test default to `false`, but the prod profile requires `COOKIE_SECURE`/`APP_AUTH_COOKIE_SECURE` with no fallback so insecure cookies never ship accidentally.
+- Reverse proxies and Spring CORS config must define explicit origins + `Access-Control-Allow-Credentials: true` to satisfy the SPA’s `credentials: 'include'` fetch calls.
+
 ## [ApplicationTest.java](src/test/java/contactapp/ApplicationTest.java)
 
 ### Test Snapshot
@@ -1336,16 +1350,18 @@ management:
 - `infoEndpointReturnsOk` - Verifies `/actuator/info` returns 200 OK. Provides build metadata for operational dashboards.
 - `envEndpointIsNotExposed` - Verifies `/actuator/env` returns 404. Prevents exposure of environment variables that may contain secrets.
 - `beansEndpointIsNotExposed` - Verifies `/actuator/beans` returns 404. Prevents exposure of internal architecture details.
-- `metricsEndpointIsNotExposed` - Verifies `/actuator/metrics` returns 404. Prevents exposure of JVM/application metrics.
+- `metricsEndpointRequiresAuth` - Verifies `/actuator/metrics` requires authentication. Exposes JVM/application metrics for monitoring.
+- `prometheusEndpointRequiresAuth` - Verifies `/actuator/prometheus` requires authentication. Prometheus-format metrics for scraping.
 
 ### Security Rationale
-| Endpoint            | Status    | Reason                           |
-|---------------------|-----------|----------------------------------|
-| `/actuator/health`  | ✅ Exposed | Required for orchestrator probes |
-| `/actuator/info`    | ✅ Exposed | Build metadata for ops           |
-| `/actuator/env`     | ❌ Blocked | May contain secrets              |
-| `/actuator/beans`   | ❌ Blocked | Reveals architecture             |
-| `/actuator/metrics` | ❌ Blocked | Aids attackers                   |
+| Endpoint               | Status    | Reason                              |
+|------------------------|-----------|-------------------------------------|
+| `/actuator/health`     | ✅ Exposed | Required for orchestrator probes    |
+| `/actuator/info`       | ✅ Exposed | Build metadata for ops              |
+| `/actuator/metrics`    | ✅ Exposed | JVM/app metrics (auth required)     |
+| `/actuator/prometheus` | ✅ Exposed | Prometheus scraping (auth required) |
+| `/actuator/env`        | ❌ Blocked | May contain secrets                 |
+| `/actuator/beans`      | ❌ Blocked | Reveals architecture                |
 
 ## [ServiceBeanTest.java](src/test/java/contactapp/ServiceBeanTest.java)
 

@@ -74,7 +74,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    @Value("${server.servlet.session.cookie.secure:true}")
+    @Value("${app.auth.cookie.secure:true}")
     private boolean secureCookie;
 
     /**

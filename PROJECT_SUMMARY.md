@@ -104,9 +104,9 @@ Built a complete React frontend with:
 
 | Metric | Value |
 |--------|-------|
-| **Total Tests** | 574 (580 with ITs) |
-| **Mutation Coverage (PITest)** | 95% (594/626 mutants killed) |
-| **Line Coverage (JaCoCo)** | 96% on mutated classes |
+| **Total Tests** | 580 (586 with ITs) |
+| **Mutation Coverage (PITest)** | 94% (615/656 mutants killed) |
+| **Line Coverage (JaCoCo)** | 95% on mutated classes |
 | **Static Analysis** | SpotBugs clean |
 | **API Fuzzing** | 30,668 Schemathesis tests |
 
@@ -202,9 +202,9 @@ Every major decision is documented with context, rationale, and consequences:
 - [x] Structured logging with correlation IDs
 - [x] Metrics/tracing via Actuator/Micrometer
 
-### Phase 5.5: DAST + Runtime Security
-- [ ] OWASP ZAP baseline/API scan in CI
-- [ ] Auth/role integration tests (401/403 assertions)
+### Phase 5.5: DAST + Runtime Security ✅
+- [x] OWASP ZAP baseline/API scan in CI
+- [x] Auth/role integration tests (401/403 assertions)
 
 ### Phase 6: Packaging + CI
 - [ ] Dockerfiles for backend and UI
@@ -245,7 +245,7 @@ Every major decision is documented with context, rationale, and consequences:
 
 **Testing & Quality:**
 - JUnit 5 with parameterized tests
-- Mutation testing with PITest (95% kill rate, 594/626 mutants)
+- Mutation testing with PITest (94% kill rate, 615/656 mutants)
 - Integration testing with Testcontainers
 - API fuzzing with Schemathesis
 - Static analysis with SpotBugs and Checkstyle
@@ -273,7 +273,7 @@ Every major decision is documented with context, rationale, and consequences:
 
 ### The 2-Sentence Pitch
 
-"I built a full-stack contact management system with Spring Boot and React. It started as a simple CS320 assignment, but I evolved it into a production-grade app with 44 documented design decisions, 95% mutation test coverage (594/626 mutants killed), and a complete CI/CD pipeline."
+"I built a full-stack contact management system with Spring Boot and React. It started as a simple CS320 assignment, but I evolved it into a production-grade app with 44 documented design decisions, 94% mutation test coverage (615/656 mutants killed), and a complete CI/CD pipeline."
 
 ### Main Components (4 pieces)
 
@@ -361,7 +361,7 @@ Use this template: *"The problem was __. I looked at __. I chose __ because __. 
 > "It manages contacts, tasks, and appointments. Full CRUD operations through a React UI backed by a Spring Boot API with PostgreSQL persistence."
 
 **"What are you most proud of?"**
-> "The 95% mutation coverage. It's easy to get line coverage high, but mutation testing proves the tests actually catch bugs. PITest killed 594 out of 626 mutants."
+> "The 94% mutation coverage. It's easy to get line coverage high, but mutation testing proves the tests actually catch bugs. PITest killed 615 out of 656 mutants."
 
 **"What would you change?"**
 > "I'd migrate from java.util.Date to java.time - the old Date API is awkward. Also, I'd implement token refresh earlier to reduce the complexity of session management."
@@ -384,7 +384,7 @@ contact-suite-spring-react/
 │   ├── api/             # REST controllers, DTOs, exception handling
 │   ├── persistence/     # JPA entities, mappers, repositories, stores
 │   └── config/          # Spring configuration
-├── src/test/java/       # 574 tests (unit, integration, legacy, security)
+├── src/test/java/       # 580 tests (unit, integration, legacy, security)
 ├── ui/contact-app/      # React 19 + Vite + TypeScript frontend
 ├── docs/
 │   ├── adrs/            # 44 Architecture Decision Records

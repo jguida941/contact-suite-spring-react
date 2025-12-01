@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -59,7 +60,7 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = Validation.MAX_ROLE_LENGTH)
-    private Role role = Role.USER;
+    private Role role;
 
     @Column(nullable = false)
     private boolean enabled = true;
@@ -90,21 +91,10 @@ public class User implements UserDetails {
      * @throws IllegalArgumentException if any field fails validation
      */
     public User(final String username, final String email, final String password, final Role role) {
-        Validation.validateLength(username, "Username", 1, Validation.MAX_USERNAME_LENGTH);
-        Validation.validateEmail(email, "Email");
-        Validation.validateLength(password, "Password", 1, Validation.MAX_PASSWORD_LENGTH);
-        if (!BCRYPT_PATTERN.matcher(password).matches()) {
-            throw new IllegalArgumentException(
-                    "Password must be a BCrypt hash starting with $2a$, $2b$, or $2y$");
-        }
-        if (role == null) {
-            throw new IllegalArgumentException("Role must not be null");
-        }
-
-        this.username = username.trim();
-        this.email = email.trim();
-        this.password = password;
-        this.role = role;
+        this.username = normalizeUsername(username);
+        this.email = normalizeEmail(email);
+        this.password = requireBcryptHash(password);
+        this.role = requireRole(role);
     }
 
     @PrePersist
@@ -121,7 +111,8 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        final Role resolvedRole = Objects.requireNonNull(role, "User role must not be null");
+        return List.of(new SimpleGrantedAuthority("ROLE_" + resolvedRole.name()));
     }
 
     @Override
@@ -184,5 +175,31 @@ public class User implements UserDetails {
 
     void setEnabled(final boolean enabled) {
         this.enabled = enabled;
+    }
+
+    private static String normalizeUsername(final String username) {
+        Validation.validateLength(username, "Username", 1, Validation.MAX_USERNAME_LENGTH);
+        return username.trim();
+    }
+
+    private static String normalizeEmail(final String email) {
+        Validation.validateEmail(email, "Email");
+        return email.trim();
+    }
+
+    private static String requireBcryptHash(final String password) {
+        Validation.validateLength(password, "Password", 1, Validation.MAX_PASSWORD_LENGTH);
+        if (!BCRYPT_PATTERN.matcher(password).matches()) {
+            throw new IllegalArgumentException(
+                    "Password must be a BCrypt hash starting with $2a$, $2b$, or $2y$");
+        }
+        return password;
+    }
+
+    private static Role requireRole(final Role role) {
+        if (role == null) {
+            throw new IllegalArgumentException("Role must not be null");
+        }
+        return role;
     }
 }

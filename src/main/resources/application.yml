@@ -96,10 +96,16 @@ server:
   servlet:
     session:
       cookie:
-        # Secure cookies require HTTPS - disabled for local dev, enabled in prod
-        secure: ${COOKIE_SECURE:false}
+        # Secure cookies require HTTPS - default true, dev/test profiles override to false
+        secure: ${COOKIE_SECURE:true}
         same-site: lax
         http-only: true
+
+app:
+  auth:
+    cookie:
+      # Dedicated flag for auth cookies; defaults to session cookie secure flag (true in prod)
+      secure: ${APP_AUTH_COOKIE_SECURE:${COOKIE_SECURE:true}}
 
 # -----------------------------------------------------------------------------
 # Logging Configuration (default: INFO level)
@@ -127,7 +133,7 @@ logging:
 # -----------------------------------------------------------------------------
 jwt:
   secret: ${JWT_SECRET:dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5LWRvLW5vdC11c2UtaW4tcHJvZA==}
-  expiration: 86400000  # 24 hours in milliseconds
+  expiration: 1800000  # 30 minutes in milliseconds
 
 # -----------------------------------------------------------------------------
 # Rate Limiting Configuration
@@ -182,6 +188,16 @@ logging:
     contactapp: DEBUG
   request:
     enabled: true  # Enable request/response logging in dev for debugging
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+
+app:
+  auth:
+    cookie:
+      secure: false
 
 ---
 # =============================================================================
@@ -204,6 +220,16 @@ logging:
   level:
     root: WARN
     contactapp: INFO
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+
+app:
+  auth:
+    cookie:
+      secure: false
 
 ---
 # =============================================================================
@@ -243,9 +269,22 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 2
 
+server:
+  servlet:
+    session:
+      cookie:
+        # Production must use secure cookies - explicit true fallback
+        secure: ${COOKIE_SECURE:true}
+
 # Production JWT secret - REQUIRED, no default (fails fast if not set)
 jwt:
   secret: ${JWT_SECRET}
+
+app:
+  auth:
+    cookie:
+      # Production auth cookies must be secure - explicit true fallback
+      secure: ${APP_AUTH_COOKIE_SECURE:${COOKIE_SECURE:true}}
 
 management:
   endpoint:

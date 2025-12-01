@@ -28,27 +28,27 @@
 
 ## Current State
 
-- **Phase 5 complete**: Spring Security protects every `/api/v1/**` endpoint with JWT bearer auth, per-user data isolation lives in the database (`user_id` foreign keys), controllers enforce ADMIN checks on `?all=true`, bucket4j rate limiting shields `/api/auth/*` + API calls, and the React SPA now exposes `/login` + auth guards before any data fetch.
+- **Phase 5 complete**: Spring Security protects every `/api/v1/**` endpoint with JWT bearer auth, per-user data isolation lives in the database (`user_id` foreign keys), ADMIN-only bulk exports now have a POST `/api/v1/admin/query` override with CSRF + `X-Admin-Override` headers (legacy `?all=true` is only kept for compatibility through **2026-02-01**), bucket4j rate limiting shields `/api/auth/*` + API calls, the CSRF `XSRF-TOKEN` cookie sets `SameSite=Lax` and follows `server.servlet.session.cookie.secure` (default `true`, overridden to `false` in dev/test for localhost), and the React SPA now exposes `/login` + auth guards before any data fetch.
 - Spring Boot 3.4.12 Maven project with layered packages (`domain`, `service`, `api`, `persistence`, `security`, `config`).
 - Domain classes (`Contact`, `Task`, `Appointment`) with validation rules preserved; `appointmentDate` serialized as ISO 8601 with millis + offset (`yyyy-MM-dd'T'HH:mm:ss.SSSXXX`, UTC).
 - Services annotated with `@Service` for Spring DI while retaining `getInstance()` fallbacks powered by in-memory stores that migrate into the JPA-backed stores once Spring initializes; `getInstance()` now simply returns the Spring proxy when available so no manual proxy unwrapping is needed, and the backlog tracks their eventual removal once DI-only usage is confirmed.
 - REST controllers expose CRUD at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments` plus `/api/auth` for login/register/logout; controllers validate input via Bean Validation DTOs and rely on domain constructors for business rules.
 - DTOs with Bean Validation (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) mapped to domain objects.
-- Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 401, 403, 404, 409).
+- Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 401, 403, 404, 409 including optimistic locking conflicts).
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors, and `RequestLoggingFilter` logs masked IP/query data + user agents whenever request logging is enabled.
 - Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and H2/Testcontainers (tests). The default (no profile) run uses in-memory H2 in PostgreSQL compatibility mode so `mvn spring-boot:run` works out of the box; `dev`/`integration`/`prod` profiles point at Postgres. Shared migrations now live under `db/migration/common`, with profile-specific overrides under `db/migration/h2` and `db/migration/postgresql`.
-- Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres, while new JWT/config/filter/unit tests push total coverage to 571 backend tests (577 with ITs).
+- Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres, while new JWT/config/filter/unit tests push total coverage to 580 backend tests (586 with ITs).
 - Mapper/unit suites now include null-guard coverage plus JPA entity accessor tests to keep persistence mutation-safe even when Hibernate instantiates proxies through the protected constructors.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: 571 tests passing (577 with ITs; unit + slice + Testcontainers + security + filter + config tests), 95% mutation score (594/626 mutants killed), 96% line coverage on mutated classes, SpotBugs clean.
+- Latest CI: 580 tests passing (586 with ITs; unit + slice + Testcontainers + security + filter + config tests), 94% mutation score (615/656 mutants killed), 95% line coverage on mutated classes, SpotBugs clean.
 - Testcontainers-backed Postgres integration tests run automatically in CI (Ubuntu jobs pass `-DskipITs=false`) while local `mvn verify` runs set `skipITs=true` by default; enable them locally with `mvn verify -DskipITs=false` once Docker Desktop/Colima is running.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
 - Exception handler tests (5 tests): GlobalExceptionHandlerTest validates direct handler coverage (including ConstraintViolationException for path variable validation).
 - Error controller tests (34 tests): CustomErrorControllerTest (17) + JsonErrorReportValveTest (17) validate container-level error handling.
 - Service tests include lookup method coverage: getAllContacts/getContactById, getAllTasks/getTaskById, getAllAppointments/getAppointmentById, plus mapper/repository slices and legacy singleton tests.
 - `ui/qa-dashboard` is a sample Vite/React metrics console, not a product UI.
-- No authentication, authorization, logging, or observability yet.
+- JWT cookies (`auth_token`) default to 30-minute expirations, use a dedicated `app.auth.cookie.secure` property (env: `APP_AUTH_COOKIE_SECURE`) so prod deployments must explicitly enable the Secure flag, and the SPA issues `credentials: 'include'` fetches—edge proxies + Spring `CorsRegistry` must list concrete origins with `Access-Control-Allow-Credentials: true`.
 - Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) instead of `getDatabase()` for better encapsulation.
 - DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules.
 
@@ -187,12 +187,13 @@ Implementation details:
 - Added component tests (Vitest/RTL, 22 tests) and Playwright CRUD smoke tests (5 tests). `frontend-maven-plugin` builds UI during `mvn package`, bundling into the Spring Boot JAR.
 
 ### Phase 5: Security + Observability ✅ (Completed)
-- Added Spring Security JWT stack (AuthController, `JwtAuthenticationFilter`, `SecurityConfig`, `@PreAuthorize` usage); enforced `/api/v1/**` protection, controller-level ADMIN checks for `?all=true`, and `CookieCsrfTokenRepository` double-submit tokens (issued via `/api/auth/csrf-token`) so cookie-authenticated requests include `X-XSRF-TOKEN`.
+- Added Spring Security JWT stack (AuthController, `JwtAuthenticationFilter`, `SecurityConfig`, `@PreAuthorize` usage); enforced `/api/v1/**` protection, introduced a POST `/api/v1/admin/query` override that requires CSRF tokens + `X-Admin-Override` headers + audited JSON bodies (legacy `?all=true` support remains only until **2026-02-01**), delivered `CookieCsrfTokenRepository` double-submit tokens (issued via `/api/auth/csrf-token`) so cookie-authenticated requests include `X-XSRF-TOKEN`, and ensured the CSRF cookie mirrors `SameSite=Lax`/`secure` expectations for scans.
 - Added SPA auth flow: `/login` page, `RequireAuth`/`PublicOnlyRoute` guards, token/profile synchronization, selective cache clearing on logout. AuthResponse docs now mandate httpOnly cookies and CSRF safeguards.
-- Added structured logging (`logback-spring.xml`), correlation IDs, fully sanitized `RequestLoggingFilter` (masked IPs, CR/LF-stripped method/URI/query/user-agent), and rate limiting via bucket4j/Caffeine.
+- Added structured logging (`logback-spring.xml`), correlation IDs, fully sanitized `RequestLoggingFilter` (masked IPs, CR/LF-stripped method/URI/query/user-agent), and bucket4j/Caffeine rate limiting: login now combines username-level limits + 100/min/IP enforcement with temporary lockouts, register stays at 3/min/IP, and `/api/v1/**` remains 100/min per authenticated user.
 - Enabled Prometheus metrics, secure headers (CSP/HSTS/X-Content-Type-Options/X-Frame-Options), and secrets strategy (env vars for dev/test, vault in prod). Added rate-limit, correlation, logging, and request utility tests.
+- Documented credentialed CORS requirements (`Access-Control-Allow-Credentials: true`, explicit SPA origins, exposed trace headers) and introduced the dedicated `app.auth.cookie.secure` property (prod profile mandates `COOKIE_SECURE`/`APP_AUTH_COOKIE_SECURE`) alongside a default 30-minute `jwt.expiration` so cookie auth cannot silently fall back to insecure HTTP.
 
-### Phase 5.5: DAST + Runtime Security
+### Phase 5.5: DAST + Runtime Security ✅
 - Run OWASP ZAP (API/baseline) in CI against the running test instance; fail on high/critical findings.
 - Add auth/role integration tests (401/403 assertions) for protected endpoints.
 
@@ -347,7 +348,7 @@ Implementation details:
 - [x] README + runbooks updated with deployment, security, and operational notes
 - [x] Secrets management strategy documented (env vars locally, vault/secret manager in prod)
 
-### Phase 5.5: DAST + Runtime Security
+### Phase 5.5: DAST + Runtime Security ✅
 - [x] DAST (OWASP ZAP baseline/API scan) running in CI (`.github/workflows/zap-scan.yml`)
 - [x] Auth/role integration tests asserting 401/403 and allowed roles (`AuthControllerTest`, `ContactControllerTest`)
 - [x] Security scan documentation/checks repeatable in CI (ZAP rules in `.zap/rules.tsv`)

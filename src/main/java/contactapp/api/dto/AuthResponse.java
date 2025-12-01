@@ -42,7 +42,7 @@ public record AuthResponse(
         @Schema(description = "User role", example = "USER")
         String role,
 
-        @Schema(description = "Token expiration time in milliseconds", example = "86400000")
+        @Schema(description = "Token expiration time in milliseconds", example = "1800000")
         long expiresIn
 ) {
 }

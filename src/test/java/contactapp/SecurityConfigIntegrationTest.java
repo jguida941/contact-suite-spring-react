@@ -100,6 +100,23 @@ class SecurityConfigIntegrationTest {
                 .andExpect(header().string("Content-Security-Policy",
                         org.hamcrest.Matchers.containsString("script-src 'self'")))
                 .andExpect(header().string("Content-Security-Policy",
-                        org.hamcrest.Matchers.containsString("frame-ancestors 'self'")));
+                        org.hamcrest.Matchers.containsString("frame-ancestors 'self'")))
+                .andExpect(header().string("Content-Security-Policy",
+                        org.hamcrest.Matchers.containsString("form-action 'self'")))
+                .andExpect(header().string("Content-Security-Policy",
+                        org.hamcrest.Matchers.containsString("base-uri 'self'")))
+                .andExpect(header().string("Content-Security-Policy",
+                        org.hamcrest.Matchers.containsString("object-src 'none'")));
+    }
+
+    @Test
+    void securityHeaders_includesPermissionsPolicy() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("Permissions-Policy"))
+                .andExpect(header().string("Permissions-Policy",
+                        org.hamcrest.Matchers.containsString("geolocation=()")))
+                .andExpect(header().string("Permissions-Policy",
+                        org.hamcrest.Matchers.containsString("camera=()")));
     }
 }

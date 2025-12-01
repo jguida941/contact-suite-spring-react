@@ -98,6 +98,8 @@ public class SecurityConfig {
 
     @Value("${cors.allowed-origins:http://localhost:5173,http://localhost:8080}")
     private String allowedOrigins;
+    @Value("${server.servlet.session.cookie.secure:true}")
+    private boolean secureSessionCookie;
 
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
@@ -113,26 +115,37 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
+        final CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfTokenRepository.setCookieCustomizer(cookie -> cookie
+                .sameSite("Lax")
+                .secure(secureSessionCookie));
+
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(CSRF_IGNORED_MATCHERS)
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
-                .headers(headers -> headers
-                        .contentSecurityPolicy(csp -> csp
-                                .policyDirectives(
-                                        "default-src 'self'; "
-                                        + "script-src 'self'; "
-                                        + "style-src 'self' 'unsafe-inline'; "
-                                        + "img-src 'self' data:; "
-                                        + "font-src 'self'; "
-                                        + "connect-src 'self'; "
-                                        + "frame-ancestors 'self'"))
-                        .contentTypeOptions(contentType -> { })
-                        .frameOptions(frame -> frame.sameOrigin())
-                        .referrerPolicy(referrer -> referrer
-                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                )
+                        .csrfTokenRepository(csrfTokenRepository))
+                .headers(headers -> {
+                    headers.contentSecurityPolicy(csp -> csp
+                            .policyDirectives(
+                                    "default-src 'self'; "
+                                    + "script-src 'self'; "
+                                    + "style-src 'self'; "
+                                    + "img-src 'self' data:; "
+                                    + "font-src 'self'; "
+                                    + "connect-src 'self'; "
+                                    + "frame-ancestors 'self'; "
+                                    + "form-action 'self'; "
+                                    + "base-uri 'self'; "
+                                    + "object-src 'none'"));
+                    headers.permissionsPolicy(permissions -> permissions
+                            .policy("geolocation=(), microphone=(), camera=(), "
+                                    + "payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"));
+                    headers.contentTypeOptions(contentType -> { });
+                    headers.frameOptions(frame -> frame.sameOrigin());
+                    headers.referrerPolicy(referrer -> referrer
+                            .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
+                })
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - authentication
                         .requestMatchers("/api/auth/**").permitAll()

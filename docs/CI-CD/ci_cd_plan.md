@@ -53,9 +53,12 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 
 ---
 
-## Phase 8 - Dynamic Security Testing (Planned)
-1. ☐ Add OWASP ZAP baseline/API scan in CI against a running test instance (fail on high/critical findings).
-2. ☐ Publish ZAP reports as artifacts for triage.
+## Phase 8 - Dynamic Security Testing ✅
+1. ✅ Add OWASP ZAP baseline/API scan in CI against a running test instance (fail on high/critical findings).
+   - `.github/workflows/zap-scan.yml` runs both baseline and API scans.
+   - Uses PostgreSQL service container for realistic testing.
+   - Configurable via `.zap/rules.tsv` to manage alert thresholds.
+2. ✅ Publish ZAP reports as artifacts for triage.
 
 ## Phase 9 - API Fuzzing ✅
 1. ✅ Add Schemathesis in CI against the OpenAPI spec; fail on 5xx or schema violations.
@@ -76,3 +79,16 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 
 Keep this plan updated as each phase lands. When a task completes, we replace the checkbox with ✅ and add links to PRs or workflow runs for traceability.
 Once all phases are complete, we summarize the final workflow in `README.md`.
+
+<a id="phase-5-5-cookie-rollout"></a>
+## Phase 5.5 Cookie Rollout Checklist
+1. ✅ Deploy dual-mode auth build (`v5.5.0-migration`) that issues HttpOnly cookies while still
+   honoring legacy bearer tokens.
+2. ✅ Add bootstrap script to the SPA that exchanges any `localStorage.auth_token` for a cookie and
+   deletes the legacy storage key (Vitest coverage included).
+3. ✅ Update backend logging/reporting dashboards to emit `LegacyTokenUsed` metrics for tracking
+   migration progress.
+4. ☐ Run one-week observation period; confirm legacy usage drops below 1% before disabling headers.
+5. ☐ Flip the feature flag that rejects Authorization headers missing CSRF cookies, announce the
+   change in release notes, and monitor error budgets.
+6. ☐ Post-migration, remove the fallback code paths and delete metrics/alerts tied to legacy tokens.

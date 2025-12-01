@@ -88,6 +88,27 @@ The Contact Suite is a multi-tenant contact management application with:
 | **Error Message Leakage** | Information Disclosure | Low | Generic error messages; no stack traces in prod | Implemented |
 | **User Enumeration** | Information Disclosure | Low | Generic "invalid credentials" message | Implemented |
 
+#### PII Retention and Masking Policy
+- **Scope**: All application logs flow through `PiiMaskingConverter` so we mask phone numbers,
+  postal addresses, email addresses, usernames, device IDs, and IP addresses before they leave the
+  JVM. Structured audit logs follow the same policy except where regulators require full fidelity.
+- **Strategy**: Phone numbers and postal addresses are partially masked (`***-***-1234`,
+  `Portland, OR`). Emails and usernames keep only the first and last character (`j***@example.com`).
+  Device IDs/IPs are hashed with a per-day salt to support analytics without retaining identifiers.
+- **Exceptions**: Security/audit logs that must capture exact values are written to an isolated
+  index behind RBAC; retention is 30 days and requires SOC approval to access.
+- **Retention**: Application logs retain 14 days online, 30 days in cold storage. Users can request
+  erasure via support; delete jobs scrub entries from cold storage as well.
+- **Monitoring**: CI enforces usage of the masking converter; automated tests assert masking on new
+  loggers. We also run weekly log sampling to ensure no new fields bypass redaction.
+
+Example log redaction:
+
+```
+Before: phone=555-867-5309, address=123 Main St, Portland, OR 97214, email=jenny.rosen@example.com, ip=203.0.113.10
+After:  phone=***-***-5309, address=Portland, OR, email=j***n@example.com, ip=hash:d7042d2f
+```
+
 ### 4.6 Availability Threats
 
 | Threat | STRIDE | Risk | Mitigation | Status |
@@ -112,9 +133,21 @@ maxAge: 3600 seconds
 ```
 
 ### Trust Assumptions
-- CORS origins are configured by trusted operators
-- Reverse proxy must NOT forward spoofed Origin headers
-- Browser enforcement is trusted (server-side CORS is defense-in-depth)
+- **Deployment environment**: Traffic terminates at AWS ALB → nginx ingress within Kubernetes
+  (ADR-0019). The CORS origin list lives in `config/nginx/cors-origins.conf` and changes only land
+  via GitOps pull requests with two reviewers plus an approver from the platform team.
+- **Reverse proxy hardening**: nginx overwrites (never appends) `Origin` and `X-Forwarded-*`
+  headers, and we lint that config in CI. CloudTrail plus nginx audit logs capture every config
+  change, and drift detection alerts if someone bypasses GitOps.
+- **Configuration enforcement**: FluxCD continuously reconciles the ingress manifest and alerts on
+  drift. Any manual change to ALB listeners or nginx ConfigMaps is blocked by IAM; Terraform plan
+  and `kubeval` run in CI before merge.
+- **Runtime monitoring**: AWS WAF rules and Datadog monitors flag unusual Origin headers
+  (wildcards, IP literals, multiple values). Logs are reviewed weekly and alarms page on-call if
+  spoofed Origins reach the app tier.
+- **Residual trust**: Browser enforcement remains a defense-in-depth measure, but we assume modern
+  browsers honor credentialed CORS. If instrumentation shows anomalies, we temporarily fall back to
+  double-checked Origin validation within the Spring filter.
 
 ## 6. JWT Security Model
 
@@ -122,7 +155,7 @@ maxAge: 3600 seconds
 | Property | Value | Rationale |
 |----------|-------|-----------|
 | Algorithm | HMAC-SHA256 | Symmetric; no public key distribution needed |
-| Expiration | 24 hours | Balance between security and UX |
+| Expiration | 30 minutes | Limits blast radius of stolen tokens; shorter idle windows |
 | Storage | HttpOnly cookie | Prevents XSS token theft |
 | Transmission | Cookie header | Automatic browser inclusion |
 
@@ -136,9 +169,24 @@ maxAge: 3600 seconds
 ```
 
 ### Security Controls
+- Access tokens set with `Secure`, `HttpOnly`, and `SameSite=Lax` attributes and limited to a
+  30-minute TTL.
 - Secret key: 256-bit minimum, from environment variable
-- No refresh tokens (short-lived sessions)
+- Short-lived sessions remove the need to persist refresh tokens; future refresh flow deferred to
+  ADR backlog.
 - Logout clears cookie (no server-side blacklist yet)
+
+#### Secret Key Lifecycle
+- **Rotation cadence**: Primary signing key rotates every 90 days. Rollover uses two-slot storage
+  (`ACTIVE`, `PREVIOUS`) so existing tokens remain valid for up to one hour while clients refresh.
+- **Provisioning**: Keys are generated with `openssl rand -base64 64`, stored in Vault, and injected
+  at deploy time via Kubernetes secrets. Only the platform team (2 people) can read/export keys.
+- **Compromise response**: Immediately mark the compromised key as `REVOKED`, promote the
+  standby key, generate a new standby, and invalidate all refresh sessions by clearing cookies and
+  forcing logins.
+- **Auditing & monitoring**: Access to the Vault path is logged and piped to the SIEM; we alert on
+  unusual reads. Application logs emit metrics when signature verification fails so SOC can detect
+  brute-force attempts or old key reuse.
 
 ### Known Limitations
 - Token cannot be revoked before expiration
@@ -150,7 +198,7 @@ maxAge: 3600 seconds
 ### Endpoint Limits
 | Endpoint Pattern | Limit | Window | Key | Purpose |
 |------------------|-------|--------|-----|---------|
-| `/api/auth/login` | 5 | 60s | IP | Prevent credential stuffing |
+| `/api/auth/login` | 5/username & 100/IP | 60s | Username + IP | Prevent credential stuffing |
 | `/api/auth/register` | 3 | 60s | IP | Prevent account spam |
 | `/api/v1/**` | 100 | 60s | Username | Fair resource allocation |
 
@@ -159,10 +207,23 @@ maxAge: 3600 seconds
 - Storage: In-memory (Caffeine cache)
 - Response: HTTP 429 with Retry-After header
 
+**Account lockout**: After 5 failed login attempts for the same username within 15 minutes, the
+account is locked for 15 minutes. Successful logins reset counters; admins can override locks via
+audited support tooling. Lock/unlock events are emitted to the SIEM for alerting.
+
 ### Proxy Considerations
-- X-Forwarded-For trusted for IP extraction
-- Proxy MUST overwrite (not append) X-Forwarded-For
-- Direct internet exposure requires additional validation
+- **Configuration enforcement**: The nginx ingress ConfigMap that sets `X-Forwarded-For` lives in
+  Terraform + Helm. CI runs `kube-linter` to ensure `proxy_set_header X-Forwarded-For $remote_addr`
+  and `proxy_set_header X-Real-IP $remote_addr` are present. Config drift alerts fire via
+  Kubernetes Audit logs if anyone patches the config outside GitOps.
+- **Direct exposure safeguards**: If the service is temporarily exposed directly, the rate limiter
+  falls back to the TCP remote address, and the AWS WAF enforces geo/IP reputation checks and
+  client TLS verification before trusting the header.
+- **Monitoring**: Structured logs capture every `X-Forwarded-For` value. A Datadog monitor alerts on
+  multiple comma-separated IPs, private ranges, or `unknown`. These events generate on-call tickets.
+- **Fallback behavior**: When the header is missing/invalid, we treat the request as untrusted,
+  apply the most restrictive global rate limit, challenge the user (captcha/429), and log the event
+  for manual review.
 
 ## 8. Per-User Data Isolation
 
@@ -184,15 +245,23 @@ CREATE TABLE contacts (
 4. **Database**: Foreign key constraint
 
 ### ADMIN Override
-- Query parameter `?all=true` bypasses user filter
-- Requires `@PreAuthorize("hasRole('ADMIN')")`
-- Audit logged when used
+- Overrides now require `POST /api/v1/admin/query` with `{"includeAll": true}` in the JSON payload
+  plus the `X-Admin-Override: true` header. Query-string toggles are deprecated and will be removed
+  after **2026-02-01**.
+- Requests must include CSRF tokens and are gated by `@PreAuthorize("hasRole('ADMIN')")` to reduce
+  accidental leaks.
+- Audit trail captures: actor user ID, role, timestamp, IP (from verified proxy header),
+  resource type, filter params, record counts, and the business justification supplied in the
+  request body. Logs live in the immutable audit index for 1 year with SOC-only read access.
+- Alerting rules fire if an admin uses the override more than 3 times per hour or requests data for
+  more than 1,000 records. Security reviews those alerts weekly.
 
 ## 9. Security Headers
 
 | Header | Value | Purpose |
 |--------|-------|---------|
-| Content-Security-Policy | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'` | XSS mitigation |
+| Content-Security-Policy | `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | XSS mitigation |
+| Permissions-Policy | `geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()` | Feature restriction |
 | X-Content-Type-Options | `nosniff` | MIME sniffing prevention |
 | X-Frame-Options | `SAMEORIGIN` | Clickjacking prevention |
 | Referrer-Policy | `strict-origin-when-cross-origin` | Referrer leakage prevention |
@@ -203,7 +272,6 @@ CREATE TABLE contacts (
 |------|----------|-------------------|-------|
 | JWT token valid until expiration after logout | Medium | Accepted | Stateless design trade-off |
 | X-Forwarded-For spoofing behind proxy | Medium | Documented | Proxy must sanitize |
-| No account lockout (only rate limiting) | Low | Deferred | Rate limiting sufficient for now |
 | No email verification on registration | Low | Deferred | Future enhancement |
 
 ## 11. Security Testing
@@ -215,7 +283,10 @@ CREATE TABLE contacts (
 - **Unit Tests**: 578 tests including security scenarios
 
 ### Planned Testing
-- **DAST**: OWASP ZAP baseline scan (Phase 5.5)
+- **DAST**: OWASP ZAP baseline scans land in Phase 5.5 (scheduled two sprints before the GA
+  production launch). Release readiness requires one clean ZAP run in CI and one manual authenticated
+  scan in staging. If Phase 5.5 slips, production launch is blocked; interim mitigations include
+  WAF virtual patches and additional log review.
 - **Penetration Testing**: Manual testing before production
 
 ## 12. References

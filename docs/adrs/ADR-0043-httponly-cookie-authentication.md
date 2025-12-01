@@ -35,19 +35,42 @@ Migrate from localStorage-based Bearer token authentication to HttpOnly cookie-b
 
 3. **application.yml**:
    - Added cookie security configuration
-   - `COOKIE_SECURE` env var controls Secure flag (false for dev, true for prod)
+   - `app.auth.cookie.secure` property (env: `APP_AUTH_COOKIE_SECURE`) controls the auth cookie Secure flag:
+     - **Dev/Test**: Defaults to `false` via `application.yml` so localhost HTTP flows keep working.
+     - **Prod**: Mandatory. Operators must set `APP_AUTH_COOKIE_SECURE=true` (or `COOKIE_SECURE=true`, which the prod profile maps to the same setting). There is no fallback in prod and rollout checklists treat a missing value as a deployment blocker.
 
 ### Frontend Changes
 
 1. **api.ts**:
    - Removed localStorage token storage
    - Added `credentials: 'include'` to all fetch calls
-   - User info stored in sessionStorage (clears on tab close)
+   - User info stored in sessionStorage (typically clears on tab close; browser session-restore
+     and bfcache scenarios may delay cleanup)
    - `isAuthenticated()` now checks for user session, not token
 
 2. **useProfile.ts**: Changed from localStorage to sessionStorage
 
 3. **SettingsPage.tsx**: Updated to clear sessionStorage
+
+### Credentialed CORS Requirements
+
+Setting `credentials: 'include'` forces the backend to explicitly allow credentialed
+cross-origin requests. Per [ADR-0019](ADR-0019-deployment-and-packaging.md) and the reverse proxy
+deploy docs, every environment (local, staging, prod) must configure:
+
+```
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: https://spa.contact-suite.example (no wildcards)
+Access-Control-Allow-Headers: Authorization, Content-Type, X-XSRF-TOKEN, X-Request-ID
+Access-Control-Expose-Headers: X-Request-ID, X-Trace-ID
+```
+
+**Operator checklist**
+- Keep the SPA origin list in source control and require two-person review for changes
+- Re-deploy reverse proxy + Spring `CorsRegistry` on the same commit to avoid drift
+- Verify the `OPTIONS` preflight includes `Access-Control-Allow-Credentials: true`
+- Monitor for blocked credentialed requests in CDN/WAF logs and alert on violations
+- Document the mapping in release checklists so backend/frontend deployments stay aligned
 
 ## Cookie Attributes Rationale
 
@@ -80,7 +103,8 @@ All other `/api/**` endpoints require valid CSRF token.
 
 - **XSS Protection**: Tokens completely inaccessible to JavaScript
 - **Automatic Handling**: Browser manages cookie lifecycle
-- **Session Scoping**: sessionStorage clears on tab close
+- **Session Scoping**: sessionStorage typically clears on tab close (subject to browser restore
+  features)
 - **Backward Compatibility**: API clients can still use Authorization header
 
 ### Negative
@@ -97,9 +121,36 @@ All other `/api/**` endpoints require valid CSRF token.
 
 ## Migration Notes
 
-1. Existing localStorage tokens should be cleared by users logging out
-2. Frontend now stores user metadata in sessionStorage, not localStorage
-3. Authorization header still supported for programmatic API access
+### 1. Legacy localStorage Token Cleanup
+- Deployment enablement job sets `X-Legacy-Token: purge` on every response when a request
+  still presents the deprecated `auth_token` localStorage value. The SPA listens for that
+  header and deletes the entry immediately.
+- Authentication service invalidates all outstanding bearer tokens issued before
+  **2025-12-05** (the migration window start) so even users that keep the tab open are prompted
+  to re-authenticate and receive the HttpOnly cookie.
+- Customer support playbook instructs users to refresh or log out/in if they report repeated
+  401s; support articles link to this ADR.
+
+### 2. Frontend Bootstrap Migration Handler
+- On boot, the SPA checks `localStorage.auth_token`. If present, it silently calls the
+  `/api/auth/login` endpoint with the legacy token in the `Authorization` header exactly once.
+  When the backend returns `Set-Cookie: auth_token=...`, the SPA deletes the localStorage entry
+  and caches the profile in sessionStorage.
+- If the exchange fails (token expired/invalid), the SPA removes the localStorage token, clears
+  TanStack caches, and shows a "Session expired — please sign in again" message.
+- A run-once vitest ensures the bootstrap hook deletes the stored token even when cookies are
+  blocked so we do not regress.
+
+### 3. Deprecation Timeline
+- **2025-12-05**: Migration window opens with dual support (Bearer header + cookie). Release tag:
+  `v5.5.0-migration`.
+- **2025-12-19**: Scheduled job removes any lingering localStorage tokens by issuing a logout
+  broadcast to connected clients.
+- **2026-01-05**: Enforcement date — Authorization header tokens without CSRF cookies are rejected
+  with `401 LegacyTokenDisabled`. Backend logging verifies 0 requests per hour before closing the
+  window.
+- Implementation steps, manual test scripts, and on-call alerts are tracked in
+  `docs/ci-cd/ci_cd_plan.md#phase-5-5-cookie-rollout`.
 
 ## References
 

@@ -32,7 +32,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | Path | Description |
 |------|-------------|
 | [`../src/main/java/contactapp/Application.java`](../src/main/java/contactapp/Application.java) | Spring Boot entrypoint (`@SpringBootApplication`). |
-| [`../src/main/resources/application.yml`](../src/main/resources/application.yml) | Multi-document profile config (dev/test/integration/prod + Flyway/JPA settings). |
+| [`../src/main/resources/application.yml`](../src/main/resources/application.yml) | Multi-document profile config (dev/test/integration/prod + Flyway/JPA) with `jwt.expiration=30m`, explicit `app.auth.cookie.secure` overrides, and prod-only Secure-cookie requirements. |
 | [`../src/main/resources/db/migration/common/V1__create_contacts_table.sql`](../src/main/resources/db/migration/common/V1__create_contacts_table.sql) | Flyway migration creating contacts table with id, firstName, lastName, phone, address columns (shared by all DBs). |
 | [`../src/main/resources/db/migration/common/V2__create_tasks_table.sql`](../src/main/resources/db/migration/common/V2__create_tasks_table.sql) | Flyway migration creating tasks table with id, name, description columns. |
 | [`../src/main/resources/db/migration/common/V3__create_appointments_table.sql`](../src/main/resources/db/migration/common/V3__create_appointments_table.sql) | Flyway migration creating appointments table with id, appointmentDate, description columns. |
@@ -137,7 +137,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/api/TaskController.java`](../src/main/java/contactapp/api/TaskController.java) | REST controller for Task CRUD at `/api/v1/tasks`. |
 | [`../src/main/java/contactapp/api/AppointmentController.java`](../src/main/java/contactapp/api/AppointmentController.java) | REST controller for Appointment CRUD at `/api/v1/appointments`. |
 | [`../src/main/java/contactapp/api/AuthController.java`](../src/main/java/contactapp/api/AuthController.java) | REST controller for authentication (login/register) at `/api/auth`. |
-| [`../src/main/java/contactapp/api/GlobalExceptionHandler.java`](../src/main/java/contactapp/api/GlobalExceptionHandler.java) | @RestControllerAdvice mapping exceptions to HTTP responses (400, 401, 404, 409). |
+| [`../src/main/java/contactapp/api/GlobalExceptionHandler.java`](../src/main/java/contactapp/api/GlobalExceptionHandler.java) | @RestControllerAdvice mapping exceptions to HTTP responses (400, 401, 403, 404, 409 including optimistic locking conflicts). |
 | [`../src/main/java/contactapp/api/CustomErrorController.java`](../src/main/java/contactapp/api/CustomErrorController.java) | ErrorController ensuring ALL errors return JSON (including Tomcat-level). |
 | [`../src/main/java/contactapp/api/dto/ContactRequest.java`](../src/main/java/contactapp/api/dto/ContactRequest.java) | Contact request DTO with Bean Validation. |
 | [`../src/main/java/contactapp/api/dto/ContactResponse.java`](../src/main/java/contactapp/api/dto/ContactResponse.java) | Contact response DTO. |
@@ -193,7 +193,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/security/UserRepository.java`](../src/main/java/contactapp/security/UserRepository.java) | Spring Data repository for User persistence with lookup methods. |
 | [`../src/main/java/contactapp/security/JwtService.java`](../src/main/java/contactapp/security/JwtService.java) | JWT token generation and validation service (HMAC-SHA256). |
 | [`../src/main/java/contactapp/security/JwtAuthenticationFilter.java`](../src/main/java/contactapp/security/JwtAuthenticationFilter.java) | Filter that validates JWT tokens from HttpOnly cookie first, then Authorization header fallback. |
-| [`../src/main/java/contactapp/security/SecurityConfig.java`](../src/main/java/contactapp/security/SecurityConfig.java) | Spring Security configuration (JWT auth, CookieCsrfTokenRepository for SPA routes, CORS, security headers). |
+| [`../src/main/java/contactapp/security/SecurityConfig.java`](../src/main/java/contactapp/security/SecurityConfig.java) | Spring Security configuration (JWT auth, CookieCsrfTokenRepository for SPA routes with `SameSite=Lax`/secure inheritance, CORS, security headers). |
 | [`../src/main/java/contactapp/security/CustomUserDetailsService.java`](../src/main/java/contactapp/security/CustomUserDetailsService.java) | `UserDetailsService` implementation loading users from repository. |
 | [`../src/test/java/contactapp/security/UserTest.java`](../src/test/java/contactapp/security/UserTest.java) | Unit tests for User entity validation (boundary, null/blank, role tests). |
 | [`../src/test/java/contactapp/security/JwtServiceTest.java`](../src/test/java/contactapp/security/JwtServiceTest.java) | Unit tests for JWT token lifecycle (generation, extraction, validation). |
@@ -245,9 +245,9 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 |------|-------------|
 | [`../ui/contact-app/src/hooks/useTheme.ts`](../ui/contact-app/src/hooks/useTheme.ts) | Theme switching hook with localStorage persistence. |
 | [`../ui/contact-app/src/hooks/useMediaQuery.ts`](../ui/contact-app/src/hooks/useMediaQuery.ts) | Responsive breakpoint detection hook. |
-| [`../ui/contact-app/src/hooks/useProfile.ts`](../ui/contact-app/src/hooks/useProfile.ts) | User profile management hook with sessionStorage persistence (cleared on tab close). |
+| [`../ui/contact-app/src/hooks/useProfile.ts`](../ui/contact-app/src/hooks/useProfile.ts) | User profile management hook with sessionStorage persistence (clears when the browser session ends; restore/bfcache handling included). |
 | [`../ui/contact-app/src/lib/queryClient.ts`](../ui/contact-app/src/lib/queryClient.ts) | Central TanStack Query client configured for auth-aware cache invalidation. |
-| [`../ui/contact-app/src/lib/api.ts`](../ui/contact-app/src/lib/api.ts) | Typed fetch wrapper handling HttpOnly cookie auth + sessionStorage-backed user/profile caching. |
+| [`../ui/contact-app/src/lib/api.ts`](../ui/contact-app/src/lib/api.ts) | Typed fetch wrapper handling HttpOnly cookie auth, credentialed CORS/CSRF headers, and sessionStorage-backed user/profile caching. |
 | [`../ui/contact-app/src/lib/schemas.ts`](../ui/contact-app/src/lib/schemas.ts) | Zod schemas matching backend Validation.java constants. |
 | [`../ui/contact-app/src/lib/utils.ts`](../ui/contact-app/src/lib/utils.ts) | `cn()` utility for class name merging. |
 

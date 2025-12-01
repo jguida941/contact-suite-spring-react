@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
  *   <li>jwt.secret - Base64-encoded secret key (min 256 bits). <b>Required</b> - application
  *       will fail to start if not configured. Raw strings are still accepted for backward
  *       compatibility but strongly discouraged.</li>
- *   <li>jwt.expiration - Token expiration time in milliseconds (default: 24h)</li>
+ *   <li>jwt.expiration - Token expiration time in milliseconds (default: 30m)</li>
  * </ul>
  *
  * <p><b>Security Note:</b> The jwt.secret must be configured via environment variable or
@@ -36,7 +36,7 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration:86400000}")
+    @Value("${jwt.expiration:1800000}")
     private long jwtExpiration;
 
     /**
