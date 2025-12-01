@@ -39,6 +39,7 @@ class JpaAppointmentStoreTest {
 
     @Test
     void existsById_withoutUserThrowsUnsupportedOperation() {
+        // codeql[java/avoid-deprecated-apis] Deprecated existsById(String) should keep throwing until legacy callers migrate.
         assertThatThrownBy(() -> store.existsById("a-1"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -64,6 +65,7 @@ class JpaAppointmentStoreTest {
 
     @Test
     void findById_withoutUserThrowsUnsupportedOperation() {
+        // codeql[java/avoid-deprecated-apis] Confirms the legacy overload still throws, deterring tenant bypasses.
         assertThatThrownBy(() -> store.findById("a-3"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -83,6 +85,7 @@ class JpaAppointmentStoreTest {
 
     @Test
     void deleteById_withoutUserThrowsUnsupportedOperation() {
+        // codeql[java/avoid-deprecated-apis] We intentionally keep this deprecated method throwing to enforce scoping.
         assertThatThrownBy(() -> store.deleteById("a-5"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

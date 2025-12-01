@@ -39,6 +39,8 @@
         <pitest.version>1.22.0</pitest.version>
         <pit.skip>false</pit.skip>
         <spotbugs.skip>false</spotbugs.skip>
+        <!-- Integration tests require Docker/Testcontainers; skip locally by default -->
+        <skipITs>true</skipITs>
     </properties>
 
     <dependencies>
@@ -293,6 +295,7 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${surefire.version}</version>
                 <configuration>
+                    <skipITs>${skipITs}</skipITs>
                     <useModulePath>false</useModulePath>
                     <parallel>classes</parallel>
                     <useUnlimitedThreads>true</useUnlimitedThreads>

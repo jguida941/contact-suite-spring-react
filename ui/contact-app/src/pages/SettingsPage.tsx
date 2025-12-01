@@ -192,10 +192,11 @@ export function SettingsPage() {
             <Button
               variant="outline"
               onClick={() => {
-                // Only clear settings-related items, preserve auth tokens
+                // Clear theme from localStorage, profile from sessionStorage
                 localStorage.removeItem('theme');
                 localStorage.removeItem('darkMode');
-                localStorage.removeItem('user_profile');
+                localStorage.removeItem('user_profile'); // legacy key cleanup
+                sessionStorage.removeItem('contact-app-profile');
                 resetProfile();
                 window.location.reload();
               }}

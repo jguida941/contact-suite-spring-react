@@ -162,10 +162,70 @@ curl http://localhost:8080/actuator/prometheus | grep jvm_memory
 - [ ] Use Docker secrets instead of environment variables
 - [ ] Set up network policies to restrict Prometheus endpoint access
 - [ ] Enable HTTPS with TLS certificates
+- [ ] Configure reverse proxy to overwrite X-Forwarded-For (see below)
 - [ ] Run security scan: `docker scan contactapp:latest`
 - [ ] Set resource limits in docker-compose.yml
 - [ ] Configure log aggregation (e.g., ELK stack)
 - [ ] Set up monitoring alerts based on Prometheus metrics
+
+### Reverse Proxy Configuration (CRITICAL)
+
+The application uses `X-Forwarded-For` headers for rate limiting. **Your reverse proxy MUST overwrite (not append to) these headers** to prevent IP spoofing attacks.
+
+#### Nginx Example
+
+```nginx
+server {
+    listen 443 ssl;
+
+    location / {
+        proxy_pass http://contactapp:8080;
+
+        # CRITICAL: Overwrite X-Forwarded-* headers, don't append
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+#### Apache Example
+
+```apache
+<VirtualHost *:443>
+    ProxyPass / http://contactapp:8080/
+    ProxyPassReverse / http://contactapp:8080/
+
+    # CRITICAL: Overwrite X-Forwarded-For
+    RequestHeader set X-Forwarded-For "%{REMOTE_ADDR}e"
+    RequestHeader set X-Forwarded-Proto "https"
+</VirtualHost>
+```
+
+#### Spring Boot Configuration
+
+Enable Spring's forwarded header handling in application.yml:
+
+```yaml
+server:
+  forward-headers-strategy: framework
+```
+
+#### Why This Matters
+
+Without proper proxy configuration:
+1. Attackers can spoof `X-Forwarded-For` to bypass rate limits
+2. Each spoofed IP gets its own rate limit bucket (5 req/min for login)
+3. This enables brute-force attacks against authentication
+
+The rate limit filter reads client IPs from:
+1. `X-Forwarded-For` header (first IP if present)
+2. `X-Real-IP` header (fallback)
+3. `request.getRemoteAddr()` (final fallback)
+
+If your proxy appends to `X-Forwarded-For` instead of overwriting, attackers can prepend fake IPs to evade rate limits.
 
 ### Resource Limits
 

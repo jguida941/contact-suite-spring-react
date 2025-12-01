@@ -104,7 +104,7 @@ Built a complete React frontend with:
 
 | Metric | Value |
 |--------|-------|
-| **Total Tests** | 571 (577 with ITs) |
+| **Total Tests** | 574 (580 with ITs) |
 | **Mutation Coverage (PITest)** | 95% (594/626 mutants killed) |
 | **Line Coverage (JaCoCo)** | 96% on mutated classes |
 | **Static Analysis** | SpotBugs clean |
@@ -137,7 +137,7 @@ Compile -> Unit Tests -> Checkstyle -> SpotBugs -> JaCoCo -> PITest -> OWASP Dep
 
 ## Why I Made These Decisions
 
-### 39 Architecture Decision Records (ADRs)
+### 44 Architecture Decision Records (ADRs)
 
 Every major decision is documented with context, rationale, and consequences:
 
@@ -180,8 +180,8 @@ Every major decision is documented with context, rationale, and consequences:
 | Java Production Classes | 62 |
 | Java Test Classes | 51 |
 | React Components | 40+ |
-| ADRs | 42 |
-| Database Migrations | 5 |
+| ADRs | 44 |
+| Database Migrations | 7 |
 | CI/CD Workflows | 3 |
 | Documentation Files | 70+ |
 
@@ -245,7 +245,7 @@ Every major decision is documented with context, rationale, and consequences:
 
 **Testing & Quality:**
 - JUnit 5 with parameterized tests
-- Mutation testing with PITest (99% kill rate)
+- Mutation testing with PITest (95% kill rate, 594/626 mutants)
 - Integration testing with Testcontainers
 - API fuzzing with Schemathesis
 - Static analysis with SpotBugs and Checkstyle
@@ -273,7 +273,7 @@ Every major decision is documented with context, rationale, and consequences:
 
 ### The 2-Sentence Pitch
 
-"I built a full-stack contact management system with Spring Boot and React. It started as a simple CS320 assignment, but I evolved it into a production-grade app with 35 documented design decisions, 99% mutation test coverage, and a complete CI/CD pipeline."
+"I built a full-stack contact management system with Spring Boot and React. It started as a simple CS320 assignment, but I evolved it into a production-grade app with 44 documented design decisions, 95% mutation test coverage (594/626 mutants killed), and a complete CI/CD pipeline."
 
 ### Main Components (4 pieces)
 
@@ -361,10 +361,10 @@ Use this template: *"The problem was __. I looked at __. I chose __ because __. 
 > "It manages contacts, tasks, and appointments. Full CRUD operations through a React UI backed by a Spring Boot API with PostgreSQL persistence."
 
 **"What are you most proud of?"**
-> "The 99% mutation coverage. It's easy to get line coverage high, but mutation testing proves the tests actually catch bugs. PITest killed 308 out of 311 mutants."
+> "The 95% mutation coverage. It's easy to get line coverage high, but mutation testing proves the tests actually catch bugs. PITest killed 594 out of 626 mutants."
 
 **"What would you change?"**
-> "I'd add authentication earlier. Right now the API is wide open. Also, I'd migrate from java.util.Date to java.time - the old Date API is awkward."
+> "I'd migrate from java.util.Date to java.time - the old Date API is awkward. Also, I'd implement token refresh earlier to reduce the complexity of session management."
 
 **"How do you test it?"**
 > "Unit tests for domain logic, service tests with H2, integration tests with Testcontainers running real PostgreSQL, and API fuzzing with Schemathesis that ran 30,000+ requests looking for edge cases."
@@ -384,10 +384,10 @@ contact-suite-spring-react/
 │   ├── api/             # REST controllers, DTOs, exception handling
 │   ├── persistence/     # JPA entities, mappers, repositories, stores
 │   └── config/          # Spring configuration
-├── src/test/java/       # 444 tests (unit, integration, legacy, security)
+├── src/test/java/       # 574 tests (unit, integration, legacy, security)
 ├── ui/contact-app/      # React 19 + Vite + TypeScript frontend
 ├── docs/
-│   ├── adrs/            # 39 Architecture Decision Records
+│   ├── adrs/            # 44 Architecture Decision Records
 │   ├── requirements/    # Domain specifications
 │   └── REQUIREMENTS.md  # Master document with phased plan
 ├── .github/workflows/   # CI/CD pipelines

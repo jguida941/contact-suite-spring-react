@@ -31,7 +31,8 @@ function getInitials(name: string): string {
 
 export function useProfile() {
   const [profile, setProfileState] = useState<Profile>(() => {
-    const stored = localStorage.getItem(PROFILE_KEY);
+    // Use sessionStorage for tab-scoped storage that clears on tab close
+    const stored = sessionStorage.getItem(PROFILE_KEY);
     if (stored) {
       try {
         return JSON.parse(stored);
@@ -43,7 +44,7 @@ export function useProfile() {
   });
 
   useEffect(() => {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
   }, [profile]);
 
   const updateProfile = (updates: Partial<Omit<Profile, 'initials'>>) => {

@@ -17,7 +17,7 @@ class CustomUserDetailsServiceTest {
 
     @Test
     void loadUserReturnsUserDetailsWhenFound() {
-        User user = new User("tester", "tester@example.com", "$2a$10$dummyBcryptHashForTesting123456", Role.USER);
+        User user = new User("tester", "tester@example.com", "$2a$10$TESTHASHaaaaaaaaaaaaaaBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", Role.USER);
         when(userRepository.findByUsername("tester")).thenReturn(Optional.of(user));
 
         UserDetails result = service.loadUserByUsername("tester");

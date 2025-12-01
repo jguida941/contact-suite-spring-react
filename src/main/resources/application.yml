@@ -34,6 +34,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration/{vendor},classpath:db/migration/common
+    placeholders:
+      # Default hash corresponds to the disabled "system" bootstrap user for local/dev profiles.
+      # Override via SYSTEM_USER_PASSWORD_HASH env var in production (no plaintext secrets in git).
+      system_user_password_hash: ${SYSTEM_USER_PASSWORD_HASH:$2y$10$wW7tqpZkv5HjAcEX3OXJxOJ3wHXk98XKWUD656/VTZSpBpfUYyX5C}
 
 # -----------------------------------------------------------------------------
 # Actuator Configuration (applies to all profiles unless overridden)
@@ -89,6 +93,13 @@ server:
       enabled: false
     # Include error message in response for better debugging (generic messages still used)
     include-message: always
+  servlet:
+    session:
+      cookie:
+        # Secure cookies require HTTPS - disabled for local dev, enabled in prod
+        secure: ${COOKIE_SECURE:false}
+        same-site: lax
+        http-only: true
 
 # -----------------------------------------------------------------------------
 # Logging Configuration (default: INFO level)

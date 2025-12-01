@@ -164,5 +164,7 @@ graph TD
   the current single-user/admin model.
 - **Separate error messages for wrong username vs wrong password** - rejected;
   security best practice is to return generic "Invalid credentials" to prevent enumeration.
-- **CSRF protection** - disabled because the API is stateless with JWT tokens;
-  no server-side session to protect.
+- **CSRF protection** - API routes remain stateless with JWT tokens, so `/api/**`
+  is excluded, but we issue `CookieCsrfTokenRepository` tokens for browser
+  routes so form submissions still have CSRF defenses and CodeQL requirements
+  stay satisfied.

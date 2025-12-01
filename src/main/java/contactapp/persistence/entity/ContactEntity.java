@@ -2,6 +2,7 @@ package contactapp.persistence.entity;
 
 import contactapp.domain.Validation;
 import contactapp.security.User;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 
 /**
  * JPA entity mirroring the {@link contactapp.domain.Contact} structure.
@@ -26,11 +28,19 @@ import jakarta.persistence.UniqueConstraint;
         uniqueConstraints = @UniqueConstraint(
                 name = "uq_contacts_contact_id_user_id",
                 columnNames = {"contact_id", "user_id"}))
+@SuppressFBWarnings(
+        value = "EI_EXPOSE_REP",
+        justification = "JPA entity returns User reference for ORM relationship; "
+                + "entity lifecycle is managed by Hibernate persistence context")
 public class ContactEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     @Column(name = "contact_id", length = Validation.MAX_ID_LENGTH, nullable = false)
     private String contactId;
@@ -73,6 +83,10 @@ public class ContactEntity {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 
     public String getContactId() {

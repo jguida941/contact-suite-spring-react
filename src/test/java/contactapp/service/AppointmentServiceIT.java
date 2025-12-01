@@ -59,7 +59,7 @@ class AppointmentServiceIT {
     @Test
     @Transactional
     void addAppointmentPersistsRecord() {
-        authenticateTestUser();
+        User owner = authenticateTestUser();
         Appointment appointment = new Appointment(
                 "it-appt",
                 Date.from(Instant.now().plusSeconds(86_400)),
@@ -69,7 +69,7 @@ class AppointmentServiceIT {
         boolean added = appointmentService.addAppointment(appointment);
 
         assertThat(added).isTrue();
-        assertThat(appointmentRepository.findByAppointmentId("it-appt")).isPresent();
+        assertThat(appointmentRepository.findByAppointmentIdAndUser("it-appt", owner)).isPresent();
     }
 
     @Test

@@ -1,7 +1,11 @@
 package contactapp.config;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * Configuration properties for API rate limiting.
@@ -45,6 +49,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @ConfigurationProperties(prefix = "rate-limit")
+@Validated
+@SuppressFBWarnings(
+        value = "EI_EXPOSE_REP",
+        justification = "Spring Boot configuration properties are read-only after context startup; "
+                + "getters return endpoint limit values that should not be copied for each access")
 public class RateLimitConfig {
 
     private static final int LOGIN_REQUEST_LIMIT = 5;
@@ -52,8 +61,11 @@ public class RateLimitConfig {
     private static final int API_REQUEST_LIMIT = 100;
     private static final int DEFAULT_DURATION_SECONDS = 60;
 
+    @Valid
     private EndpointLimit login = new EndpointLimit(LOGIN_REQUEST_LIMIT, DEFAULT_DURATION_SECONDS);
+    @Valid
     private EndpointLimit register = new EndpointLimit(REGISTER_REQUEST_LIMIT, DEFAULT_DURATION_SECONDS);
+    @Valid
     private EndpointLimit api = new EndpointLimit(API_REQUEST_LIMIT, DEFAULT_DURATION_SECONDS);
 
     /**
@@ -119,7 +131,9 @@ public class RateLimitConfig {
      * request is rejected with 429 status.
      */
     public static class EndpointLimit {
+        @Min(value = 1, message = "Rate limit requests must be at least 1")
         private int requests;
+        @Min(value = 1, message = "Rate limit duration must be at least 1 second")
         private int durationSeconds;
 
         public EndpointLimit() {

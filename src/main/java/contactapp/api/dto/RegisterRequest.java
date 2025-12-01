@@ -3,6 +3,7 @@ package contactapp.api.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import static contactapp.domain.Validation.MAX_EMAIL_LENGTH;
 import static contactapp.domain.Validation.MAX_PASSWORD_LENGTH;
@@ -20,7 +21,7 @@ import static contactapp.domain.Validation.MIN_PASSWORD_LENGTH;
  * <ul>
  *   <li>username: required, 1-50 characters</li>
  *   <li>email: required, 1-100 characters, valid email format</li>
- *   <li>password: required, 8-255 characters (raw password, will be hashed)</li>
+ *   <li>password: required, 8-255 characters, must contain uppercase, lowercase, and digit</li>
  * </ul>
  *
  * @param username the desired username
@@ -41,10 +42,14 @@ public record RegisterRequest(
         @Email(message = "email must be a valid email address")
         String email,
 
-        @Schema(description = "Password (minimum 8 characters)", example = "securePassword123")
+        @Schema(description = "Password (8+ chars, uppercase, lowercase, digit)",
+                example = "SecurePass123")
         @NotBlank(message = "password must not be null or blank")
         @Size(min = MIN_PASSWORD_LENGTH, max = MAX_PASSWORD_LENGTH,
                 message = "password length must be between {min} and {max}")
+        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$",
+                message = "password must contain at least one uppercase letter, "
+                        + "one lowercase letter, and one digit")
         String password
 ) {
 }

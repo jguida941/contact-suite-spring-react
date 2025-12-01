@@ -42,6 +42,7 @@
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
 - Latest CI: 571 tests passing (577 with ITs; unit + slice + Testcontainers + security + filter + config tests), 95% mutation score (594/626 mutants killed), 96% line coverage on mutated classes, SpotBugs clean.
+- Testcontainers-backed Postgres integration tests run automatically in CI (Ubuntu jobs pass `-DskipITs=false`) while local `mvn verify` runs set `skipITs=true` by default; enable them locally with `mvn verify -DskipITs=false` once Docker Desktop/Colima is running.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
 - Exception handler tests (5 tests): GlobalExceptionHandlerTest validates direct handler coverage (including ConstraintViolationException for path variable validation).
 - Error controller tests (34 tests): CustomErrorControllerTest (17) + JsonErrorReportValveTest (17) validate container-level error handling.
@@ -186,9 +187,9 @@ Implementation details:
 - Added component tests (Vitest/RTL, 22 tests) and Playwright CRUD smoke tests (5 tests). `frontend-maven-plugin` builds UI during `mvn package`, bundling into the Spring Boot JAR.
 
 ### Phase 5: Security + Observability ✅ (Completed)
-- Added Spring Security JWT stack (AuthController, `JwtAuthenticationFilter`, `SecurityConfig`, `@PreAuthorize` usage); enforced `/api/v1/**` protection and controller-level ADMIN checks for `?all=true`.
+- Added Spring Security JWT stack (AuthController, `JwtAuthenticationFilter`, `SecurityConfig`, `@PreAuthorize` usage); enforced `/api/v1/**` protection, controller-level ADMIN checks for `?all=true`, and `CookieCsrfTokenRepository` double-submit tokens (issued via `/api/auth/csrf-token`) so cookie-authenticated requests include `X-XSRF-TOKEN`.
 - Added SPA auth flow: `/login` page, `RequireAuth`/`PublicOnlyRoute` guards, token/profile synchronization, selective cache clearing on logout. AuthResponse docs now mandate httpOnly cookies and CSRF safeguards.
-- Added structured logging (`logback-spring.xml`), correlation IDs, sanitized `RequestLoggingFilter` (masked IPs/query/user-agent), and rate limiting via bucket4j/Caffeine.
+- Added structured logging (`logback-spring.xml`), correlation IDs, fully sanitized `RequestLoggingFilter` (masked IPs, CR/LF-stripped method/URI/query/user-agent), and rate limiting via bucket4j/Caffeine.
 - Enabled Prometheus metrics, secure headers (CSP/HSTS/X-Content-Type-Options/X-Frame-Options), and secrets strategy (env vars for dev/test, vault in prod). Added rate-limit, correlation, logging, and request utility tests.
 
 ### Phase 5.5: DAST + Runtime Security
@@ -332,26 +333,26 @@ Implementation details:
 - [x] UI E2E smoke test (Playwright) — 5 tests covering CRUD happy path
 
 ### Phase 5: Security + Observability
-- [ ] Authentication (JWT per ADR-0018) implemented with login endpoint + SPA integration
-- [ ] Role-based authorization on mutating endpoints (@PreAuthorize with ADMIN vs USER)
-- [ ] Per-user/tenant data isolation (add `user_id`/`account_id` to aggregates; repositories/services filter automatically)
-- [ ] CORS configured exclusively for the SPA origin; document threat model in `docs/architecture/threat-model.md`
-- [ ] Security headers applied (CSP, HSTS, X-Content-Type-Options, Referrer-Policy, X-Frame-Options)
-- [ ] Rate limiting configured (bucket4j or similar) for high-risk API paths
-- [ ] Structured logging with correlation IDs + PII masking for phone/address
-- [ ] Actuator metrics + Prometheus scrape endpoint enabled; basic readiness/liveness probes
-- [ ] Dockerfile + docker-compose stack (Spring Boot + Postgres + optional pgAdmin) with CI health check (`curl http://localhost:8080/actuator/health`)
-- [ ] ADR updates for authentication/authorization and observability strategy
-- [ ] ZAP baseline/API scan run (document findings + fixes or suppressions)
-- [ ] README + runbooks updated with deployment, security, and operational notes
-- [ ] Secrets management strategy documented (env vars locally, vault/secret manager in prod)
+- [x] Authentication (JWT per ADR-0018) implemented with login endpoint + SPA integration
+- [x] Role-based authorization on mutating endpoints (@PreAuthorize with ADMIN vs USER)
+- [x] Per-user/tenant data isolation (add `user_id`/`account_id` to aggregates; repositories/services filter automatically)
+- [x] CORS configured exclusively for the SPA origin; document threat model in `docs/architecture/threat-model.md`
+- [x] Security headers applied (CSP, HSTS, X-Content-Type-Options, Referrer-Policy, X-Frame-Options)
+- [x] Rate limiting configured (bucket4j or similar) for high-risk API paths
+- [x] Structured logging with correlation IDs + PII masking for phone/address
+- [x] Actuator metrics + Prometheus scrape endpoint enabled; basic readiness/liveness probes
+- [x] Dockerfile + docker-compose stack (Spring Boot + Postgres + optional pgAdmin) with CI health check (`curl http://localhost:8080/actuator/health`)
+- [x] ADR updates for authentication/authorization and observability strategy
+- [x] ZAP baseline/API scan run (document findings + fixes or suppressions)
+- [x] README + runbooks updated with deployment, security, and operational notes
+- [x] Secrets management strategy documented (env vars locally, vault/secret manager in prod)
 
 ### Phase 5.5: DAST + Runtime Security
-- [ ] DAST (OWASP ZAP baseline/API scan) running in CI
-- [ ] Auth/role integration tests asserting 401/403 and allowed roles
-- [ ] Security scan documentation/checks repeatable in CI
-- [ ] Dependency-Check/CodeQL suppressions tracked with reasoning; coverage/mutation thresholds enforced in CI
-- [ ] GitHub Actions updated to run `npm run test:run` (Vitest) and `npm run test:e2e` (Playwright) with branch protection on all required jobs
+- [x] DAST (OWASP ZAP baseline/API scan) running in CI (`.github/workflows/zap-scan.yml`)
+- [x] Auth/role integration tests asserting 401/403 and allowed roles (`AuthControllerTest`, `ContactControllerTest`)
+- [x] Security scan documentation/checks repeatable in CI (ZAP rules in `.zap/rules.tsv`)
+- [x] Dependency-Check/CodeQL suppressions tracked with reasoning; coverage/mutation thresholds enforced in CI
+- [x] GitHub Actions updated to run `npm run test:run` (Vitest) and `npm run test:e2e` (Playwright) with branch protection on all required jobs
 
 ### Phase 6: Packaging + CI
 - [ ] Dockerfiles for backend and UI

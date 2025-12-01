@@ -103,7 +103,26 @@ sequenceDiagram
 - `application`: contact-service
 - `environment`: local/docker/staging/production
 
-### 5. Docker Packaging
+### 5. Security Headers
+
+**Implemented Headers** (in `SecurityConfig.java`):
+| Header | Value | Purpose |
+|--------|-------|---------|
+| Content-Security-Policy | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'` | Prevents XSS, clickjacking, and data injection attacks |
+| X-Content-Type-Options | `nosniff` | Prevents MIME-type sniffing |
+| X-Frame-Options | `SAMEORIGIN` | Prevents clickjacking |
+| Referrer-Policy | `strict-origin-when-cross-origin` | Controls referrer header leakage |
+
+**CSP Policy Breakdown**:
+- `default-src 'self'`: Only load resources from same origin by default
+- `script-src 'self'`: Only execute scripts from same origin (blocks inline scripts)
+- `style-src 'self' 'unsafe-inline'`: Allow styles from same origin + inline styles (needed for some UI frameworks)
+- `img-src 'self' data:`: Allow images from same origin + data URIs
+- `font-src 'self'`: Only load fonts from same origin
+- `connect-src 'self'`: Only allow API calls to same origin
+- `frame-ancestors 'self'`: Prevent embedding in iframes from other origins
+
+### 6. Docker Packaging
 
 **Dockerfile Features**:
 - Multi-stage build (builder + runtime)
@@ -140,6 +159,7 @@ sequenceDiagram
 - PII masking prevents sensitive data in logs.
 - Prometheus metrics integrate with standard monitoring tools.
 - Docker packaging enables consistent deployments.
+- Security headers (CSP, X-Content-Type-Options, X-Frame-Options) mitigate XSS and clickjacking.
 
 ### Trade-offs
 - Per-user isolation adds `instanceof JpaStore` checks in services.

@@ -37,6 +37,10 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Transactional
+@SuppressFBWarnings(
+        value = "CT_CONSTRUCTOR_THROW",
+        justification = "Constructor calls registerInstance() for singleton pattern compatibility; "
+                + "this is intentional for backward compatibility with legacy non-Spring callers")
 public class TaskService {
 
     private static TaskService instance;

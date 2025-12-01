@@ -5,6 +5,7 @@ import contactapp.persistence.entity.ContactEntity;
 import contactapp.persistence.mapper.ContactMapper;
 import contactapp.persistence.repository.ContactRepository;
 import contactapp.security.User;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,10 @@ public class JpaContactStore implements ContactStore {
     private final ContactRepository repository;
     private final ContactMapper mapper;
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP2",
+            justification = "Spring-managed singleton stores repository and mapper references; "
+                    + "these are framework-managed beans with controlled lifecycle")
     public JpaContactStore(final ContactRepository repository, final ContactMapper mapper) {
         this.repository = repository;
         this.mapper = mapper;
@@ -54,6 +59,7 @@ public class JpaContactStore implements ContactStore {
      * @param user the user who owns the contact
      */
     @Transactional
+    @Override
     public void save(final Contact aggregate, final User user) {
         if (aggregate == null) {
             throw new IllegalArgumentException("contact aggregate must not be null");

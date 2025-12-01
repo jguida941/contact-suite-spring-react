@@ -21,7 +21,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`requirements/appointment-requirements/`](requirements/appointment-requirements/) | Appointment assignment requirements (object/service specs + checklist). |
 | [`requirements/task-requirements/`](requirements/task-requirements/) | Task assignment requirements (task object/service specs + checklist). |
 | [`architecture/`](architecture/) | Feature design briefs (e.g., Task entity/service plan with Definition of Done). |
-| [`adrs/`](adrs/) | Architecture Decision Records index plus individual ADR files (ADR-0001..0042). |
+| [`adrs/`](adrs/) | Architecture Decision Records index plus individual ADR files (ADR-0001..0044). |
 | [`design-notes/`](design-notes/) | Personal design note hub with supporting explanations under `design-notes/notes/`. |
 | [`logs/`](logs/) | Changelog and backlog. |
 | [`operations/`](operations/) | Operations documentation (Docker setup, Actuator endpoints, deployment guides). |
@@ -192,12 +192,12 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/security/Role.java`](../src/main/java/contactapp/security/Role.java) | Role enum (`USER`, `ADMIN`) for authorization. |
 | [`../src/main/java/contactapp/security/UserRepository.java`](../src/main/java/contactapp/security/UserRepository.java) | Spring Data repository for User persistence with lookup methods. |
 | [`../src/main/java/contactapp/security/JwtService.java`](../src/main/java/contactapp/security/JwtService.java) | JWT token generation and validation service (HMAC-SHA256). |
-| [`../src/main/java/contactapp/security/JwtAuthenticationFilter.java`](../src/main/java/contactapp/security/JwtAuthenticationFilter.java) | Filter that validates JWT tokens from Authorization header. |
-| [`../src/main/java/contactapp/security/SecurityConfig.java`](../src/main/java/contactapp/security/SecurityConfig.java) | Spring Security configuration (JWT auth, CORS, security headers). |
+| [`../src/main/java/contactapp/security/JwtAuthenticationFilter.java`](../src/main/java/contactapp/security/JwtAuthenticationFilter.java) | Filter that validates JWT tokens from HttpOnly cookie first, then Authorization header fallback. |
+| [`../src/main/java/contactapp/security/SecurityConfig.java`](../src/main/java/contactapp/security/SecurityConfig.java) | Spring Security configuration (JWT auth, CookieCsrfTokenRepository for SPA routes, CORS, security headers). |
 | [`../src/main/java/contactapp/security/CustomUserDetailsService.java`](../src/main/java/contactapp/security/CustomUserDetailsService.java) | `UserDetailsService` implementation loading users from repository. |
 | [`../src/test/java/contactapp/security/UserTest.java`](../src/test/java/contactapp/security/UserTest.java) | Unit tests for User entity validation (boundary, null/blank, role tests). |
 | [`../src/test/java/contactapp/security/JwtServiceTest.java`](../src/test/java/contactapp/security/JwtServiceTest.java) | Unit tests for JWT token lifecycle (generation, extraction, validation). |
-| [`../src/test/java/contactapp/security/JwtAuthenticationFilterTest.java`](../src/test/java/contactapp/security/JwtAuthenticationFilterTest.java) | Unit tests for JWT filter (missing header, invalid token, valid token). |
+| [`../src/test/java/contactapp/security/JwtAuthenticationFilterTest.java`](../src/test/java/contactapp/security/JwtAuthenticationFilterTest.java) | Unit tests for JWT filter (missing cookie/header, invalid token, valid token). |
 | [`../src/test/java/contactapp/security/CustomUserDetailsServiceTest.java`](../src/test/java/contactapp/security/CustomUserDetailsServiceTest.java) | Unit tests for user lookup and exception handling. |
 | [`../src/test/java/contactapp/security/WithMockAppUser.java`](../src/test/java/contactapp/security/WithMockAppUser.java) | Custom annotation for populating SecurityContext with real User instances in tests. |
 | [`../src/test/java/contactapp/security/WithMockAppUserSecurityContextFactory.java`](../src/test/java/contactapp/security/WithMockAppUserSecurityContextFactory.java) | SecurityContextFactory creating concrete User entities for @WithMockAppUser annotation. |
@@ -245,9 +245,9 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 |------|-------------|
 | [`../ui/contact-app/src/hooks/useTheme.ts`](../ui/contact-app/src/hooks/useTheme.ts) | Theme switching hook with localStorage persistence. |
 | [`../ui/contact-app/src/hooks/useMediaQuery.ts`](../ui/contact-app/src/hooks/useMediaQuery.ts) | Responsive breakpoint detection hook. |
-| [`../ui/contact-app/src/hooks/useProfile.ts`](../ui/contact-app/src/hooks/useProfile.ts) | User profile management hook with localStorage persistence. |
+| [`../ui/contact-app/src/hooks/useProfile.ts`](../ui/contact-app/src/hooks/useProfile.ts) | User profile management hook with sessionStorage persistence (cleared on tab close). |
 | [`../ui/contact-app/src/lib/queryClient.ts`](../ui/contact-app/src/lib/queryClient.ts) | Central TanStack Query client configured for auth-aware cache invalidation. |
-| [`../ui/contact-app/src/lib/api.ts`](../ui/contact-app/src/lib/api.ts) | Typed fetch wrapper for backend API calls with auth token handling. |
+| [`../ui/contact-app/src/lib/api.ts`](../ui/contact-app/src/lib/api.ts) | Typed fetch wrapper handling HttpOnly cookie auth + sessionStorage-backed user/profile caching. |
 | [`../ui/contact-app/src/lib/schemas.ts`](../ui/contact-app/src/lib/schemas.ts) | Zod schemas matching backend Validation.java constants. |
 | [`../ui/contact-app/src/lib/utils.ts`](../ui/contact-app/src/lib/utils.ts) | `cn()` utility for class name merging. |
 
@@ -282,7 +282,8 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../scripts/api_fuzzing.py`](../scripts/api_fuzzing.py) | API fuzzing helper for local Schemathesis runs (starts app, fuzzes, exports OpenAPI spec). |
 | [`architecture/2025-11-19-task-entity-and-service.md`](architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`architecture/2025-11-24-appointment-entity-and-service.md`](architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record. |
-| [`adrs/README.md`](adrs/README.md) | ADR index (ADR-0001..0042 covering validation, persistence, API, UI, security, observability). |
+| [`architecture/threat-model.md`](architecture/threat-model.md) | End-to-end threat model (assets, trust zones, mitigations, residual risks). |
+| [`adrs/README.md`](adrs/README.md) | ADR index (ADR-0001..0044 covering validation, persistence, API, UI, security, observability). |
 | [`design-notes/README.md`](design-notes/README.md) | Landing page for informal design notes (individual topics in `design-notes/notes/`). |
 | [`logs/backlog.md`](logs/backlog.md) | Backlog for reporting and domain enhancements. |
 | [`logs/CHANGELOG.md`](logs/CHANGELOG.md) | Project changelog. |

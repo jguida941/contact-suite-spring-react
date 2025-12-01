@@ -403,7 +403,10 @@ public class ActuatorSecurityConfig {
         http
             .securityMatcher("/actuator/**")
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health/**").permitAll()
+                .requestMatchers(
+                    "/actuator/health",
+                    "/actuator/health/liveness",
+                    "/actuator/health/readiness").permitAll()
                 .requestMatchers("/actuator/prometheus").hasRole("MONITORING")
                 .anyRequest().hasRole("ADMIN")
             )

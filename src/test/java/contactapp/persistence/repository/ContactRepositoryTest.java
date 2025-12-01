@@ -37,7 +37,7 @@ class ContactRepositoryTest {
 
         repository.saveAndFlush(entity);
 
-        assertThat(repository.findByContactId("repo-1"))
+        assertThat(repository.findByContactIdAndUser("repo-1", owner))
                 .isPresent()
                 .get()
                 .extracting(ContactEntity::getFirstName)

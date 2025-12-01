@@ -5,6 +5,7 @@ import contactapp.persistence.entity.TaskEntity;
 import contactapp.persistence.mapper.TaskMapper;
 import contactapp.persistence.repository.TaskRepository;
 import contactapp.security.User;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,10 @@ public class JpaTaskStore implements TaskStore {
     private final TaskRepository repository;
     private final TaskMapper mapper;
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP2",
+            justification = "Spring-managed singleton stores repository and mapper references; "
+                    + "these are framework-managed beans with controlled lifecycle")
     public JpaTaskStore(final TaskRepository repository, final TaskMapper mapper) {
         this.repository = repository;
         this.mapper = mapper;

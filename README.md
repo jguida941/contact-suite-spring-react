@@ -18,11 +18,15 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 
 ## Table of Contents
 - [Getting Started](#getting-started)
+- [Phase Roadmap & Highlights](#phase-roadmap--highlights)
+- [React UI Highlights](#react-ui-highlights)
+- [Branches & History](#branches--history)
 - [Folder Highlights](#folder-highlights)
 - [Design Decisions & Highlights](#design-decisions--highlights)
 - [Architecture Overview](#architecture-overview)
-- [Validation & Error Handling](#validation--error-handling)
-- [Testing Strategy](#testing-strategy)
+- [Backend Domain & Services](#backend-domain--services)
+- [Security Infrastructure](#security-infrastructure)
+- [Observability Infrastructure](#observability-infrastructure)
 - [REST API Layer](#rest-api-layer-phase-2)
 - [React UI Layer](#react-ui-layer-phase-4)
 - [Spring Boot Infrastructure](#applicationjava--spring-boot-infrastructure)
@@ -32,9 +36,25 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 - [QA Summary](#qa-summary)
 - [Self-Hosted Mutation Runner Setup](#self-hosted-mutation-runner-setup)
 
+## System Requirements
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| **Java** | 17+ | Temurin JDK 17 recommended |
+| **Apache Maven** | 3.9+ | For building and testing |
+| **Node.js** | 22+ | For frontend development (matches pom.xml) |
+| **npm** | 8+ | Comes with Node.js |
+| **Python** | 3.8+ | For development scripts (`dev_stack.py`) |
+| **Docker** | 20.10+ | For Postgres dev database (optional) |
+| **Docker Compose** | 2.0+ | For multi-container setup (optional) |
+
+**Hardware:** 2GB RAM minimum, 500MB free disk space.
+
+**Operating Systems:** Linux, macOS, Windows (WSL2 recommended for Windows).
+
 ## Getting Started
 1. Install Java 17 and Apache Maven (3.9+).
-2. Run `mvn verify` from the project root to compile everything, execute the JUnit suite, and run Checkstyle/SpotBugs/JaCoCo quality gates.
+2. Run `mvn verify` from the project root to compile everything, execute the JUnit suite, and run Checkstyle/SpotBugs/JaCoCo quality gates. (Testcontainers-based integration tests are skipped locally by default; run `mvn verify -DskipITs=false` with Docker running to include them.)
 3. **Development mode** (backend only): `mvn spring-boot:run` (base profile uses an in-memory H2 database in PostgreSQL compatibility mode so you can try the API without installing Postgres; use `--spring.profiles.active=dev` or `prod` to connect to a real Postgres instance that persists data between restarts)
    - Health/info actuator endpoints at `http://localhost:8080/actuator/health`
    - **Swagger UI** at `http://localhost:8080/swagger-ui.html`
@@ -93,16 +113,33 @@ Flyway automatically creates the schema on first run. Stop the database with `do
    ```
    Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-7. Planning note: Phases 0-5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability). **571 tests** (unit/slice via Surefire; 577 total with integration tests via Failsafe) cover the JPA path, legacy singleton fallbacks, JWT auth components, and User entity validation (PIT mutation coverage 95% with 96% line coverage on mutated classes, 96% test strength). ADR-0014..0042 capture the selected stack, implementation decisions, and engineering principles.
+7. Planning note: Phases 0-5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability). **574 tests** (580 with integration tests via Failsafe) cover the JPA path, legacy singleton fallbacks, JWT auth components, and User entity validation (PIT mutation coverage 95% with 96% line coverage on mutated classes, 96% test strength). ADR-0014..0044 capture the selected stack, implementation decisions, and engineering principles. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list plus upcoming work.
 
-   **Phase 5 Security & Observability Highlights:**
-   - **Per-user data isolation**: `user_id` foreign key columns on contacts, tasks, and appointments tables enforce multi-tenancy at the database level; services filter queries by authenticated user
-   - **Rate limiting**: Bucket4j with Caffeine bounded caches enforces login (5/min), register (3/min), and API (100/min per user) limits
-   - **Sanitized request logging**: `RequestLoggingFilter` records method/URI/status plus masked query strings, redacted sensitive parameters, obfuscated client IPs, and normalized user agents for safe audit trails
-   - **JWT authentication**: Spring Security integration with `JwtAuthenticationFilter` validates HMAC-SHA256 signed tokens from Authorization headers
-   - **Structured logging**: Correlation IDs (`X-Correlation-ID`) flow through MDC for distributed tracing; PII masking converter redacts sensitive patterns in log output
-   - **Prometheus metrics**: `/actuator/prometheus` exposes micrometer metrics with custom timers for API endpoints; liveness/readiness probes at `/actuator/health`
-   - **Production-ready Docker packaging**: Multi-stage build with Eclipse Temurin 17, non-root user, layered JAR extraction for optimal layer caching
+## Phase Roadmap & Highlights
+
+The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope. This snapshot keeps the status and headline deliverables handy while future phases (5.5, 6) stay visible.
+
+| Phase | Status | Focus | Highlights |
+|-------|--------|-------|------------|
+| 0 | Complete | Domain guardrails | Defensive copies in Contact/Task services; appointment date-not-past fix |
+| 1 | Complete | Spring Boot foundation | Services promoted to `@Service` beans; actuator health/info endpoints |
+| 2 | Complete | REST API + DTOs | CRUD controllers at `/api/v1/**`; Bean Validation DTOs; 71 controller tests |
+| 2.5 | Complete | OpenAPI fuzzing | Schemathesis workflows with spec validation/hardening |
+| 3 | Complete | Persistence & storage | Spring Data JPA + Flyway migrations; Postgres dev/prod; H2/Testcontainers parity |
+| 4 | Complete | React SPA | CRUD UI with TanStack Query + Vite/Tailwind stack; Vitest + Playwright suites |
+| 5 | Complete | Security & observability | JWT auth, per-user tenancy, rate limiting, sanitized logging, Prometheus |
+| 5.5 | Planned | CI security gates | Add ZAP scans and explicit 401/403 regression tests |
+| 6 | Planned | Packaging | Production-ready Docker images + compose verification |
+
+### Phase 5 Security & Observability Summary
+- **Per-user data isolation**: `user_id` foreign keys on contacts, tasks, and appointments enforce multi-tenancy while services scope queries to the authenticated user.
+- **Rate limiting**: Bucket4j with bounded Caffeine caches enforces login (5/min), register (3/min), and API (100/min per user) limits.
+- **CSRF double-submit tokens**: `/api/v1/**` endpoints now require `X-XSRF-TOKEN` headers generated via `CookieCsrfTokenRepository` and `/api/auth/csrf-token`, keeping the HttpOnly cookie flow resistant to cross-site requests.
+- **Sanitized request logging**: `RequestLoggingFilter` records method/URI/status plus masked query strings, redacted sensitive parameters, obfuscated client IPs, and normalized user agents for safe audit trails.
+- **JWT authentication**: Spring Security + `JwtAuthenticationFilter` issues HttpOnly `auth_token` cookies (SameSite=Lax, Secure) and still honors `Authorization: Bearer` headers for API clients.
+- **Structured logging**: Correlation IDs (`X-Correlation-ID`) flow through MDC for distributed tracing; `PiiMaskingConverter` redacts sensitive patterns in log output.
+- **Prometheus metrics**: `/actuator/prometheus` exposes Micrometer metrics with custom timers for API endpoints; liveness/readiness probes remain on `/actuator/health`.
+- **Production-ready Docker packaging**: Multi-stage build (Eclipse Temurin 17, non-root user, layered JAR extraction) keeps runtime images lean; detailed steps live in [`Dockerfile`](Dockerfile).
 
 ## React UI Highlights
 - Built with **Vite + React 19 + TypeScript + Tailwind CSS v4** plus shadcn/ui components for a professional look.
@@ -177,12 +214,12 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/main/java/contactapp/security/Role.java`](src/main/java/contactapp/security/Role.java)                                         | Role enum (`USER`, `ADMIN`) for authorization.                                                                                    |
 | [`src/main/java/contactapp/security/UserRepository.java`](src/main/java/contactapp/security/UserRepository.java)                     | Spring Data repository for User persistence with lookup methods.                                                                  |
 | [`src/main/java/contactapp/security/JwtService.java`](src/main/java/contactapp/security/JwtService.java)                             | JWT token generation and validation service (HMAC-SHA256).                                                                        |
-| [`src/main/java/contactapp/security/JwtAuthenticationFilter.java`](src/main/java/contactapp/security/JwtAuthenticationFilter.java)   | Filter that validates JWT tokens from Authorization header.                                                                       |
-| [`src/main/java/contactapp/security/SecurityConfig.java`](src/main/java/contactapp/security/SecurityConfig.java)                     | Spring Security configuration (JWT auth, CORS, security headers, endpoint protection).                                            |
+| [`src/main/java/contactapp/security/JwtAuthenticationFilter.java`](src/main/java/contactapp/security/JwtAuthenticationFilter.java)   | Filter that validates JWT tokens from HttpOnly cookies first, then Authorization header fallback (see ADR-0043).                  |
+| [`src/main/java/contactapp/security/SecurityConfig.java`](src/main/java/contactapp/security/SecurityConfig.java)                     | Spring Security configuration (JWT auth, CSRF protection, CORS, security headers, endpoint protection).                          |
 | [`src/main/java/contactapp/security/CustomUserDetailsService.java`](src/main/java/contactapp/security/CustomUserDetailsService.java) | UserDetailsService implementation loading users from repository.                                                                  |
 | [`src/test/java/contactapp/security/UserTest.java`](src/test/java/contactapp/security/UserTest.java)                                 | Unit tests for User entity validation (boundary, null/blank, role tests).                                                         |
 | [`src/test/java/contactapp/security/JwtServiceTest.java`](src/test/java/contactapp/security/JwtServiceTest.java)                     | Unit tests for JWT token lifecycle (generation, extraction, validation, expiry).                                                  |
-| [`src/test/java/contactapp/security/JwtAuthenticationFilterTest.java`](src/test/java/contactapp/security/JwtAuthenticationFilterTest.java) | Unit tests for JWT filter (missing header, invalid token, valid token scenarios).                                           |
+| [`src/test/java/contactapp/security/JwtAuthenticationFilterTest.java`](src/test/java/contactapp/security/JwtAuthenticationFilterTest.java) | Unit tests for JWT filter (missing cookie/header, invalid token, valid token scenarios).                                       |
 | [`src/test/java/contactapp/security/CustomUserDetailsServiceTest.java`](src/test/java/contactapp/security/CustomUserDetailsServiceTest.java) | Unit tests for user lookup and UsernameNotFoundException handling.                                                        |
 | [`src/main/java/contactapp/api/dto/`](src/main/java/contactapp/api/dto/)                                                             | Request/Response DTOs with Bean Validation (Contact/Task/Appointment + LoginRequest, RegisterRequest, AuthResponse).              |
 | [`src/main/java/contactapp/api/exception/`](src/main/java/contactapp/api/exception/)                                                 | Custom exceptions (`ResourceNotFoundException`, `DuplicateResourceException`).                                                    |
@@ -217,7 +254,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                                       | Task assignment requirements and checklist (same format as Contact).                                                              |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md)                 | Task entity/service design plan with Definition of Done and phased approach.                                                      |
 | [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md)   | Appointment entity/service implementation record.                                                                                 |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                                         | Architecture Decision Record index (ADR-0001…ADR-0042).                                                                           |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                                         | Architecture Decision Record index (ADR-0001…ADR-0044).                                                                           |
 | [`Dockerfile`](Dockerfile)                                                                                                           | Multi-stage production Docker image (Eclipse Temurin 17, non-root user, layered JAR).                                             |
 | [`docker-compose.yml`](docker-compose.yml)                                                                                           | Production-like stack (Postgres + App + optional pgAdmin) with health checks.                                                     |
 | [`docs/operations/`](docs/operations/)                                                                                               | Operations docs: Docker setup guide, Actuator endpoints reference, deployment guides.                                             |
@@ -291,17 +328,19 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 
   <br>
 
-## [Contact.java](src/main/java/contactapp/domain/Contact.java) / [ContactTest.java](src/test/java/contactapp/domain/ContactTest.java)
+## Backend Domain & Services
 
-### Service Snapshot
+### [Contact.java](src/main/java/contactapp/domain/Contact.java) / [ContactTest.java](src/test/java/contactapp/domain/ContactTest.java)
+
+#### Service Snapshot
 - `Contact` acts as the immutable ID holder with mutable first/last name, phone, and address fields.
 - Constructor delegates to setters so validation stays centralized and consistent for both creation and updates.
 - Validation trims IDs/names/addresses before storing them; phone numbers are stored as provided and must already be 10 digits (whitespace fails the digit check instead of being silently removed).
 - `copy()` creates a defensive copy by validating the source state and reusing the public constructor, keeping defensive copies aligned with validation rules.
 
-## Validation & Error Handling
+#### Validation & Error Handling
 
-### Validation Pipeline
+##### Validation Pipeline
 ```mermaid
 graph TD
     A[input]
@@ -324,7 +363,7 @@ graph TD
 - Phone numbers: `validateDigits` calls `validateNotBlank` on the original input, then checks for digits-only and exact length. No trimming; whitespace fails the digit check.
 - Because the constructor routes through the setters, the exact same pipeline applies whether the object is being created or updated.
 
-### Error Message Philosophy
+##### Error Message Philosophy
 ```java
 // Bad
 throw new IllegalArgumentException("Invalid input");
@@ -334,7 +373,7 @@ throw new IllegalArgumentException("firstName length must be between 1 and 10");
 ```
 - Specific, label-driven messages make debugging easier and double as documentation. Tests assert on the message text so regressions are caught immediately.
 
-### Exception Strategy
+##### Exception Strategy
 | Exception Type | Use Case           | Recovery? | Our Choice |
 |----------------|--------------------|-----------|------------|
 | Checked        | Recoverable issues | Maybe     | ❌          |
@@ -342,7 +381,7 @@ throw new IllegalArgumentException("firstName length must be between 1 and 10");
 
 - We throw `IllegalArgumentException` (unchecked) because invalid input is a caller bug and should crash fast.
 
-### Propagation Flow
+##### Propagation Flow
 ```mermaid
 graph TD
     A[Client request] --> B[ContactService]
@@ -354,14 +393,14 @@ graph TD
 ```
 - Fail-fast means invalid state never reaches persistence/logs, and callers/tests can react immediately.
 
-## Testing Strategy
+#### Testing Strategy
 
-### Approach & TDD
+##### Approach & TDD
 - Each validator rule started as a failing test, then the implementation was written until the suite passed.
 - `ContactTest` serves as the living specification covering both the success path and every invalid scenario.
 - `TaskTest` and `TaskServiceTest` mirror the same workflow for the Task domain/service, reusing the shared `Validation` helper and singleton patterns, and include invalid update cases to prove atomicity.
 
-### Parameterized Coverage
+##### Parameterized Coverage
 - `@ParameterizedTest` + `@CsvSource` enumerate the invalid IDs, names, phones, and addresses so we don’t duplicate boilerplate tests.
 ```java
 @ParameterizedTest
@@ -377,11 +416,11 @@ void testInvalidContactId(String id, String expectedMessage) {
 }
 ```
 
-### Assertion Patterns
+##### Assertion Patterns
 - AssertJ’s `hasFieldOrPropertyWithValue` validates the happy path in one fluent statement.
 - `assertThatThrownBy().isInstanceOf(...).hasMessage(...)` proves exactly which validation rule triggered.
 
-### Scenario Coverage
+##### Scenario Coverage
 - `testSuccessfulCreation` validates the positive constructor path (all fields stored).
 - `testValidSetters` ensures setters update fields when inputs pass validation.
 - `testConstructorTrimsStoredValues` confirms IDs, names, and addresses are normalized via `trim()`.
@@ -404,9 +443,9 @@ void testInvalidContactId(String id, String expectedMessage) {
 
 > **Note (JDK 25+):** When running tests on JDK 25 or later, you may see a warning like `Mockito is currently self-attaching to enable the inline-mock-maker`. This is expected and harmless; Mockito's subclass mock-maker handles mocking without requiring the Java agent, so the warning does not affect test correctness.
 
-### Test Utilities (Phase 5)
+#### Authenticated Test Utilities
 
-Phase 5 security additions introduced specialized test utilities to simplify authenticated testing:
+Security hardening introduced specialized test utilities to simplify authenticated testing:
 
 - **`@WithMockAppUser`** ([WithMockAppUser.java](src/test/java/contactapp/security/WithMockAppUser.java)) - Custom annotation that populates the SecurityContext with a real `User` entity (not just a generic Spring Security stub). Use `@WithMockAppUser` on test methods or classes to authenticate as a default user, or customize with `@WithMockAppUser(username = "admin", role = Role.ADMIN)` for role-specific tests. The factory creates a detached user instance so tests don't need database setup.
 
@@ -416,16 +455,16 @@ Phase 5 security additions introduced specialized test utilities to simplify aut
 
 <br>
 
-## [ContactService.java](src/main/java/contactapp/service/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/service/ContactServiceTest.java)
+### [ContactService.java](src/main/java/contactapp/service/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/service/ContactServiceTest.java)
 
-### Service Snapshot
+#### Service Snapshot
 - **DomainDataStore abstraction** - `ContactService` depends on `ContactStore`, injected with the JPA-backed implementation during normal operation. The legacy singleton path lazily spins up an `InMemoryContactStore`, then migrates data into the JPA store when Spring finishes wiring beans.
 - **Transactional guarantees** - Methods run inside Spring transactions so the `existsById` + `save` or `findById` + `update` sequences remain atomic. Read methods opt into `@Transactional(readOnly = true)` for SQL efficiency.
 - **Validation + normalization** - Service methods validate/trims IDs via `Validation.validateNotBlank`, but all field-level rules still live inside `Contact` (`update()` and setters). That keeps controller/service logic shallow.
 - **Defensive copies** - `getAllContacts()`, `getDatabase()`, and `getContactById()` return fresh `Contact.copy()` instances so external callers cannot mutate persistent state.
 - **Package-private reset hooks** - `clearAllContacts()` sticks around exclusively for tests in the same package; production code never calls it directly.
 
-### Persistence Flow
+#### Persistence Flow
 ```mermaid
 graph TD
     A[Controller/Service call] --> B{Operation}
@@ -446,7 +485,7 @@ graph TD
 - Delete/update operations trim IDs before handing them to the store so whitespace inputs remain consistent.
 - Duplicate IDs or missing rows return `false`, letting controllers return 409/404 without extra exception types.
 
-### Testing Strategy
+#### Testing Strategy
 - `ContactServiceTest` is now a `@SpringBootTest` running against the `test` profile (H2 + Flyway) so every service method hits the real repositories/mappers.
 - `ContactServiceLegacyTest` cold-starts the singleton without Spring, proving the fallback still works for older callers (and that state remains isolated between tests via reflection resets).
 - Slice tests live next door for mappers (`ContactMapperTest`) and repositories (`ContactRepositoryTest`), catching schema or mapping regressions without booting the full application context.
@@ -476,7 +515,7 @@ graph TD
 - `testGetAllContactsReturnsEmptyList` verifies getAllContacts returns empty list when no contacts exist.
 - `testGetAllContactsReturnsAllContacts` verifies getAllContacts returns all contacts.
 
-#### Phase 5 Security Tests (Multi-User Isolation)
+##### Security Tests (Per-User Isolation)
 - `getAllContactsAllUsers_requiresAdminRole` proves non-ADMIN users get `AccessDeniedException` when attempting to fetch all users' contacts.
 - `getAllContactsAllUsers_returnsDataForAdmins` proves ADMIN users can fetch contacts from multiple users.
 - `getContactById_onlyReturnsCurrentUsersRecords` proves users cannot see contacts owned by other users.
@@ -484,26 +523,26 @@ graph TD
 - `deleteContact_doesNotRemoveOtherUsersData` proves users cannot delete contacts owned by other users.
 - `updateContact_doesNotAffectOtherUserRecords` proves users cannot update contacts owned by other users.
 
-### Persistence & Mapper Coverage
+#### Persistence & Mapper Coverage
 - Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
 - New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
-- Combined with the existing controller/service suites and Phase 5 security additions, this brings the repo to **571 tests** (577 with ITs) with **95% mutation kills** (594/626 mutants killed) and **96% line coverage on mutated classes**.
+- Combined with the existing controller/service suites and the security additions above, this brings the repo to **574 tests** (580 with ITs) with **95% mutation kills** (594/626 mutants killed) and **96% line coverage on mutated classes**.
 
 <br>
 
-## [Task.java](src/main/java/contactapp/domain/Task.java) / [TaskTest.java](src/test/java/contactapp/domain/TaskTest.java)
+### [Task.java](src/main/java/contactapp/domain/Task.java) / [TaskTest.java](src/test/java/contactapp/domain/TaskTest.java)
 
-### Service Snapshot
+#### Service Snapshot
 - Task IDs are required, trimmed, and immutable after construction (length 1-10).
 - Name (≤20 chars) and description (≤50 chars) share one helper so constructor, setters, and `update(...)` all enforce identical rules.
 - `Task#update` validates both values first, then swaps them in one shot; invalid inputs leave the object untouched.
 - `copy()` creates a defensive copy by validating the source state and reusing the public constructor, keeping defensive copies aligned with validation rules.
 - Tests mirror Contact coverage: constructor trimming, happy-path setters/update, and every invalid-path exception message.
 
-## Validation & Error Handling
+#### Validation & Error Handling
 
-### Validation Pipeline
+##### Validation Pipeline
 ```mermaid
 graph TD
     A[Constructor input] --> B["validateLength(taskId, 1-10)"]
@@ -521,11 +560,11 @@ graph TD
 - Setters (`setName`, `setDescription`) use the same `validateLength` + trim pattern for updates.
 - `update(...)` validates both fields first, then assigns both atomically if they pass.
 
-### Error Message Philosophy
+##### Error Message Philosophy
 - All strings come from `Validation.validateLength`, so failures always say `<label> must not be null or blank` or `<label> length must be between X and Y`.
 - Tests assert the exact messages so a wording change immediately fails the suite.
 
-### Propagation Flow
+##### Propagation Flow
 ```mermaid
 graph TD
     A[Client] --> B[Task constructor/setter/update]
@@ -535,16 +574,16 @@ graph TD
 ```
 - No silent coercion; invalid data throws fast so tests/users fix the source input.
 
-## Testing Strategy
+#### Testing Strategy
 
-### Approach & TDD
+##### Approach & TDD
 - Started with constructor trimming tests, then added invalid cases before writing setters/update so every branch had a failing test first.
 
-### Assertion Patterns
+##### Assertion Patterns
 - AssertJ `hasFieldOrPropertyWithValue` keeps success assertions short.
 - `assertThatThrownBy(...).hasMessage(...)` locks in the Validation wording for each failure mode.
 
-### Scenario Coverage
+##### Scenario Coverage
 - Constructor stores trimmed values and rejects null/blank/too-long IDs, names, and descriptions.
 - Setters accept valid updates and reject invalid ones with the same helper-generated messages.
 - `update(...)` replaces both mutable fields atomically and never mutates on invalid input.
@@ -554,15 +593,15 @@ graph TD
 
   <br>
 
-## [TaskService.java](src/main/java/contactapp/service/TaskService.java) / [TaskServiceTest.java](src/test/java/contactapp/service/TaskServiceTest.java)
+### [TaskService.java](src/main/java/contactapp/service/TaskService.java) / [TaskServiceTest.java](src/test/java/contactapp/service/TaskServiceTest.java)
 
-### Service Snapshot
+#### Service Snapshot
 - Depends on `TaskStore`, which is implemented by `JpaTaskStore` (Spring Data repository + mapper) for normal operation and `InMemoryTaskStore` for legacy `getInstance()` callers. As soon as the Spring bean initializes it registers itself as the singleton instance.
 - Transactions wrap add/delete/update operations; read-only queries opt into `@Transactional(readOnly = true)` for efficient SQL on H2/Postgres.
 - Service-level guards cover null task inputs and blank IDs. `Task.update(...)` enforces field rules so error messages stay aligned with the domain tests.
 - `getDatabase()` and `getAllTasks()` return defensive copies, and `clearAllTasks()` stays package-private for test resets.
 
-### Persistence Flow
+#### Persistence Flow
 ```mermaid
 graph TD
     A[TaskService call] --> B{Operation}
@@ -582,12 +621,12 @@ graph TD
 - Duplicate IDs or missing rows simply return `false` so controllers can produce 409/404 responses without inspecting exceptions.
 - Mapper conversions ensure persisted data always flows back through the domain constructor/update path for validation.
 
-### Testing Strategy
+#### Testing Strategy
 - `TaskServiceTest` is a Spring Boot test running on the `test` profile (H2 + Flyway), so every operation exercises the real repositories/mappers instead of in-memory maps.
 - `TaskServiceLegacyTest` cold-starts `getInstance()` outside Spring, proving the fallback still works and that legacy callers stay isolated.
 - Mapper/repository tests sit alongside the service tests for faster feedback on schema or conversion issues.
 
-#### Phase 5 Security Tests (Multi-User Isolation)
+##### Security Tests (Per-User Isolation)
 - `getAllTasksAllUsers_requiresAdminRole` proves non-ADMIN users get `AccessDeniedException` when attempting to fetch all users' tasks.
 - `getAllTasksAllUsers_returnsDataForAdmins` proves ADMIN users can fetch tasks from multiple users.
 - `getTaskById_onlyReturnsCurrentUsersTasks` proves users cannot see tasks owned by other users.
@@ -596,16 +635,16 @@ graph TD
 
   <br>
 
-## [Appointment.java](src/main/java/contactapp/domain/Appointment.java) / [AppointmentTest.java](src/test/java/contactapp/domain/AppointmentTest.java)
+### [Appointment.java](src/main/java/contactapp/domain/Appointment.java) / [AppointmentTest.java](src/test/java/contactapp/domain/AppointmentTest.java)
 
-### Service Snapshot
+#### Service Snapshot
 - Appointment IDs are required, trimmed, and immutable after construction (length 1-10).
 - `appointmentDate` uses `java.util.Date`, must not be null or in the past, is stored/returned via defensive copies, and is serialized/deserialized as ISO 8601 with millis + offset (`yyyy-MM-dd'T'HH:mm:ss.SSSXXX`, UTC).
 - Descriptions are required, trimmed, and capped at 50 characters; constructor and update share the same validation path.
 
-### Validation & Error Handling
+#### Validation & Error Handling
 
-#### Validation Pipeline
+##### Validation Pipeline
 ```mermaid
 flowchart TD
     X[IllegalArgumentException]
@@ -630,11 +669,11 @@ flowchart TD
 - Dates are validated via `Validation.validateDateNotPast` and copied on set/get to prevent external mutation.
 - `update(...)` validates both inputs before mutating, keeping updates atomic.
 
-### Testing Strategy
+#### Testing Strategy
 - `AppointmentTest` covers trimmed creation with defensive date copies, description setter happy path, invalid constructor cases (null/blank/over-length id/description, null/past dates), invalid description setters, invalid updates (null/past dates, bad descriptions) that leave state unchanged, and defensive getters.
 - AssertJ getters/field checks verify stored values; future/past dates are relative to “now” to avoid flakiness.
 
-### Scenario Coverage
+##### Scenario Coverage
 - `testSuccessfulCreationTrimsAndCopiesDate` validates trim/defensive copy on construction.
 - `testUpdateReplacesValuesAtomically` confirms date/description updates and defensive date copy.
 - `testSetDescriptionAcceptsValidValue` covers setter happy path.
@@ -645,15 +684,15 @@ flowchart TD
 - `testCopyProducesIndependentInstance` verifies copy() produces an independent instance with identical values.
 - `testCopyRejectsNullInternalState` (`@ParameterizedTest`) uses reflection to corrupt each internal field (appointmentId, appointmentDate, description), proving the `validateCopySource()` guard triggers for all null branches.
 
-## [AppointmentService.java](src/main/java/contactapp/service/AppointmentService.java) / [AppointmentServiceTest.java](src/test/java/contactapp/service/AppointmentServiceTest.java)
+### [AppointmentService.java](src/main/java/contactapp/service/AppointmentService.java) / [AppointmentServiceTest.java](src/test/java/contactapp/service/AppointmentServiceTest.java)
 
-### Service Snapshot
+#### Service Snapshot
 - Uses `AppointmentStore` (JPA-backed) under Spring and `InMemoryAppointmentStore` when `getInstance()` is called before the context loads. As soon as the Spring bean initializes it registers itself as the canonical singleton.
 - Transactions wrap add/delete/update operations; read-only queries use `@Transactional(readOnly = true)` like the other services.
 - Service methods validate/trim IDs via `Validation.validateNotBlank`, but `Appointment.update(...)` enforces the date-not-past rule and description length so error messages match the domain layer.
 - `getDatabase()`, `getAllAppointments()`, and `getAppointmentById()` return defensive copies so external code never mutates persistent state.
 
-### Persistence Flow
+#### Persistence Flow
 ```mermaid
 graph TD
     A[AppointmentService call] --> B{Operation}
@@ -673,12 +712,12 @@ graph TD
 - Duplicate IDs/missing rows return `false`; invalid fields bubble up as `IllegalArgumentException`, keeping the fail-fast philosophy intact.
 - Mapper conversions preserve the Instant/Date handling so persisted timestamps match domain expectations.
 
-### Testing Strategy
+#### Testing Strategy
 - `AppointmentServiceTest` runs against H2 + Flyway (`test` profile) and covers add/delete/update/defensive-copy behaviors end-to-end.
 - `AppointmentServiceLegacyTest` validates the non-Spring fallback and uses reflection resets to isolate state between runs.
 - Mapper/repository tests verify Instant↔Date conversion plus schema-level guarantees (e.g., NOT NULL/length constraints).
 
-#### Phase 5 Security Tests (Multi-User Isolation)
+##### Security Tests (Per-User Isolation)
 - `getAllAppointmentsAllUsers_requiresAdminRole` proves non-ADMIN users get `AccessDeniedException` when attempting to fetch all users' appointments.
 - `getAllAppointmentsAllUsers_returnsDataForAdmins` proves ADMIN users can fetch appointments from multiple users.
 - `getAppointmentById_onlyReturnsCurrentUsersAppointments` proves users cannot see appointments owned by other users.
@@ -687,16 +726,20 @@ graph TD
 
 <br>
 
-## [User.java](src/main/java/contactapp/security/User.java) / [UserTest.java](src/test/java/contactapp/security/UserTest.java)
+## Security Infrastructure
 
-### Entity Snapshot
+Phase 5 delivered the following foundational pieces and they remain the backbone of the security stack:
+
+### [User.java](src/main/java/contactapp/security/User.java) / [UserTest.java](src/test/java/contactapp/security/UserTest.java)
+
+#### Entity Snapshot
 - User entity implements Spring Security's `UserDetails` interface for seamless authentication integration.
 - Field constraints defined in `Validation.java`: username (1-50 chars), email (1-100 chars, valid format), password (1-255 chars, BCrypt hash required).
 - Constructor validates all fields, trims username/email, and rejects raw passwords (must start with `$2a$`, `$2b$`, or `$2y$`).
 - Role enum (`USER`, `ADMIN`) stored as string; default is `USER`.
 - JPA lifecycle callbacks (`@PrePersist`, `@PreUpdate`) manage `createdAt` and `updatedAt` timestamps.
 
-### Validation Pipeline
+#### Validation Pipeline
 ```mermaid
 graph TD
     A[Constructor input] --> B["validateLength(username, 1-50)"]
@@ -717,23 +760,19 @@ graph TD
 - `validateEmail()` checks both length (1-100) and format via regex pattern.
 - BCrypt pattern `^\\$2[aby]\\$.+` ensures passwords are pre-hashed; raw passwords rejected immediately.
 
-### Testing Strategy
+#### Testing Strategy
 - `UserTest` covers successful creation with valid BCrypt hash, trimming behavior, UserDetails interface methods (`getAuthorities`, account status), and all validation edge cases.
 - Parameterized tests exercise null/blank/over-length inputs for username, email, and password.
 - Invalid email format tests cover common malformed patterns (missing @, missing domain, double dots).
 - BCrypt requirement test confirms plain-text passwords are rejected.
 
-### Scenario Coverage
+#### Scenario Coverage
 - `testSuccessfulCreation` validates all fields stored correctly with valid BCrypt hash.
 - `testConstructorTrimsUsernameAndEmail` proves normalization on both fields.
 - `testGetAuthoritiesReturnsRoleWithPrefix` verifies Spring Security `ROLE_` prefix.
 - `testEmailInvalidFormatThrows` enumerates malformed email patterns.
 - `testPasswordMustBeBcryptHash` confirms raw password rejection.
 - Boundary tests use `emailOfLength()` helper to generate valid emails at max length.
-
-<br>
-
-## Security Infrastructure (Phase 5)
 
 ### [UserRepository.java](src/main/java/contactapp/security/UserRepository.java)
 - Spring Data JPA repository with `findByUsername`, `findByEmail`, `existsByUsername`, `existsByEmail` methods.
@@ -745,13 +784,13 @@ graph TD
 - Methods: `generateToken()`, `extractUsername()`, `isTokenValid()`, `extractClaim()`.
 
 ### [JwtAuthenticationFilter.java](src/main/java/contactapp/security/JwtAuthenticationFilter.java)
-- `OncePerRequestFilter` that intercepts requests with `Authorization: Bearer <token>` header.
+- `OncePerRequestFilter` that extracts JWTs from the HttpOnly `auth_token` cookie (preferred) with `Authorization: Bearer <token>` header fallback for API clients.
 - Extracts username from JWT, loads user via `UserDetailsService`, validates token, and sets `SecurityContextHolder`.
 - Invalid/expired tokens silently continue without authentication (endpoints handle 401).
 
 ### [SecurityConfig.java](src/main/java/contactapp/security/SecurityConfig.java)
 - Configures Spring Security filter chain with stateless session management (JWT).
-- CSRF disabled for stateless API; BCrypt password encoder bean.
+- CSRF tokens issued via `CookieCsrfTokenRepository` for browser routes while `/api/**` relies on JWT; BCrypt password encoder bean.
 - Public endpoints: `/api/auth/**`, `/actuator/health`, `/actuator/info`, `/swagger-ui/**`, `/error`, static SPA files.
 - Protected endpoints: `/api/v1/**` require authenticated users with valid JWT.
 - CORS configured via `cors.allowed-origins` property for SPA development (default: `localhost:5173,localhost:8080`).
@@ -766,12 +805,13 @@ graph TD
 - **DTOs**: `LoginRequest` (username, password), `RegisterRequest` (username, email, password), `AuthResponse` (token, username, email, role, expiresIn).
 - Uses `AuthenticationManager` for credential verification and `JwtService` for token generation.
 - Duplicate username/email checks via `UserRepository` methods.
+- Exposes `GET /api/auth/csrf-token` so the SPA can fetch the `XSRF-TOKEN` value for double-submit protection now that JWTs live in HttpOnly cookies.
 
 ### Auth Endpoint Summary
 | Endpoint | Method | Description | Success | Errors |
 |----------|--------|-------------|---------|--------|
-| `/api/auth/login` | POST | Authenticate user | 200 + JWT | 400 (validation), 401 (invalid credentials) |
-| `/api/auth/register` | POST | Register new user | 201 + JWT | 400 (validation), 409 (duplicate username/email) |
+| `/api/auth/login` | POST | Authenticate user | 200 + HttpOnly JWT cookie (token omitted from body) | 400 (validation), 401 (invalid credentials) |
+| `/api/auth/register` | POST | Register new user | 201 + HttpOnly JWT cookie (token omitted from body) | 400 (validation), 409 (duplicate username/email) |
 | `/api/auth/logout` | POST | Invalidate session | 204 No Content | - |
 
 ### Auth HTTP Status Codes
@@ -787,7 +827,7 @@ graph TD
 ### Role-Based Access Control
 - Controllers annotated with `@PreAuthorize("hasAnyRole('USER', 'ADMIN')")` require authenticated users.
 - `@SecurityRequirement(name = "bearerAuth")` documents JWT requirement in OpenAPI spec.
-- SPA stores token in localStorage and includes `Authorization: Bearer <token>` header on API requests.
+- SPA relies on HttpOnly cookies for tokens while caching profile metadata in `sessionStorage` via `tokenStorage`/`useProfile`, so no JS-accessible token is stored.
 
 ### Security Tests
 
@@ -806,7 +846,7 @@ graph TD
 - `fallbackToUtf8SecretWhenBase64DecodingFails` proves the UTF-8 fallback works when Base64 decoding fails.
 
 #### [JwtAuthenticationFilterTest.java](src/test/java/contactapp/security/JwtAuthenticationFilterTest.java) Scenario Coverage
-- `skipsFilterWhenAuthorizationHeaderMissing` ensures requests without Authorization header proceed without authentication.
+- `skipsFilterWhenAuthorizationHeaderMissing` ensures requests without a JWT cookie/header proceed without authentication.
 - `proceedsWhenTokenInvalid` confirms invalid tokens don't block the filter chain and leave SecurityContext empty.
 - `setsAuthenticationWhenTokenValid` verifies valid tokens populate SecurityContext with the authenticated user.
 
@@ -838,7 +878,7 @@ Each service enforces per-user data isolation via `user_id` foreign keys. Tests 
 | TaskService        | `TaskServiceTest`        | `getAllTasksAllUsers_requiresAdminRole`, `getTaskById_onlyReturnsCurrentUsersTasks`, `deleteTask_doesNotAllowOtherUsersToDelete`, `updateTask_doesNotAllowCrossUserModification`                                   |
 | AppointmentService | `AppointmentServiceTest` | `getAllAppointmentsAllUsers_requiresAdminRole`, `getAppointmentById_onlyReturnsCurrentUsersAppointments`, `deleteAppointment_doesNotAllowCrossUserDeletion`, `updateAppointment_doesNotAllowCrossUserModification` |
 
-See detailed scenario descriptions in each service's "Phase 5 Security Tests (Multi-User Isolation)" subsection above.
+See detailed scenario descriptions in each service's "Security Tests (Per-User Isolation)" subsection above.
 
 ### Mutation Tests (Service Layer)
 
@@ -874,9 +914,9 @@ sequenceDiagram
 
 <br>
 
-## Observability Infrastructure (Phase 5)
+## Observability Infrastructure
 
-Production-ready request tracing, logging, and rate limiting implemented via servlet filters and Logback extensions. See [ADR-0040](docs/adrs/ADR-0040-request-tracing-and-logging.md), [ADR-0041](docs/adrs/ADR-0041-pii-masking-in-logs.md), and [ADR-0042](docs/adrs/ADR-0042-docker-containerization-strategy.md).
+The same security/observability pass introduced the following request tracing, logging, and rate-limiting building blocks. See [ADR-0040](docs/adrs/ADR-0040-request-tracing-and-logging.md), [ADR-0041](docs/adrs/ADR-0041-pii-masking-in-logs.md), and [ADR-0042](docs/adrs/ADR-0042-docker-containerization-strategy.md).
 
 ### Filter Chain Order
 ```
@@ -1142,19 +1182,30 @@ ui/contact-app/
 
 ### API Integration
 ```typescript
-// lib/api.ts - Typed fetch wrapper with error normalization
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw { message: body.message || response.statusText, status: response.status };
+const METHODS_REQUIRING_CSRF = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+async function ensureCsrfToken(): Promise<string | null> {
+  // Reads XSRF-TOKEN cookie or hits /api/auth/csrf-token if missing
+}
+
+async function fetchWithCsrf(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers ?? {});
+  const method = (init.method ?? 'GET').toUpperCase();
+  if (METHODS_REQUIRING_CSRF.has(method)) {
+    const token = await ensureCsrfToken();
+    if (token) headers.set('X-XSRF-TOKEN', token);
   }
-  return response.status === 204 ? undefined as T : response.json();
+  return fetch(input, { credentials: 'include', ...init, headers });
 }
 
 export const contactsApi = {
-  getAll: () => fetch('/api/contacts').then(handleResponse<Contact[]>),
-  getById: (id: string) => fetch(`/api/contacts/${encodeURIComponent(id)}`).then(handleResponse<Contact>),
-  // ... create, update, delete
+  create: (data: ContactRequest) =>
+    fetchWithCsrf('/api/v1/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(handleResponse<Contact>),
+  // ... get/update/delete re-use fetchWithCsrf
 };
 ```
 
@@ -1406,7 +1457,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ### Jobs at a Glance
 | Job                 | Trigger                                                                             | What it does                                                                                                                                                                                                 | Notes                                                                                                      |
 |---------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
-| `build-test`        | Push/PR to main/master, release, manual dispatch                                    | Matrix `{ubuntu, windows} × {JDK 17, 21}` running `mvn verify` (tests + Checkstyle + SpotBugs + JaCoCo + PITest + Dependency-Check), builds QA dashboard, posts QA summary, uploads reports, Codecov upload. **Note:** Windows runners skip Testcontainers integration tests (`-DskipITs`) because GitHub-hosted Windows runners cannot run Linux containers. | Retries `mvn verify` with Dependency-Check/PITest skipped if the first attempt fails due to feed/timeouts. |
+| `build-test`        | Push/PR to main/master, release, manual dispatch                                    | Matrix `{ubuntu, windows} × {JDK 17, 21}` running `mvn verify` (tests + Checkstyle + SpotBugs + JaCoCo + PITest + Dependency-Check), builds QA dashboard, posts QA summary, uploads reports, Codecov upload. **Note:** Ubuntu runners explicitly run `-DskipITs=false` while Windows runners skip Testcontainers integration tests (`-DskipITs=true`) because GitHub-hosted Windows runners cannot run Linux containers. | Retries `mvn verify` with Dependency-Check/PITest skipped if the first attempt fails due to feed/timeouts. |
 | `api-fuzz`          | Push/PR to main/master, manual dispatch                                             | Starts Spring Boot app, runs Schemathesis against `/v3/api-docs`, exports OpenAPI spec, publishes JUnit XML results. Fails on 5xx errors or schema violations.                                               | 20-minute timeout; exports spec as artifact for ZAP.                                                       |
 | `container-test`    | Always (needs `build-test`)                                                         | Re-runs `mvn verify` inside `maven:3.9.9-eclipse-temurin-17` to prove a clean container build; retries with Dependency-Check/PITest skipped on failure.                                                      | Uses same MAVEN_OPTS for PIT attach.                                                                       |
 | `mutation-test`     | Only when repo var `RUN_SELF_HOSTED == 'true'` and a `self-hosted` runner is online | Runs `mvn verify` on the self-hosted runner with PITest enabled; retries with Dependency-Check/PITest skipped on failure.                                                                                    | Optional lane; skipped otherwise.                                                                          |
@@ -1425,7 +1476,8 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ### Matrix Verification
 - `.github/workflows/java-ci.yml` runs `mvn -B verify` across `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` to surface OS and JDK differences early.
 - **Ubuntu runners** execute the full test suite including Testcontainers integration tests (Postgres via Docker).
-- **Windows runners** skip integration tests (`-DskipITs`) because GitHub-hosted Windows runners only support Windows containers, not the Linux containers required by Testcontainers/Postgres. Unit tests, MockMvc tests, and all quality gates still run.
+- **Windows runners** skip integration tests (`-DskipITs=true`) because GitHub-hosted Windows runners only support Windows containers, not the Linux containers required by Testcontainers/Postgres. Unit tests, MockMvc tests, and all quality gates still run.
+- **Local developers** also skip the Testcontainers suite by default (Maven property `skipITs=true`). Opt in with `mvn verify -DskipITs=false` once Docker Desktop/Colima is running to mirror the CI configuration.
 - `container-test` reruns the same `mvn verify` flow inside `maven:3.9.9-eclipse-temurin-17` to prove the build works in a clean, reproducible environment; if quality gates fail, it retries with Dependency-Check and PITest skipped.
 
 ### Quality Gate Behavior
@@ -1434,7 +1486,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - SpotBugs runs as part of every `mvn verify` run on the supported JDKs (currently 17 and 21 in CI) and fails the build on findings.
 - Dependency-Check throttling is tuned via `nvdApiDelay` (defaults to 3500ms when an NVD API key is configured, 8000ms without a key) and honors `-Ddependency.check.skip=true` if the NVD feed is unreachable; PITest has a similar `-Dpit.skip=true` retry path so contributors stay unblocked but warnings remain visible.
 - Python 3.12 is provisioned via `actions/setup-python@v5` so `scripts/ci_metrics_summary.py` runs consistently on both Ubuntu and Windows runners.
-- Node.js 20 is provisioned via `actions/setup-node@v4` and the React dashboard under `ui/qa-dashboard/` is built every run so the artifacts contain the interactive QA console.
+- Node.js 22 is provisioned via `actions/setup-node@v4` and the React dashboard under `ui/qa-dashboard/` is built every run so the artifacts contain the interactive QA console.
 - Mutation coverage now relies on GitHub-hosted runners by default; the self-hosted lane is opt-in and only fires when the repository variable `RUN_SELF_HOSTED` is set.
 - Dependabot checks run daily so Maven updates appear as automated PRs without waiting for the weekly window.
 - After every matrix job, `scripts/ci_metrics_summary.py` posts a table to the GitHub Actions run summary showing tests, JaCoCo coverage, PITest mutation score, and Dependency-Check counts (with ASCII bars for quick scanning).

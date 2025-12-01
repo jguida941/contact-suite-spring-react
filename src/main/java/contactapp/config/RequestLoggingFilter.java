@@ -125,10 +125,11 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
      * @param request the HTTP request wrapper
      */
     private void logRequest(final ContentCachingRequestWrapper request) {
-        final String method = request.getMethod();
-        final String uri = request.getRequestURI();
-        final String queryString = sanitizeQueryString(request.getQueryString());
-        final String clientIp = maskClientIp(RequestUtils.getClientIp(request));
+        final String method = sanitizeLogValue(request.getMethod(), "UNKNOWN");
+        final String uri = sanitizeLogValue(request.getRequestURI(), "unknown");
+        final String rawQueryString = sanitizeQueryString(request.getQueryString());
+        final String queryString = sanitizeLogValue(rawQueryString);
+        final String clientIp = maskClientIp(sanitizeLogValue(RequestUtils.getClientIp(request)));
         final String userAgent = sanitizeUserAgent(request.getHeader("User-Agent"));
 
         if (queryString != null && !queryString.isBlank()) {
@@ -195,10 +196,19 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     }
 
     private String sanitizeUserAgent(final String userAgent) {
-        if (userAgent == null || userAgent.isBlank()) {
-            return "unknown";
+        return sanitizeLogValue(userAgent, "unknown");
+    }
+
+    private String sanitizeLogValue(final String value, final String defaultValue) {
+        final String sanitized = sanitizeLogValue(value);
+        return sanitized != null ? sanitized : defaultValue;
+    }
+
+    private String sanitizeLogValue(final String value) {
+        if (value == null) {
+            return null;
         }
-        // Remove control characters to avoid log injection
-        return userAgent.replaceAll("[\\r\\n]", "").trim();
+        final String sanitized = value.replaceAll("[\\r\\n]", "").trim();
+        return sanitized.isEmpty() ? null : sanitized;
     }
 }

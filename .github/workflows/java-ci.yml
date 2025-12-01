@@ -45,7 +45,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'  # Must match pom.xml frontend-maven-plugin nodeVersion
           cache: 'npm'
           cache-dependency-path: ui/qa-dashboard/package-lock.json
 
@@ -101,9 +101,9 @@ jobs:
           # Skip integration tests on Windows, run full suite on Linux
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             echo "::notice::Windows runner - skipping Testcontainers integration tests (no Linux container support)"
-            SKIP_ITS="-DskipITs"
+            SKIP_ITS="-DskipITs=true"
           else
-            SKIP_ITS=""
+            SKIP_ITS="-DskipITs=false"
           fi
 
           if [ -z "${NVD_API_KEY:-}" ]; then

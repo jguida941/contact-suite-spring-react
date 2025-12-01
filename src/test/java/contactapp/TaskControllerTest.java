@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.lang.reflect.Method;
 import java.util.stream.Stream;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -40,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockAppUser
 class TaskControllerTest {
 
     @Autowired
@@ -66,6 +68,7 @@ class TaskControllerTest {
     @Test
     void createTask_validRequest_returns201() throws Exception {
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -134,6 +137,7 @@ class TaskControllerTest {
         createTestTask("104", "Old Name", "Old description");
 
         mockMvc.perform(put("/api/v1/tasks/104")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -151,7 +155,8 @@ class TaskControllerTest {
     void deleteTask_exists_returns204() throws Exception {
         createTestTask("105", "Delete Me", "Task to delete");
 
-        mockMvc.perform(delete("/api/v1/tasks/105"))
+        mockMvc.perform(delete("/api/v1/tasks/105")
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/v1/tasks/105"))
@@ -170,6 +175,7 @@ class TaskControllerTest {
     @Test
     void updateTask_notFound_returns404() throws Exception {
         mockMvc.perform(put("/api/v1/tasks/missing")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -184,7 +190,8 @@ class TaskControllerTest {
 
     @Test
     void deleteTask_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/tasks/notfound"))
+        mockMvc.perform(delete("/api/v1/tasks/notfound")
+                        .with(csrf()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Task not found: notfound"));
     }
@@ -196,6 +203,7 @@ class TaskControllerTest {
         createTestTask("106", "First Task", "First task description");
 
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -219,6 +227,7 @@ class TaskControllerTest {
             final String expectedMessageContains) throws Exception {
         // fieldName is used in test display name via {0} placeholder above
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonBody))
                 .andExpect(status().isBadRequest())
@@ -260,6 +269,7 @@ class TaskControllerTest {
     void createTask_exactlyMaxLengthFields_accepted() throws Exception {
         // Test exact boundaries: id=10, name=20, description=50
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -276,6 +286,7 @@ class TaskControllerTest {
     void createTask_idOneOverMax_rejected() throws Exception {
         // id max is 10, this is 11
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -293,6 +304,7 @@ class TaskControllerTest {
     void createTask_nameOneOverMax_rejected() throws Exception {
         // name max is 20, this is 21
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -310,6 +322,7 @@ class TaskControllerTest {
     void createTask_descriptionOneOverMax_rejected() throws Exception {
         // description max is 50, this is 51
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -328,6 +341,7 @@ class TaskControllerTest {
     @Test
     void createTask_malformedJson_returns400() throws Exception {
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{invalid json}"))
                 .andExpect(status().isBadRequest())
@@ -342,6 +356,7 @@ class TaskControllerTest {
             final String description) throws Exception {
 
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {

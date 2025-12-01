@@ -1,5 +1,6 @@
 package contactapp.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -26,6 +27,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * @param role the user's role (USER or ADMIN)
  * @param expiresIn token expiration time in milliseconds
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "Authentication response with JWT token and user info")
 public record AuthResponse(
         @Schema(description = "JWT access token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")

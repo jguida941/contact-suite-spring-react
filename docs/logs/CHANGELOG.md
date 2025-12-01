@@ -6,6 +6,7 @@ All notable changes to this project will be documented here. Follow the
 ## [Unreleased]
 
 ### Added
+- **README System Requirements**: Added a toolchain/hardware table plus OS guidance, and documented Node.js 22+ to match the frontend-maven-plugin + CI workflow.
 - **ADR-0040**: Request Tracing and Logging Infrastructure – detailed documentation for CorrelationIdFilter, RequestLoggingFilter, and RequestUtils with test coverage.
 - **ADR-0041**: PII Masking in Log Output – phone number and address masking patterns with Logback configuration.
 - **ADR-0042**: Docker Containerization Strategy – multi-stage build, layer caching, JVM configuration, and compose stack.
@@ -17,6 +18,13 @@ All notable changes to this project will be documented here. Follow the
 - **RequestLoggingFilter query string tests**: Added tests verifying query string inclusion/exclusion in logs.
 
 ### Fixed
+- AuthController now issues/clears JWT cookies via `ResponseCookie` + `HttpHeaders.SET_COOKIE` so SameSite attributes are preserved without clobbering other Set-Cookie headers during login/logout.
+- Frontend `tokenStorage.getUser()` now guards `JSON.parse` with try/catch, purging corrupt sessionStorage entries instead of crashing on malformed data (aligns with SPA security notes).
+- CODEBASE_AUDIT duplicate heading removed and the Phase 5 checklist in `docs/REQUIREMENTS.md` now reflects the completed security/observability scope described elsewhere.
+- Removed the `final` modifier from `contactapp.security.User` so Hibernate can generate lazy-load proxies for the `@ManyToOne(fetch = LAZY)` relations in Contact/Task/Appointment entities.
+- Added `X-XSRF-TOKEN` to `Access-Control-Allow-Headers` so CSRF-protected mutating requests succeed when the SPA runs on `localhost:5173`.
+- Configures `spring.flyway.placeholders.system_user_password_hash` (env override `SYSTEM_USER_PASSWORD_HASH`) so the V5 migration runs outside tests without Flyway placeholder failures.
+- SecurityConfig now allows `/actuator/health`, `/actuator/health/liveness`, and `/actuator/health/readiness` while keeping `/actuator/metrics/**` and `/actuator/prometheus` authenticated per ADR-0039 and `ActuatorEndpointsTest`.
 - Prometheus actuator endpoint now works in tests with `@AutoConfigureObservability`
 - H2 identity sequence conflict resolved in V5 migration
 - Rate limit maps bounded with Caffeine to prevent DoS
@@ -33,9 +41,13 @@ All notable changes to this project will be documented here. Follow the
 - Regression tests to kill remaining PIT survivors: legacy `add*` duplicate coverage in `ContactServiceLegacyTest`/`TaskServiceLegacyTest`/`AppointmentServiceLegacyTest`, repository-backed `existsById` false-path asserts in `Jpa*StoreTest`, RequestLoggingFilter sanitization/masking tests, RateLimitingFilter wait-time + cache reset tests, and a fresh-token guard in `JwtServiceTest`.
 
 ### Changed
+- Maven now defaults `skipITs=true` so local `mvn verify` no longer requires Docker; Ubuntu CI and any Docker-enabled runs pass `-DskipITs=false`, Windows runners stay on `-DskipITs=true`, and README/ADR-0004/agents/requirements now document the opt-in behavior.
+- README/INDEX/agents now describe the HttpOnly cookie auth flow and sessionStorage-based profile caching so doc guidance matches the secure SPA implementation.
 - V5 migration uses MERGE INTO and resets identity sequence to avoid conflicts
 
 ### Security
+- **JWT cookie CSRF enforcement**: Re-enabled CSRF protection for `/api/v1/**`, added `/api/auth/csrf-token` plus SPA-side double-submit headers, and updated integration tests to include CSRF tokens now that JWTs live in HttpOnly cookies.
+- **Log injection fixes**: Sanitized HTTP method/URI/query logging plus rate-limit key/path logging to strip CR/LF characters before hitting Logback, and tightened integration tests to use tenant-scoped repository lookups while documenting intentional deprecated API coverage in the legacy store/mapper tests.
 - **react-router vulnerability**: Bumped `react-router` and `react-router-dom` from 7.0.2 to 7.9.6 to fix CVE for pre-render data spoofing.
 - **Per-user data isolation**: Added `user_id` column to contacts, tasks, and appointments tables (V5 migration). Services now filter all queries by authenticated user. ADMIN users can access all records via `?all=true` query parameter.
 - **Rate limiting**: Implemented bucket4j token-bucket rate limiting to protect against brute force and DoS attacks:
@@ -80,7 +92,7 @@ All notable changes to this project will be documented here. Follow the
 - **Profile hook** (`useProfile.ts`): Manages user profile (name, email, initials) in localStorage with auto-computed initials.
 - **TopBar navigation**: Avatar dropdown now links to Settings and Help pages, shows user initials from profile.
 - **README Development URLs table**: Clear distinction between `:5173` (React UI) and `:8080` (API/Swagger).
-- **Security test coverage**: Added mutation-focused tests for service `add*` persistence failures plus new `JwtServiceTest`, `JwtAuthenticationFilterTest`, `CustomUserDetailsServiceTest`, and the config/logging/rate-limit suites, bringing the repo to **570 tests** with **96% PIT coverage** (599/626 mutants killed) and **96% line coverage** on mutated classes.
+- **Security test coverage**: Added mutation-focused tests for service `add*` persistence failures plus new `JwtServiceTest`, `JwtAuthenticationFilterTest`, `CustomUserDetailsServiceTest`, and the config/logging/rate-limit suites, bringing the repo to **571 tests** (577 with ITs) with **95% PIT coverage** (594/626 mutants killed) and **96% line coverage** on mutated classes.
 
 - **Phase 4 React UI (complete)**:
   - Scaffolded `ui/contact-app/` with Vite + React 19 + TypeScript + Tailwind CSS v4.
@@ -200,7 +212,7 @@ All notable changes to this project will be documented here. Follow the
 ### Changed
 - `scripts/dev_stack.py` now supports `--database postgres`, Docker Compose startup, datasource/profile defaults, and multi-argument Maven goals; README/PROJECT_SUMMARY explain the new workflow.
 - `ApplicationTest.mainMethodCoverage` now launches `Application` with `--server.port=0` so PIT/CI runs pick an ephemeral port instead of colliding with another JVM on the agent.
-- README/REQUIREMENTS/agents/Roadmap now document the expanded **570-test** suite and PIT's **96% mutation (599/626) / 96% line coverage** after the new regression tests.
+- README/REQUIREMENTS/agents/Roadmap now document the expanded **571-test** suite (577 with ITs) and PIT's **95% mutation (594/626) / 96% line coverage** after the new regression tests.
 - Simplified legacy singleton compatibility: `getInstance()` in Contact/Task/Appointment services now returns the Spring-managed proxy when the context is ready (or the in-memory fallback before boot) without any manual `Advised` proxy unwrapping. Updated the corresponding Spring Boot service tests to assert shared persistence behavior between DI and legacy access instead of relying on brittle object identity checks.
 - Updated `docs/logs/backlog.md` to mark CVE dependencies as fixed.
 

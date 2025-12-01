@@ -9,6 +9,7 @@ import contactapp.api.AuthController;
 import contactapp.api.dto.LoginRequest;
 import contactapp.security.JwtService;
 import contactapp.security.UserRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 /**
  * Focused unit tests for {@link AuthController} branches that are hard to hit
  * with the full MVC stack (specifically the lambda used by
- * {@code orElseThrow} inside {@link AuthController#login(LoginRequest)}).
+ * {@code orElseThrow} inside {@link AuthController#login}).
  *
  * <p>The mutation report flagged that the lambda could return {@code null}
  * without any test failing, so this class asserts the controller still throws
@@ -41,6 +42,8 @@ class AuthControllerUnitTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private JwtService jwtService;
+    @Mock
+    private HttpServletResponse response;
 
     private AuthController controller;
 
@@ -57,7 +60,7 @@ class AuthControllerUnitTest {
 
         final LoginRequest request = new LoginRequest("ghost", "secret");
 
-        assertThatThrownBy(() -> controller.login(request))
+        assertThatThrownBy(() -> controller.login(request, response))
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Invalid credentials");
     }

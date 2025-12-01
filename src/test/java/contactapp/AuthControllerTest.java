@@ -21,8 +21,10 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -65,8 +67,9 @@ class AuthControllerTest {
     // ==================== Registration Happy Path Tests ====================
 
     @Test
-    void register_validRequest_returns201WithToken() throws Exception {
+    void register_validRequest_returns201WithCookie() throws Exception {
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -76,7 +79,10 @@ class AuthControllerTest {
                             }
                             """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.token").value(notNullValue()))
+                // Token is in HttpOnly cookie, not response body (ADR-0043)
+                .andExpect(cookie().exists("auth_token"))
+                .andExpect(cookie().httpOnly("auth_token", true))
+                .andExpect(jsonPath("$.token").doesNotExist()) // null serialized as absent
                 .andExpect(jsonPath("$.username").value("newuser"))
                 .andExpect(jsonPath("$.email").value("newuser@example.com"))
                 .andExpect(jsonPath("$.role").value("USER"))
@@ -86,6 +92,7 @@ class AuthControllerTest {
     @Test
     void register_validRequest_userPersistedInDatabase() throws Exception {
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -106,11 +113,12 @@ class AuthControllerTest {
     // ==================== Login Happy Path Tests ====================
 
     @Test
-    void login_validCredentials_returns200WithToken() throws Exception {
+    void login_validCredentials_returns200WithCookie() throws Exception {
         // Create a user first
         createTestUser("loginuser", "login@example.com", "correctPassword123");
 
         mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -119,7 +127,10 @@ class AuthControllerTest {
                             }
                             """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value(notNullValue()))
+                // Token is in HttpOnly cookie, not response body (ADR-0043)
+                .andExpect(cookie().exists("auth_token"))
+                .andExpect(cookie().httpOnly("auth_token", true))
+                .andExpect(jsonPath("$.token").doesNotExist()) // null serialized as absent
                 .andExpect(jsonPath("$.username").value("loginuser"))
                 .andExpect(jsonPath("$.email").value("login@example.com"))
                 .andExpect(jsonPath("$.role").value("USER"))
@@ -131,6 +142,7 @@ class AuthControllerTest {
         createTestUser("adminuser", "admin@example.com", "adminPassword123", Role.ADMIN);
 
         mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -149,6 +161,7 @@ class AuthControllerTest {
         createTestUser("testuser", "test@example.com", "correctPassword");
 
         mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -163,6 +176,7 @@ class AuthControllerTest {
     @Test
     void login_nonexistentUser_returns401() throws Exception {
         mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -181,16 +195,18 @@ class AuthControllerTest {
         createTestUser("existinguser", "existing@example.com", "password123");
 
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
                                 "username": "existinguser",
                                 "email": "different@example.com",
-                                "password": "password123456"
+                                "password": "Password123456"
                             }
                             """))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Username 'existinguser' is already taken"));
+                // Generic message prevents user enumeration (ADR-0038)
+                .andExpect(jsonPath("$.message").value("Username or email already exists"));
     }
 
     @Test
@@ -198,16 +214,18 @@ class AuthControllerTest {
         createTestUser("user1", "duplicate@example.com", "password123");
 
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
                                 "username": "differentuser",
                                 "email": "duplicate@example.com",
-                                "password": "password123456"
+                                "password": "Password123456"
                             }
                             """))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Email 'duplicate@example.com' is already registered"));
+                // Generic message prevents user enumeration (ADR-0038)
+                .andExpect(jsonPath("$.message").value("Username or email already exists"));
     }
 
     // ==================== Validation Error Tests (Registration) ====================
@@ -220,6 +238,7 @@ class AuthControllerTest {
             final String jsonBody,
             final String expectedMessageContains) throws Exception {
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonBody))
                 .andExpect(status().isBadRequest())
@@ -230,27 +249,38 @@ class AuthControllerTest {
         return Stream.of(
                 // Username validation
                 Arguments.of("username (blank)", """
-                    {"username": "", "email": "test@example.com", "password": "password123"}
+                    {"username": "", "email": "test@example.com", "password": "Password123"}
                     """, "username"),
                 Arguments.of("username (too long)", """
-                    {"username": "a".repeat(51), "email": "test@example.com", "password": "password123"}
+                    {"username": "a".repeat(51), "email": "test@example.com", "password": "Password123"}
                     """.replace("\"a\".repeat(51)", "\"" + "a".repeat(51) + "\""), "username"),
 
                 // Email validation
                 Arguments.of("email (blank)", """
-                    {"username": "testuser", "email": "", "password": "password123"}
+                    {"username": "testuser", "email": "", "password": "Password123"}
                     """, "email"),
                 Arguments.of("email (invalid format)", """
-                    {"username": "testuser", "email": "notanemail", "password": "password123"}
+                    {"username": "testuser", "email": "notanemail", "password": "Password123"}
                     """, "email"),
 
-                // Password validation
+                // Password validation - length
                 Arguments.of("password (blank)", """
                     {"username": "testuser", "email": "test@example.com", "password": ""}
                     """, "password"),
                 Arguments.of("password (too short)", """
-                    {"username": "testuser", "email": "test@example.com", "password": "short"}
-                    """, "password")
+                    {"username": "testuser", "email": "test@example.com", "password": "Short1"}
+                    """, "password"),
+
+                // Password validation - strength (must have uppercase, lowercase, digit)
+                Arguments.of("password (no uppercase)", """
+                    {"username": "testuser", "email": "test@example.com", "password": "password123"}
+                    """, "password must contain"),
+                Arguments.of("password (no lowercase)", """
+                    {"username": "testuser", "email": "test@example.com", "password": "PASSWORD123"}
+                    """, "password must contain"),
+                Arguments.of("password (no digit)", """
+                    {"username": "testuser", "email": "test@example.com", "password": "PasswordABC"}
+                    """, "password must contain")
         );
     }
 
@@ -264,6 +294,7 @@ class AuthControllerTest {
             final String jsonBody,
             final String expectedMessageContains) throws Exception {
         mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonBody))
                 .andExpect(status().isBadRequest())
@@ -286,6 +317,7 @@ class AuthControllerTest {
     @Test
     void register_malformedJson_returns400() throws Exception {
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{invalid json}"))
                 .andExpect(status().isBadRequest())
@@ -295,6 +327,7 @@ class AuthControllerTest {
     @Test
     void login_malformedJson_returns400() throws Exception {
         mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{invalid json}"))
                 .andExpect(status().isBadRequest())
@@ -308,12 +341,13 @@ class AuthControllerTest {
         final String maxUsername = "a".repeat(50);
 
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
                                 "username": "%s",
                                 "email": "maxlen@example.com",
-                                "password": "password123456"
+                                "password": "Password123456"
                             }
                             """, maxUsername)))
                 .andExpect(status().isCreated())
@@ -322,16 +356,25 @@ class AuthControllerTest {
 
     @Test
     void register_passwordAtMinLength_accepted() throws Exception {
+        // 8 chars minimum with required uppercase, lowercase, and digit
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
                                 "username": "minpwuser",
                                 "email": "minpw@example.com",
-                                "password": "12345678"
+                                "password": "Pass1234"
                             }
                             """))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void csrfTokenEndpoint_returnsToken() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
     }
 
     // ==================== Helper Methods ====================

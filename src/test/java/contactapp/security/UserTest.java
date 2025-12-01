@@ -27,8 +27,8 @@ class UserTest {
 
     private static final String VALID_USERNAME = "testuser";
     private static final String VALID_EMAIL = "test@example.com";
-    private static final String VALID_PASSWORD = "$2a$10$dummyBcryptHashForTesting123456";
-    private static final String VALID_BCRYPT = "$2a$10$abcdefghijklmnopqrstuvwxyzABCDE1234567890123456789012";
+    /** Valid BCrypt hash format: $2a$10$ prefix + 53 chars = 60 total. Fake hash for testing only. */
+    private static final String VALID_PASSWORD = "$2a$10$TESTHASHaaaaaaaaaaaaaaBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
     private static final String MIN_VALID_EMAIL = "a@b.co";
     private static final String EMAIL_DOMAIN = "@example.com";
 
@@ -197,11 +197,11 @@ class UserTest {
     }
 
     @Test
-    void testPasswordAtMaxLength() {
-        String maxPassword = "$2a$" + "a".repeat(Validation.MAX_PASSWORD_LENGTH - 4);
-        User user = new User(VALID_USERNAME, VALID_EMAIL, maxPassword, Role.USER);
+    void testPasswordAcceptsBcryptHash() {
+        // BCrypt hashes are always exactly 60 characters
+        User user = new User(VALID_USERNAME, VALID_EMAIL, VALID_PASSWORD, Role.USER);
 
-        assertThat(user.getPassword()).hasSize(Validation.MAX_PASSWORD_LENGTH);
+        assertThat(user.getPassword()).hasSize(60);
     }
 
     @Test

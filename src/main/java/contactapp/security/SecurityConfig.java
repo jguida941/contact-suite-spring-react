@@ -1,6 +1,7 @@
 package contactapp.security;
 
 import contactapp.config.RateLimitingFilter;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,13 +15,13 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -37,11 +38,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * <p>Security features per ADR-0018:
  * <ul>
  *   <li>Stateless session management (JWT tokens)</li>
- *   <li>CSRF disabled (stateless API with JWT)</li>
+ *   <li>CSRF tokens for browser routes while API endpoints rely on JWT</li>
  *   <li>BCrypt password encoding</li>
  *   <li>Method-level security via @PreAuthorize</li>
  *   <li>CORS configured for SPA origin</li>
- *   <li>Security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy)</li>
+ *   <li>Security headers (CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy)</li>
  * </ul>
  *
  * <h2>Public Endpoints</h2>
@@ -67,7 +68,8 @@ public class SecurityConfig {
     private static final RequestMatcher ACTUATOR_MATCHER = new AntPathRequestMatcher("/actuator/**");
     private static final String[] ACTUATOR_PUBLIC_ENDPOINTS = {
             "/actuator/health",
-            "/actuator/health/**",
+            "/actuator/health/liveness",
+            "/actuator/health/readiness",
             "/actuator/info"
     };
     /**
@@ -79,6 +81,16 @@ public class SecurityConfig {
             new AntPathRequestMatcher("/**", HttpMethod.GET.name()),
             new NegatedRequestMatcher(new OrRequestMatcher(API_MATCHER, ACTUATOR_MATCHER))
     );
+    // CSRF disabled only for endpoints that don't need protection:
+    // - actuator/swagger: not cookie-authenticated
+    // - GET /api/auth/csrf-token: bootstrap call that hands the SPA its token
+    // All other /api/** endpoints require CSRF token (X-XSRF-TOKEN header)
+    private static final RequestMatcher CSRF_IGNORED_MATCHERS = new OrRequestMatcher(
+            ACTUATOR_MATCHER,
+            new AntPathRequestMatcher("/swagger-ui/**"),
+            new AntPathRequestMatcher("/v3/api-docs/**"),
+            new AntPathRequestMatcher("/api/auth/csrf-token", HttpMethod.GET.name())
+    );
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final RateLimitingFilter rateLimitingFilter;
@@ -87,6 +99,10 @@ public class SecurityConfig {
     @Value("${cors.allowed-origins:http://localhost:5173,http://localhost:8080}")
     private String allowedOrigins;
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP2",
+            justification = "Spring Security configuration stores filter beans; "
+                    + "these are framework-managed singletons with controlled lifecycle")
     public SecurityConfig(final JwtAuthenticationFilter jwtAuthFilter,
                           final RateLimitingFilter rateLimitingFilter,
                           final UserDetailsService userDetailsService) {
@@ -99,8 +115,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(CSRF_IGNORED_MATCHERS)
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives(
+                                        "default-src 'self'; "
+                                        + "script-src 'self'; "
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "img-src 'self' data:; "
+                                        + "font-src 'self'; "
+                                        + "connect-src 'self'; "
+                                        + "frame-ancestors 'self'"))
                         .contentTypeOptions(contentType -> { })
                         .frameOptions(frame -> frame.sameOrigin())
                         .referrerPolicy(referrer -> referrer
@@ -148,7 +175,12 @@ public class SecurityConfig {
         final CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(parseAllowedOrigins());
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "X-XSRF-TOKEN"
+        ));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(DEFAULT_CORS_MAX_AGE_SECONDS);

@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.stream.Stream;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -46,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockAppUser
 class AppointmentControllerTest {
 
     @Autowired
@@ -87,6 +89,7 @@ class AppointmentControllerTest {
     @Test
     void createAppointment_validRequest_returns201() throws Exception {
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
@@ -154,6 +157,7 @@ class AppointmentControllerTest {
         createTestAppointment("104", "Old description");
 
         mockMvc.perform(put("/api/v1/appointments/104")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
@@ -170,7 +174,8 @@ class AppointmentControllerTest {
     void deleteAppointment_exists_returns204() throws Exception {
         createTestAppointment("105", "Delete me");
 
-        mockMvc.perform(delete("/api/v1/appointments/105"))
+        mockMvc.perform(delete("/api/v1/appointments/105")
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/v1/appointments/105"))
@@ -189,6 +194,7 @@ class AppointmentControllerTest {
     @Test
     void updateAppointment_notFound_returns404() throws Exception {
         mockMvc.perform(put("/api/v1/appointments/missing")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
@@ -203,7 +209,8 @@ class AppointmentControllerTest {
 
     @Test
     void deleteAppointment_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/appointments/notfound"))
+        mockMvc.perform(delete("/api/v1/appointments/notfound")
+                        .with(csrf()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Appointment not found: notfound"));
     }
@@ -215,6 +222,7 @@ class AppointmentControllerTest {
         createTestAppointment("106", "First appointment");
 
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
@@ -238,6 +246,7 @@ class AppointmentControllerTest {
             final String expectedMessageContains) throws Exception {
         // fieldName is used in test display name via {0} placeholder above
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonBody))
                 .andExpect(status().isBadRequest())
@@ -272,6 +281,7 @@ class AppointmentControllerTest {
     @Test
     void createAppointment_pastDate_returns400() throws Exception {
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
@@ -288,6 +298,7 @@ class AppointmentControllerTest {
     @Test
     void createAppointment_nullDate_returns400() throws Exception {
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -307,6 +318,7 @@ class AppointmentControllerTest {
     void createAppointment_exactlyMaxLengthFields_accepted() throws Exception {
         // Test exact boundaries: id=10, description=50
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
@@ -323,6 +335,7 @@ class AppointmentControllerTest {
     void createAppointment_idOneOverMax_rejected() throws Exception {
         // id max is 10, this is 11
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
@@ -340,6 +353,7 @@ class AppointmentControllerTest {
     void createAppointment_descriptionOneOverMax_rejected() throws Exception {
         // description max is 50, this is 51
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {
@@ -358,6 +372,7 @@ class AppointmentControllerTest {
     @Test
     void createAppointment_malformedJson_returns400() throws Exception {
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{invalid json}"))
                 .andExpect(status().isBadRequest())
@@ -371,6 +386,7 @@ class AppointmentControllerTest {
             final String description) throws Exception {
 
         mockMvc.perform(post("/api/v1/appointments")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {

@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @see <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html">
  *      Spring Boot Actuator Documentation</a>
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @AutoConfigureMockMvc
 @AutoConfigureObservability
 class ActuatorEndpointsTest {

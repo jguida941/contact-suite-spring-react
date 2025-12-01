@@ -2,6 +2,7 @@ package contactapp.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -95,6 +96,9 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             .expireAfterAccess(BUCKET_EXPIRY)
             .build();
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP2",
+            justification = "Spring-managed singleton; config is read-only after startup")
     public RateLimitingFilter(final RateLimitConfig rateLimitConfig) {
         this.rateLimitConfig = rateLimitConfig;
     }
@@ -106,6 +110,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             @NonNull final FilterChain filterChain
     ) throws ServletException, IOException {
         final String path = request.getRequestURI();
+        final String safePathForLog = sanitizeForLogging(path);
 
         // Determine rate limit configuration and key based on path
         Bucket bucket = null;
@@ -116,13 +121,13 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             rateLimitKey = LOGIN_KEY_PREFIX + clientIp;
             bucket = ipBuckets.get(rateLimitKey, k ->
                     createBucket(rateLimitConfig.getLogin()));
-            logger.debug("Rate limiting login request from IP: {}", clientIp);
+            logger.debug("Rate limiting login request from IP: {}", sanitizeForLogging(clientIp));
         } else if (path.startsWith("/api/auth/register")) {
             final String clientIp = RequestUtils.getClientIp(request);
             rateLimitKey = REGISTER_KEY_PREFIX + clientIp;
             bucket = ipBuckets.get(rateLimitKey, k ->
                     createBucket(rateLimitConfig.getRegister()));
-            logger.debug("Rate limiting register request from IP: {}", clientIp);
+            logger.debug("Rate limiting register request from IP: {}", sanitizeForLogging(clientIp));
         } else if (path.startsWith("/api/v1/")) {
             // For authenticated endpoints, use username as key
             final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -130,7 +135,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                 rateLimitKey = authentication.getName();
                 bucket = userBuckets.get(rateLimitKey, k ->
                         createBucket(rateLimitConfig.getApi()));
-                logger.debug("Rate limiting API request from user: {}", rateLimitKey);
+                logger.debug("Rate limiting API request from user: {}", sanitizeForLogging(rateLimitKey));
             }
         }
 
@@ -148,7 +153,11 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             // No tokens available, reject with 429
             final long waitForRefill = calculateWaitTime(bucket);
             handleRateLimitExceeded(response, waitForRefill);
-            logger.warn("Rate limit exceeded for key: {} on path: {}", rateLimitKey, path);
+            logger.warn(
+                    "Rate limit exceeded for key: {} on path: {}",
+                    sanitizeForLogging(rateLimitKey),
+                    safePathForLog
+            );
         }
     }
 
@@ -250,5 +259,13 @@ public class RateLimitingFilter extends OncePerRequestFilter {
      */
     public long getUserBucketCount() {
         return userBuckets.estimatedSize();
+    }
+
+    private String sanitizeForLogging(final String value) {
+        if (value == null) {
+            return "unknown";
+        }
+        final String sanitized = value.replaceAll("[\\r\\n]", "").trim();
+        return sanitized.isEmpty() ? "unknown" : sanitized;
     }
 }

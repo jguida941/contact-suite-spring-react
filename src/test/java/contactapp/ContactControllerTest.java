@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.lang.reflect.Method;
 import java.util.stream.Stream;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -41,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockAppUser
 class ContactControllerTest {
 
     @Autowired
@@ -69,6 +71,7 @@ class ContactControllerTest {
     @Test
     void createContact_validRequest_returns201() throws Exception {
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -142,6 +145,7 @@ class ContactControllerTest {
         createTestContact("104", "Dave", "Wilson", "4444444444", "444 Fourth Lane");
 
         mockMvc.perform(put("/api/v1/contacts/104")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -162,7 +166,8 @@ class ContactControllerTest {
     void deleteContact_exists_returns204() throws Exception {
         createTestContact("105", "Eve", "Taylor", "6666666666", "666 Sixth Ave");
 
-        mockMvc.perform(delete("/api/v1/contacts/105"))
+        mockMvc.perform(delete("/api/v1/contacts/105")
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
         // Verify deletion
@@ -182,6 +187,7 @@ class ContactControllerTest {
     @Test
     void updateContact_notFound_returns404() throws Exception {
         mockMvc.perform(put("/api/v1/contacts/missing")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -198,7 +204,8 @@ class ContactControllerTest {
 
     @Test
     void deleteContact_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/contacts/notfound"))
+        mockMvc.perform(delete("/api/v1/contacts/notfound")
+                        .with(csrf()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Contact not found: notfound"));
     }
@@ -210,6 +217,7 @@ class ContactControllerTest {
         createTestContact("106", "Frank", "Garcia", "7777777777", "777 Seventh St");
 
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -235,6 +243,7 @@ class ContactControllerTest {
             final String expectedMessageContains) throws Exception {
         // fieldName is used in test display name via {0} placeholder above
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonBody))
                 .andExpect(status().isBadRequest())
@@ -294,6 +303,7 @@ class ContactControllerTest {
     @Test
     void createContact_malformedJson_returns400() throws Exception {
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{invalid json}"))
                 .andExpect(status().isBadRequest())
@@ -306,6 +316,7 @@ class ContactControllerTest {
     void createContact_exactlyMaxLengthFields_accepted() throws Exception {
         // Test exact boundaries: id=10, firstName=10, lastName=10, phone=10, address=30
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -324,6 +335,7 @@ class ContactControllerTest {
     void createContact_idOneOverMax_rejected() throws Exception {
         // id max is 10, this is 11
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -343,6 +355,7 @@ class ContactControllerTest {
     void createContact_firstNameOneOverMax_rejected() throws Exception {
         // firstName max is 10, this is 11
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -362,6 +375,7 @@ class ContactControllerTest {
     void createContact_addressOneOverMax_rejected() throws Exception {
         // address max is 30, this is 31
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -381,6 +395,7 @@ class ContactControllerTest {
     void createContact_phoneNineDigits_rejected() throws Exception {
         // phone must be exactly 10 digits
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -400,6 +415,7 @@ class ContactControllerTest {
     void createContact_phoneElevenDigits_rejected() throws Exception {
         // phone must be exactly 10 digits
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -431,6 +447,7 @@ class ContactControllerTest {
     @Test
     void createContact_trimmedFields_storesCorrectly() throws Exception {
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -456,6 +473,7 @@ class ContactControllerTest {
             final String address) throws Exception {
 
         mockMvc.perform(post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                             {

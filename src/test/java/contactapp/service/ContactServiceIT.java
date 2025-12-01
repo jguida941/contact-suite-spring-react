@@ -60,13 +60,13 @@ class ContactServiceIT {
     @Test
     @Transactional
     void addContactPersistsRecord() {
-        authenticateTestUser();
+        User owner = authenticateTestUser();
         Contact contact = new Contact("it-100", "Integrate", "Contact", "5555555555", "1 Integration Way");
 
         boolean added = contactService.addContact(contact);
 
         assertThat(added).isTrue();
-        assertThat(contactRepository.findByContactId("it-100")).isPresent();
+        assertThat(contactRepository.findByContactIdAndUser("it-100", owner)).isPresent();
     }
 
     @Test

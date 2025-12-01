@@ -38,7 +38,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Table(name = "users")
 public class User implements UserDetails {
 
-    private static final Pattern BCRYPT_PATTERN = Pattern.compile("^\\$2[aby]\\$.+");
+    private static final long serialVersionUID = 1L;
+    /** BCrypt hash length is always 60 characters: $2a$10$ + 22-char salt + 31-char hash. */
+    private static final int BCRYPT_HASH_LENGTH = 60;
+    /** Stricter BCrypt pattern: prefix + 2-digit cost + $ + 53 chars (salt+hash). */
+    private static final Pattern BCRYPT_PATTERN = Pattern.compile("^\\$2[aby]\\$\\d{2}\\$.{53}$");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

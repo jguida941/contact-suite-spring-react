@@ -52,3 +52,7 @@ ui/contact-app/coverage/
 # Claude audit files
 claudeaudit.md
 claudeaudittoday.md
+chatgptaudit.md
+
+# Agent docs
+agents.md

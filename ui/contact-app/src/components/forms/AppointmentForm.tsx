@@ -52,14 +52,18 @@ function fromDateTimeLocalValue(localValue: string): string {
 
     // Validate the date is valid
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date value:', localValue);
+      if (import.meta.env.DEV) {
+        console.warn('Invalid date value:', localValue);
+      }
       return localValue; // Return as-is, let backend validate
     }
 
     // Backend expects ISO 8601: "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
     return date.toISOString();
   } catch (e) {
-    console.warn('Date parsing error:', e);
+    if (import.meta.env.DEV) {
+      console.warn('Date parsing error:', e);
+    }
     return localValue;
   }
 }

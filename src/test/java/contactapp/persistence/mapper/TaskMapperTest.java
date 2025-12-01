@@ -63,6 +63,7 @@ class TaskMapperTest {
     @Test
     @SuppressWarnings("deprecation")
     void deprecatedToEntityReturnsNullWhenDomainNull() {
+        // codeql[java/avoid-deprecated-apis] Legacy mapper overload retained solely for backward compatibility tests.
         assertThat(mapper.toEntity((Task) null)).isNull();
     }
 
@@ -70,6 +71,7 @@ class TaskMapperTest {
     @SuppressWarnings("deprecation")
     void deprecatedToEntityThrowsWhenDomainProvided() {
         Task task = new Task("legacy-1", "Name", "Desc");
+        // codeql[java/avoid-deprecated-apis] Ensures the deprecated overload still throws until we delete it.
         assertThatThrownBy(() -> mapper.toEntity(task))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

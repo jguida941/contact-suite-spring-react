@@ -5,6 +5,7 @@ import contactapp.persistence.entity.AppointmentEntity;
 import contactapp.persistence.mapper.AppointmentMapper;
 import contactapp.persistence.repository.AppointmentRepository;
 import contactapp.security.User;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,10 @@ public class JpaAppointmentStore implements AppointmentStore {
     private final AppointmentRepository repository;
     private final AppointmentMapper mapper;
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP2",
+            justification = "Spring-managed singleton stores repository and mapper references; "
+                    + "these are framework-managed beans with controlled lifecycle")
     public JpaAppointmentStore(
             final AppointmentRepository repository,
             final AppointmentMapper mapper) {

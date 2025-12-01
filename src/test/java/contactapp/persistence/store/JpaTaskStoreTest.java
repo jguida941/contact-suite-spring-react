@@ -40,18 +40,21 @@ class JpaTaskStoreTest {
 
     @Test
     void existsById_withoutUserThrowsUnsupportedOperation() {
+        // codeql[java/avoid-deprecated-apis] Deprecated path must keep throwing until all callers supply a user.
         assertThatThrownBy(() -> store.existsById("task-1"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
     void findById_withoutUserThrowsUnsupportedOperation() {
+        // codeql[java/avoid-deprecated-apis] Exercise the legacy overload so we know it continues throwing.
         assertThatThrownBy(() -> store.findById("task-2"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
     void deleteById_withoutUserThrowsUnsupportedOperation() {
+        // codeql[java/avoid-deprecated-apis] De-scoped delete overload remains intentionally unsupported.
         assertThatThrownBy(() -> store.deleteById("task-3"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

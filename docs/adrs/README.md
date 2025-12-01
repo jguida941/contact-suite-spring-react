@@ -44,3 +44,5 @@
 | [ADR-0040](ADR-0040-request-tracing-and-logging.md)                 | Request Tracing and Logging Infrastructure      | Accepted |
 | [ADR-0041](ADR-0041-pii-masking-in-logs.md)                         | PII Masking in Log Output                       | Accepted |
 | [ADR-0042](ADR-0042-docker-containerization-strategy.md)            | Docker Containerization Strategy                | Accepted |
+| [ADR-0043](ADR-0043-httponly-cookie-authentication.md)              | HttpOnly Cookie Authentication                  | Accepted |
+| [ADR-0044](ADR-0044-optimistic-locking.md)                          | Optimistic Locking for Concurrent Updates       | Accepted |

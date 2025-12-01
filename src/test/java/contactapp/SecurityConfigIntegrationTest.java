@@ -2,6 +2,7 @@ package contactapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import contactapp.config.RateLimitingFilter;
@@ -68,7 +69,7 @@ class SecurityConfigIntegrationTest {
         assertThat(configuration.getAllowedMethods())
                 .containsExactlyInAnyOrder("GET", "POST", "PUT", "DELETE", "OPTIONS");
         assertThat(configuration.getAllowedHeaders())
-                .containsExactlyInAnyOrder("Authorization", "Content-Type", "X-Requested-With");
+                .containsExactlyInAnyOrder("Authorization", "Content-Type", "X-Requested-With", "X-XSRF-TOKEN");
         assertThat(configuration.getExposedHeaders()).contains("Authorization");
         assertThat(configuration.getMaxAge()).isEqualTo(3_600L);
         assertThat(configuration.getAllowCredentials()).isTrue();
@@ -87,5 +88,18 @@ class SecurityConfigIntegrationTest {
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/contacts"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void securityHeaders_includesContentSecurityPolicy() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("Content-Security-Policy"))
+                .andExpect(header().string("Content-Security-Policy",
+                        org.hamcrest.Matchers.containsString("default-src 'self'")))
+                .andExpect(header().string("Content-Security-Policy",
+                        org.hamcrest.Matchers.containsString("script-src 'self'")))
+                .andExpect(header().string("Content-Security-Policy",
+                        org.hamcrest.Matchers.containsString("frame-ancestors 'self'")));
     }
 }
