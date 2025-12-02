@@ -1,5 +1,6 @@
 package contactapp.persistence.entity;
 
+import contactapp.domain.ProjectContactConstraints;
 import contactapp.domain.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jakarta.persistence.Column;
@@ -51,7 +52,7 @@ public class ProjectContactEntity {
     @JoinColumn(name = "contact_id", insertable = false, updatable = false, nullable = false)
     private ContactEntity contact;
 
-    @Column(name = "role", length = 50)
+    @Column(name = "role", length = ProjectContactConstraints.MAX_ROLE_LENGTH)
     private String role;
 
     @Column(name = "created_at", nullable = false)
@@ -80,11 +81,12 @@ public class ProjectContactEntity {
         this.createdAt = Instant.now();
     }
 
-    private String validateRole(final String role) {
-        if (role == null || role.trim().isEmpty()) {
+    private String validateRole(final String candidateRole) {
+        if (candidateRole == null || candidateRole.trim().isEmpty()) {
             return null;
         }
-        return Validation.validateTrimmedLengthAllowBlank(role, "role", 0, 50);
+        return Validation.validateTrimmedLengthAllowBlank(
+                candidateRole, "role", 0, ProjectContactConstraints.MAX_ROLE_LENGTH);
     }
 
     public Long getProjectId() {

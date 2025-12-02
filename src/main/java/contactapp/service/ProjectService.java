@@ -89,14 +89,14 @@ public class ProjectService {
      */
     @Autowired(required = false)
     public void setRepositories(
-            final ProjectContactRepository projectContactRepository,
-            final ContactRepository contactRepository,
-            final ProjectRepository projectRepository,
-            final ContactMapper contactMapper) {
-        this.projectContactRepository = projectContactRepository;
-        this.contactRepository = contactRepository;
-        this.projectRepository = projectRepository;
-        this.contactMapper = contactMapper;
+            final ProjectContactRepository projectContactRepositoryParam,
+            final ContactRepository contactRepositoryParam,
+            final ProjectRepository projectRepositoryParam,
+            final ContactMapper contactMapperParam) {
+        this.projectContactRepository = projectContactRepositoryParam;
+        this.contactRepository = contactRepositoryParam;
+        this.projectRepository = projectRepositoryParam;
+        this.contactMapper = contactMapperParam;
     }
 
     private ProjectService(final ProjectStore store, final boolean legacyStore) {

@@ -3,6 +3,7 @@ package contactapp.api.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import static contactapp.domain.ProjectContactConstraints.MAX_ROLE_LENGTH;
 import static contactapp.domain.Validation.MAX_ID_LENGTH;
 
 /**
@@ -27,7 +28,7 @@ public record ProjectContactRequest(
         String contactId,
 
         @Schema(description = "Optional role (e.g., CLIENT, STAKEHOLDER, VENDOR)")
-        @Size(max = 50, message = "role length must not exceed {max}")
+        @Size(max = MAX_ROLE_LENGTH, message = "role length must not exceed {max}")
         String role
 ) {
 }
