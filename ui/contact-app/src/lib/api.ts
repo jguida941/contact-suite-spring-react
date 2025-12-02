@@ -143,7 +143,6 @@ const fetchOptions: RequestInit = {
 const METHODS_REQUIRING_CSRF = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
 const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
-let cachedCsrfToken: string | null = null;
 
 function readCookie(name: string): string | null {
   const value = document.cookie
@@ -157,16 +156,13 @@ function readCookie(name: string): string | null {
 }
 
 async function ensureCsrfToken(): Promise<string | null> {
-  // Always read from cookie first (Spring Security rotates tokens after each request)
-  const existingCookie = readCookie(CSRF_COOKIE_NAME);
-  if (existingCookie) {
-    cachedCsrfToken = existingCookie;
-    return existingCookie;
+  // Always read from cookie on every request (no caching)
+  const cookieToken = readCookie(CSRF_COOKIE_NAME);
+  if (cookieToken) {
+    return cookieToken;
   }
-  // If no cookie, fetch from endpoint (bootstrap case)
-  if (cachedCsrfToken) {
-    return cachedCsrfToken;
-  }
+
+  // No cookie found - fetch from endpoint to bootstrap the token
   try {
     const response = await fetch(`${AUTH_BASE}/csrf-token`, {
       credentials: 'include',
@@ -174,9 +170,9 @@ async function ensureCsrfToken(): Promise<string | null> {
     if (!response.ok) {
       return null;
     }
-    const data = (await response.json()) as { token?: string };
-    cachedCsrfToken = data?.token ?? readCookie(CSRF_COOKIE_NAME) ?? null;
-    return cachedCsrfToken;
+    // After the fetch, the server should have set the XSRF-TOKEN cookie
+    // Read it from the cookie (don't trust the response body)
+    return readCookie(CSRF_COOKIE_NAME);
   } catch {
     return null;
   }
@@ -272,7 +268,6 @@ export const authApi = {
     } catch {
       // Ignore errors - proceed with client-side cleanup regardless
     }
-    cachedCsrfToken = null;
     tokenStorage.clear();
     queryClient.clear(); // Clear cached data to prevent data leakage to next user
   },

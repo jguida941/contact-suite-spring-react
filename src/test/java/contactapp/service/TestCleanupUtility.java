@@ -55,13 +55,11 @@ public class TestCleanupUtility {
      * 4. Clean up test users last (FK constraints cascade delete)
      * 5. Clear Hibernate L1 cache to prevent stale entity issues
      *
-     * Call this in @BeforeEach to ensure test isolation.
-     *
-     * <p>Uses REQUIRES_NEW propagation to force immediate commit so changes
-     * are visible to the test that runs after @BeforeEach completes.
+     * <p>Note: This method is called internally by resetTestEnvironment() which
+     * provides the transaction boundary. Do not call this directly; use
+     * resetTestEnvironment() instead.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void cleanAll() {
+    void cleanAll() {
         // Step 1: Clear security contexts
         clearSecurityContexts();
 
@@ -149,10 +147,12 @@ public class TestCleanupUtility {
 
     /**
      * Setup helper that creates a fresh test user after cleanup.
-     * Call this after cleanAll() in your @BeforeEach.
+     *
+     * <p>Note: This method is called internally by resetTestEnvironment() which
+     * provides the transaction boundary. Do not call this directly; use
+     * resetTestEnvironment() instead.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void setupFreshTestUser() {
+    void setupFreshTestUser() {
         if (testUserSetup != null) {
             testUserSetup.setupTestUser();
         }
@@ -162,12 +162,15 @@ public class TestCleanupUtility {
      * Complete cleanup + setup in one call.
      * Equivalent to: cleanAll() + setupFreshTestUser()
      *
-     * <p>Note: This method intentionally does NOT have @Transactional since both
-     * cleanAll() and setupFreshTestUser() already use REQUIRES_NEW to run in their
-     * own independent transactions. Adding another REQUIRES_NEW here would create
-     * nested transactions that could leave the environment inconsistent if the outer
-     * transaction rolls back after cleanup commits.
+     * <p>This is the primary entry point for test cleanup. Call this in your
+     * @BeforeEach method to ensure complete test isolation.
+     *
+     * <p>Uses REQUIRES_NEW propagation to run in an independent transaction that
+     * commits immediately, ensuring all cleanup changes are visible to the test
+     * method that runs after @BeforeEach completes. Both cleanAll() and
+     * setupFreshTestUser() run within this single transaction boundary.
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void resetTestEnvironment() {
         cleanAll();
         setupFreshTestUser();
