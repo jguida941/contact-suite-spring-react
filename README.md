@@ -15,6 +15,7 @@
 - **Architecture highlights**: PostgreSQL + JPA with 13 Flyway migrations, JWT authentication with RBAC, per-user data isolation, token-bucket rate limiting, structured logging with PII masking, Prometheus metrics, Docker packaging, Kubernetes-ready health probes, and 6 GitHub Actions workflows (CI/CD, CodeQL, ZAP DAST, API fuzzing, Dependabot).
 - **My role**: Designed the schema (13 migrations), built 6 domain aggregates with services and controllers, wired the JWT security and observability stack, created a React 19 SPA using TanStack Query, packaged everything with Docker + Compose, and automated the stack via a Makefile (30+ targets) and CI/CD pipelines.
 - **Quality bar**: 1,066 test executions (911 `@Test` methods), about 92% line coverage, roughly 89% mutation score (PITest), and 5 CI quality gates (JaCoCo, PITest, SpotBugs, Checkstyle, OWASP Dependency-Check).
+  - Linux CI runs the full suite with Testcontainers/Postgres; Windows CI uses the `skip-testcontainers` profile to run the same service/controller suites on H2 and still reports JaCoCo. Legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton` without touching the main pipeline.
 
 ---
 
@@ -126,6 +127,10 @@ Flyway automatically creates the schema on first run. Stop the database with `do
    java -jar target/cs320-contact-service-junit-1.0.0-SNAPSHOT.jar
    ```
    Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
+8. **Test profiles**:
+   - Default CI/local run: `mvn test` (Linux) exercises the full suite with Testcontainers/Postgres.
+   - Windows/`-DskipTestcontainersTests=true`: runs the same service/controller suites against in-memory H2 (no Docker) while still reporting JaCoCo.
+   - Legacy singleton coverage: `mvn test -Plegacy-singleton` runs only the legacy `getInstance()` suites tagged `legacy-singleton` against H2 to avoid interfering with the main pipeline.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
 7. Planning note: Phases 0-7 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST, packaging/CI, UX polish). **1066 tests** cover the JPA path, legacy singleton fallbacks, JWT auth components, User entity validation, Project CRUD, and the validation helpers including the new `validateNotNull` enum helper (PIT mutation coverage 94%+ with 96%+ line coverage on stores, 95%+ on mappers). +84 mutation-focused tests added targeting boundary conditions, comparison operators, copy semantics, and helper adapters. ADR-0014..0046 capture the selected stack plus validation/Project evolution decisions. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list.
 

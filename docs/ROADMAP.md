@@ -36,6 +36,8 @@ Test fixtures now reset stale SecurityContext entries and recreate the seed user
 
 Total test count: 1,066, PIT mutation 94%+, store coverage 96%+, mapper coverage 95%+.
 
+CI note: Linux job runs the full suite with Testcontainers/Postgres; Windows job uses the `skip-testcontainers` profile to exercise service/controller suites on H2 (no Docker) while still reporting JaCoCo. Legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton`.
+
 **Key Features Now Available**:
 - Create and organize projects with status tracking (ACTIVE/ON_HOLD/COMPLETED/ARCHIVED)
 - Manage tasks with status (TODO/IN_PROGRESS/DONE), due dates, and project assignment

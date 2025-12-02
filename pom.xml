@@ -617,22 +617,22 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <excludes>
-                                <!-- Exclude all tests that extend PostgresContainerSupport -->
-                                <exclude>**/ApplicationTest.java</exclude>
-                                <exclude>**/ActuatorEndpointsTest.java</exclude>
-                                <exclude>**/SecurityConfigIntegrationTest.java</exclude>
-                                <exclude>**/ServiceBeanTest.java</exclude>
-                                <exclude>**/*ControllerTest.java</exclude>
-                                <exclude>**/ContactServiceTest.java</exclude>
-                                <exclude>**/TaskServiceTest.java</exclude>
-                                <exclude>**/AppointmentServiceTest.java</exclude>
-                                <exclude>**/ProjectServiceTest.java</exclude>
-                                <exclude>**/*ServiceLegacyTest.java</exclude>
+                                <!-- Only skip explicit ITs; run service/controller tests on H2 -->
+                                <exclude>**/*IT.java</exclude>
                             </excludes>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
+            <properties>
+                <!-- H2 in-memory datasource for non-container runs -->
+                <spring.datasource.url>jdbc:h2:mem:contacts;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1</spring.datasource.url>
+                <spring.datasource.driver-class-name>org.h2.Driver</spring.datasource.driver-class-name>
+                <spring.datasource.username>sa</spring.datasource.username>
+                <spring.datasource.password></spring.datasource.password>
+                <!-- Disable Flyway against H2 for this profile if desired -->
+                <!-- <spring.flyway.enabled>false</spring.flyway.enabled> -->
+            </properties>
         </profile>
     </profiles>
 </project>

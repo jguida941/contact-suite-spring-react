@@ -50,6 +50,7 @@
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
 - Latest CI: 1,026 tests passing (unit + slice + Testcontainers + security + filter + config + Project/Task/Appointment enhancement tests), 94% mutation score, 96%+ line coverage on stores, 95%+ on mappers, SpotBugs clean.
+- Test execution strategy: Linux CI runs the full suite with Testcontainers/Postgres; Windows CI uses the `skip-testcontainers` profile to run the same service/controller suites on H2 (no Docker) while still reporting JaCoCo; legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton` to avoid interfering with the main pipeline.
 - Testcontainers-backed Postgres integration tests run automatically in CI (Ubuntu jobs pass `-DskipITs=false`) while local `mvn verify` runs set `skipITs=true` by default; enable them locally with `mvn verify -DskipITs=false` once Docker Desktop/Colima is running.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
 - Exception handler tests (5 tests): GlobalExceptionHandlerTest validates direct handler coverage (including ConstraintViolationException for path variable validation).
