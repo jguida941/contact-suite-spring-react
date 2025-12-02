@@ -308,6 +308,9 @@
                 <version>${surefire.version}</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
+                    <!-- Prevent fork bombing: use single JVM to avoid resource exhaustion -->
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
                     <!-- Sequential execution to ensure @Isolated tests don't collide -->
                     <excludes>
                         <exclude>**/*IT.java</exclude>

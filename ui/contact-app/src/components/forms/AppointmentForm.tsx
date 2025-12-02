@@ -127,6 +127,7 @@ export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: 
       onSubmit={handleSubmit(onFormSubmit)}
       className="space-y-4"
       aria-label={isEdit ? 'Edit appointment form' : 'Create appointment form'}
+      noValidate
     >
       {isEdit ? (
         // Hidden input to include ID in edit submissions
@@ -151,14 +152,30 @@ export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: 
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="appointmentDate">Date & Time</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="appointmentDate">Date & Time</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => {
+              const input = document.getElementById('appointmentDate') as HTMLInputElement;
+              if (input) {
+                input.value = '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+            }}
+          >
+            Clear
+          </Button>
+        </div>
         <Input
           id="appointmentDate"
           type="datetime-local"
           {...register('appointmentDate')}
           aria-invalid={errors.appointmentDate ? 'true' : 'false'}
           aria-describedby={errors.appointmentDate ? 'appointmentDate-error appointmentDate-help' : 'appointmentDate-help'}
-          required
         />
         {errors.appointmentDate && (
           <p id="appointmentDate-error" className="text-sm text-destructive" role="alert">
@@ -166,7 +183,7 @@ export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: 
           </p>
         )}
         <p id="appointmentDate-help" className="text-xs text-muted-foreground">
-          Must be in the future
+          Must be in the future. Tip: Use the "Clear" button to start over if editing becomes difficult.
         </p>
       </div>
 
@@ -179,7 +196,6 @@ export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: 
           maxLength={ValidationLimits.MAX_DESCRIPTION_LENGTH}
           aria-invalid={errors.description ? 'true' : 'false'}
           aria-describedby={errors.description ? 'description-error description-help' : 'description-help'}
-          required
         />
         {errors.description && (
           <p id="description-error" className="text-sm text-destructive" role="alert">
@@ -202,7 +218,6 @@ export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: 
                 <SelectValue placeholder="Select project" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
@@ -230,7 +245,6 @@ export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: 
                 <SelectValue placeholder="Select task" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
                 {tasks
                   .filter((task) => !selectedProjectId || task.projectId === selectedProjectId)
                   .map((task) => (

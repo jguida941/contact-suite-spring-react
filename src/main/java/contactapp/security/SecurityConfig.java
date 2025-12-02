@@ -136,7 +136,8 @@ public class SecurityConfig {
                     .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                     .csrf(csrf -> csrf
                             .ignoringRequestMatchers(CSRF_IGNORED_MATCHERS)
-                            .csrfTokenRepository(csrfTokenRepository))
+                            .csrfTokenRepository(csrfTokenRepository)
+                            .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
                     .headers(headers -> {
                         headers.contentSecurityPolicy(csp -> csp
                                 .policyDirectives(buildCspPolicy()));

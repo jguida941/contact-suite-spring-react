@@ -66,6 +66,7 @@ export function TaskForm({ task, onSubmit, onCancel, isLoading }: TaskFormProps)
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-4"
       aria-label={isEdit ? 'Edit task form' : 'Create task form'}
+      noValidate
     >
       {isEdit ? (
         // Hidden input to include ID in edit submissions
@@ -98,7 +99,6 @@ export function TaskForm({ task, onSubmit, onCancel, isLoading }: TaskFormProps)
           maxLength={ValidationLimits.MAX_TASK_NAME_LENGTH}
           aria-invalid={errors.name ? 'true' : 'false'}
           aria-describedby={errors.name ? 'name-error name-help' : 'name-help'}
-          required
         />
         {errors.name && (
           <p id="name-error" className="text-sm text-destructive" role="alert">
@@ -119,7 +119,6 @@ export function TaskForm({ task, onSubmit, onCancel, isLoading }: TaskFormProps)
           maxLength={ValidationLimits.MAX_DESCRIPTION_LENGTH}
           aria-invalid={errors.description ? 'true' : 'false'}
           aria-describedby={errors.description ? 'description-error description-help' : 'description-help'}
-          required
         />
         {errors.description && (
           <p id="description-error" className="text-sm text-destructive" role="alert">
@@ -182,7 +181,6 @@ export function TaskForm({ task, onSubmit, onCancel, isLoading }: TaskFormProps)
                 <SelectValue placeholder="Select project" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
@@ -214,7 +212,6 @@ export function TaskForm({ task, onSubmit, onCancel, isLoading }: TaskFormProps)
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.username} ({user.email})
