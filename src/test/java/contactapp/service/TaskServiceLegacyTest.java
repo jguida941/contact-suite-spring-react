@@ -34,9 +34,13 @@ class TaskServiceLegacyTest {
     @Autowired
     private TestUserSetup testUserSetup;
 
+    @Autowired
+    private TaskService springService;
+
     @BeforeEach
     void resetSingleton() throws Exception {
         testUserSetup.setupTestUser();
+        springService.clearAllTasks();
         setInstance(null);
     }
 

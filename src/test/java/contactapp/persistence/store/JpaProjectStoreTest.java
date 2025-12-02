@@ -41,7 +41,7 @@ class JpaProjectStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void existsById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.existsById("p-1"))
@@ -68,7 +68,7 @@ class JpaProjectStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void findById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.findById("p-3"))
@@ -87,7 +87,7 @@ class JpaProjectStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void deleteById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.deleteById("p-5"))
@@ -157,7 +157,7 @@ class JpaProjectStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void save_withoutUserThrowsUnsupportedOperation() {
         final Project project = new Project("p-1", "Alpha", "Description", ProjectStatus.ACTIVE);
         // Intentionally testing deprecated method to ensure it throws

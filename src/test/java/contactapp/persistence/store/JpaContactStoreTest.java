@@ -40,7 +40,7 @@ class JpaContactStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void existsById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.existsById("c-1"))
@@ -67,7 +67,7 @@ class JpaContactStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void findById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.findById("c-3"))
@@ -86,7 +86,7 @@ class JpaContactStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void deleteById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.deleteById("c-5"))
@@ -156,7 +156,7 @@ class JpaContactStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void save_withoutUserThrowsUnsupportedOperation() {
         final Contact contact = new Contact("c-1", "Amy", "Lee", "1234567890", "Addr");
         // Intentionally testing deprecated method to ensure it throws

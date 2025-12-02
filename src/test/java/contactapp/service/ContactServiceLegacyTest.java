@@ -34,9 +34,13 @@ class ContactServiceLegacyTest {
     @Autowired
     private TestUserSetup testUserSetup;
 
+    @Autowired
+    private ContactService springService;
+
     @BeforeEach
     void resetSingleton() throws Exception {
         testUserSetup.setupTestUser();
+        springService.clearAllContacts();
         setInstance(null);
     }
 

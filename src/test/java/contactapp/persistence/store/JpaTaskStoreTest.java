@@ -45,7 +45,7 @@ class JpaTaskStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void existsById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.existsById("task-1"))
@@ -53,7 +53,7 @@ class JpaTaskStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void findById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.findById("task-2"))
@@ -61,7 +61,7 @@ class JpaTaskStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void deleteById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.deleteById("task-3"))
@@ -161,7 +161,7 @@ class JpaTaskStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void save_withoutUserThrowsUnsupportedOperation() {
         final Task task = new Task("t-1", "Name", "Desc");
         // Intentionally testing deprecated method to ensure it throws

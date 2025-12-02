@@ -36,9 +36,13 @@ class AppointmentServiceLegacyTest {
     @Autowired
     private TestUserSetup testUserSetup;
 
+    @Autowired
+    private AppointmentService springService;
+
     @BeforeEach
     void resetSingleton() throws Exception {
         testUserSetup.setupTestUser();
+        springService.clearAllAppointments();
         setInstance(null);
     }
 

@@ -40,7 +40,7 @@ class JpaAppointmentStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void existsById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.existsById("a-1"))
@@ -67,7 +67,7 @@ class JpaAppointmentStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void findById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.findById("a-3"))
@@ -88,7 +88,7 @@ class JpaAppointmentStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void deleteById_withoutUserThrowsUnsupportedOperation() {
         // Intentionally testing deprecated method to ensure it throws
         assertThatThrownBy(() -> store.deleteById("a-5"))
@@ -159,7 +159,7 @@ class JpaAppointmentStoreTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     void save_withoutUserThrowsUnsupportedOperation() {
         final Appointment appt = new Appointment("a-1",
                 new Date(System.currentTimeMillis() + 1_000), "Desc");
