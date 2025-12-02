@@ -170,7 +170,7 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 
 **Database Schema**: 5 new migrations (V7, V8, V10, V11, V12) add projects table, task status/due dates, task-project relationships, appointment-task/project relationships, and task assignment relationships with proper foreign keys and indexes.
 
-**Test Coverage**: 1026 total tests with comprehensive coverage across domain validation, persistence layers, service operations, and REST API endpoints for all implemented phases.
+**Test Coverage**: 1056 total tests with comprehensive coverage across domain validation, persistence layers, service operations, and REST API endpoints for all implemented phases.
 
 **Deferred Features**: Phase 6 (Contact-Project Linking via V13 junction table) is deferred to future implementation. See ADR-0045 for details.
 
@@ -576,7 +576,7 @@ graph TD
 - Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
 - New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
-- Combined with the existing controller/service suites and the security additions above, this brings the repo to **1026 tests** with **94%+ mutation kills** and **96%+ line coverage on stores, 95%+ on mappers**.
+- Combined with the existing controller/service suites and the security additions above, this brings the repo to **1056 tests** with **94%+ mutation kills** and **96%+ line coverage on stores, 95%+ on mappers**.
 
 #### Mutation-Focused Test Additions (+71 Tests)
 
@@ -1786,7 +1786,7 @@ graph TD
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow's "Summary" tab and look for the "QA Metrics" section for the latest numbers.
 
-**Current Test Metrics (1026 tests):**
+**Current Test Metrics (1056 tests):**
 - +44 TaskService tests covering query methods, user isolation, and defensive copies
 - +71 mutation-focused tests targeting boundary conditions and comparison operators
 - 94%+ mutation kill rate (PIT)

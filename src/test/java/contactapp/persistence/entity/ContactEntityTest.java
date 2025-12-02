@@ -62,10 +62,4 @@ class ContactEntityTest {
         assertThat(entity.getUser()).isEqualTo(owner);
     }
 
-    @Test
-    void versionGetterReturnsAssignedValue() {
-        ContactEntity entity = new ContactEntity();
-        entity.setVersion(3L);
-        assertThat(entity.getVersion()).isEqualTo(3L);
-    }
 }

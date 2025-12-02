@@ -90,7 +90,7 @@ public class ProjectService {
     @Autowired(required = false)
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
-            justification = "Spring injects repository/mappers managed as singletons; storing references is intentional")
+            justification = "Spring injects repos/mappers as singletons; storing refs is safe")
     public void setRepositories(
             final ProjectContactRepository projectContactRepositoryParam,
             final ContactRepository contactRepositoryParam,

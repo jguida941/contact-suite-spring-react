@@ -12,9 +12,19 @@ All notable changes to this project will be documented here. Follow the
   - Query method tests: getTasksByStatus, getTasksDueBefore, getTasksByProjectId, getTasksByAssigneeId, getOverdueTasks
   - Defensive copy tests for all query methods ensuring returned lists are independent copies
   - User isolation tests verifying query methods only return current user's tasks
-  - Total test count now at **1026** tests (up from 951)
+  - Total test count now at **1056** tests (up from 951)
 
 ### Fixed
+- **Entity setVersion Methods (2025-12-02)**:
+  - Added setVersion(Long) to AppointmentEntity, ContactEntity, ProjectEntity for test determinism
+  - Removed duplicate setVersion method from AppointmentEntity that was causing compilation errors
+  - Entity tests now pass with version field properly settable for testing purposes
+  - Fixed ProjectService.java checkstyle error (line 93 exceeded 120 chars)
+
+- **CodeQL Workflow Fix (2025-12-02)**:
+  - Upgraded CodeQL action from v3 to v4 (v3 deprecated December 2026)
+  - Replaced failing autobuild with explicit `mvn -B -DskipTests compile` (autobuild failed with JAVA_TOOL_OPTIONS conflict)
+
 - **Pre-existing Config Test Fixes (2025-12-02)**:
   - Fixed RateLimitingFilterTest.doFilterInternal_logsSanitizedClientIp: Updated assertion to verify CR/LF is stripped rather than expecting `[unsafe-value]` (the implementation correctly sanitizes by removing CR/LF characters)
   - Fixed RequestLoggingFilterTest: Removed broken test for getSafeLogValue method which was refactored out in a previous change

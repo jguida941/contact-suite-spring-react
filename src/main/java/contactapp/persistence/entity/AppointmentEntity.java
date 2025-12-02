@@ -116,6 +116,13 @@ public class AppointmentEntity {
         return version;
     }
 
+    /**
+     * Setter exposed for testing so versioned entities can be reconstituted deterministically.
+     */
+    public void setVersion(final Long version) {
+        this.version = version;
+    }
+
     public String getProjectId() {
         return projectId;
     }

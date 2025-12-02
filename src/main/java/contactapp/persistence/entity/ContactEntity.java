@@ -89,6 +89,13 @@ public class ContactEntity {
         return version;
     }
 
+    /**
+     * Setter exists for testing so Hibernate proxies and unit tests can assign controlled versions.
+     */
+    public void setVersion(final Long version) {
+        this.version = version;
+    }
+
     public String getContactId() {
         return contactId;
     }

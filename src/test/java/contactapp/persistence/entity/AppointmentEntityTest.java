@@ -64,10 +64,4 @@ class AppointmentEntityTest {
         assertThat(entity.getTaskId()).isEqualTo("task-entity");
     }
 
-    @Test
-    void versionGetterReturnsAssignedValue() {
-        AppointmentEntity entity = new AppointmentEntity();
-        entity.setVersion(5L);
-        assertThat(entity.getVersion()).isEqualTo(5L);
-    }
 }

@@ -88,6 +88,13 @@ public class ProjectEntity {
         return version;
     }
 
+    /**
+     * Setter exposed for testing to reconstitute versioned projections.
+     */
+    public void setVersion(final Long version) {
+        this.version = version;
+    }
+
     public String getProjectId() {
         return projectId;
     }

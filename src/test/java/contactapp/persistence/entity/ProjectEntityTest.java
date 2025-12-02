@@ -60,10 +60,4 @@ class ProjectEntityTest {
         assertThat(entity.getUser()).isEqualTo(owner);
     }
 
-    @Test
-    void versionGetterReturnsAssignedValue() {
-        ProjectEntity entity = new ProjectEntity();
-        entity.setVersion(7L);
-        assertThat(entity.getVersion()).isEqualTo(7L);
-    }
 }

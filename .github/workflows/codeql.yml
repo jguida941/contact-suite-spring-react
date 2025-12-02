@@ -58,19 +58,16 @@ jobs:
           cache: maven
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           queries: +security-and-quality
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      # If autobuild fails, comment it out and use an explicit Maven build
-      # - name: Build with Maven
-      #   run: mvn -B -DskipTests package
+      # Explicit Maven build (autobuild fails with JAVA_TOOL_OPTIONS conflict)
+      - name: Build with Maven
+        run: mvn -B -DskipTests compile
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: ${{ matrix.language }}
