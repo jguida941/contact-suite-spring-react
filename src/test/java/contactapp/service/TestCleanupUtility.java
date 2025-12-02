@@ -184,8 +184,6 @@ public class TestCleanupUtility {
         }
         try (Connection connection = targetDataSource.getConnection();
              Statement stmt = connection.createStatement()) {
-            final boolean originalAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(true);
             final String product = connection.getMetaData().getDatabaseProductName().toLowerCase();
             if (product.contains("h2")) {
                 stmt.execute("SET REFERENTIAL_INTEGRITY FALSE");
@@ -204,7 +202,6 @@ public class TestCleanupUtility {
                 stmt.execute("TRUNCATE TABLE contacts CASCADE");
                 stmt.execute("TRUNCATE TABLE users CASCADE");
             }
-            connection.setAutoCommit(originalAutoCommit);
         } catch (SQLException e) {
             throw new RuntimeException("Failed to purge database tables during test cleanup", e);
         }
