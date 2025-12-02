@@ -1,6 +1,7 @@
 package contactapp.service;
 
 import contactapp.security.TestUserSetup;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
@@ -16,7 +17,13 @@ import java.lang.reflect.Field;
  * 1. Resetting static singleton instances via reflection
  * 2. Clearing all service data via Spring-managed beans
  * 3. Clearing security contexts
- * 4. Providing a consistent cleanup order across all tests
+ * 4. Clearing Hibernate L1 cache (EntityManager) to prevent stale entities
+ * 5. Providing a consistent cleanup order across all tests
+ *
+ * <p>The EntityManager flush/clear is critical because when Spring context is cached
+ * across test classes (same {@code @SpringBootTest} config), Hibernate's L1 cache
+ * can retain entity references even after {@code deleteAll()} operations, causing
+ * duplicate key errors when tests try to re-insert entities with the same IDs.
  */
 @Component
 public class TestCleanupUtility {
@@ -36,12 +43,16 @@ public class TestCleanupUtility {
     @Autowired(required = false)
     private TestUserSetup testUserSetup;
 
+    @Autowired(required = false)
+    private EntityManager entityManager;
+
     /**
      * Performs complete cleanup in the correct order:
      * 1. Clear security contexts first
      * 2. Reset singletons before clearing data (prevents migration)
      * 3. Clear all service data (tasks/contacts/appointments reference users)
      * 4. Clean up test users last (FK constraints cascade delete)
+     * 5. Clear Hibernate L1 cache to prevent stale entity issues
      *
      * Call this in @BeforeEach to ensure test isolation.
      */
@@ -60,6 +71,13 @@ public class TestCleanupUtility {
         // Step 4: Clean up test users LAST (FK cascade will handle orphans)
         if (testUserSetup != null) {
             testUserSetup.cleanup();
+        }
+
+        // Step 5: Clear Hibernate EntityManager cache to prevent stale entities
+        // This is critical when Spring context is shared across test classes
+        if (entityManager != null) {
+            entityManager.flush();  // Ensure all pending changes are written to DB
+            entityManager.clear();  // Clear L1 cache to prevent duplicate key errors
         }
     }
 
