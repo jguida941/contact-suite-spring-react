@@ -296,20 +296,44 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Logs rate limit exceeded warning with sanitized key and path.
+     * Logs rate limit exceeded warning with fully sanitized key and path.
      *
-     * <p>Sanitization is inlined so CodeQL can trace the data flow.
+     * <p>Full validation is inlined so CodeQL can trace the data flow while
+     * maintaining security: CR/LF stripping, whitelist pattern, length limit.
      *
      * @param key the rate limit key (IP or username)
      * @param path the request path
      */
     private void logRateLimitExceeded(final String key, final String path) {
-        // Inline sanitization for CodeQL recognition - strip CR/LF to prevent log injection
-        final String safeKey = (key == null) ? "[null]"
-                : key.replace("\r", "").replace("\n", "").trim();
-        final String safePath = (path == null) ? "[null]"
-                : path.replace("\r", "").replace("\n", "").trim();
+        final String safeKey = sanitizeForWarningLog(key);
+        final String safePath = sanitizeForWarningLog(path);
         logger.warn("Rate limit exceeded for key: {} on path: {}", safeKey, safePath);
+    }
+
+    /**
+     * Sanitizes a value for warning-level logging with full validation inline.
+     *
+     * <p>Applies all security checks: CR/LF removal, whitelist pattern, length cap.
+     * Inlined for CodeQL data flow tracing.
+     */
+    private String sanitizeForWarningLog(final String value) {
+        if (value == null) {
+            return "[null]";
+        }
+        // Inline CR/LF removal for CodeQL + trim
+        final String sanitized = value.replace("\r", "").replace("\n", "").trim();
+        if (sanitized.isEmpty()) {
+            return "[empty]";
+        }
+        // Whitelist: only allow safe characters
+        if (!SAFE_LOG_PATTERN.matcher(sanitized).matches()) {
+            return "[unsafe-value]";
+        }
+        // Length cap to prevent log exhaustion
+        if (sanitized.length() > MAX_LOG_LENGTH) {
+            return sanitized.substring(0, MAX_LOG_LENGTH) + "...";
+        }
+        return sanitized;
     }
 
     /**

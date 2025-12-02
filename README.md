@@ -486,6 +486,8 @@ void testInvalidContactId(String id, String expectedMessage) {
 
 > **Note (JDK 25+):** When running tests on JDK 25 or later, you may see a warning like `Mockito is currently self-attaching to enable the inline-mock-maker`. This is expected and harmless; Mockito's subclass mock-maker handles mocking without requiring the Java agent, so the warning does not affect test correctness.
 
+> **Legacy singleton safety:** All service-layer suites that exercise the `ContactService`, `TaskService`, and `AppointmentService` singletons (including the legacy fallback and bridge tests) are annotated with JUnit’s `@Isolated`. Surefire otherwise executes those classes in parallel, which races the shared static `getInstance()` store and can trigger duplicate ID inserts. Keep the annotation on any new suites that mutate the singleton to avoid reintroducing the flaky DuplicateResourceException bursts.
+
 #### Authenticated Test Utilities
 
 Security hardening introduced specialized test utilities to simplify authenticated testing:

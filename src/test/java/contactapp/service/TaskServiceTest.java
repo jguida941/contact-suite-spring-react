@@ -598,7 +598,7 @@ public class TaskServiceTest {
     void testAddTaskWithNullTaskIdThrows() {
         assertThatThrownBy(() -> service.addTask(new Task(null, "Name", "Desc")))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("taskId must not be null");
+                .hasMessage("taskId must not be null or blank");
     }
 
     // ==================== Extended Update Tests ====================
