@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
@@ -55,8 +56,11 @@ public class TestCleanupUtility {
      * 5. Clear Hibernate L1 cache to prevent stale entity issues
      *
      * Call this in @BeforeEach to ensure test isolation.
+     *
+     * <p>Uses REQUIRES_NEW propagation to force immediate commit so changes
+     * are visible to the test that runs after @BeforeEach completes.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void cleanAll() {
         // Step 1: Clear security contexts
         clearSecurityContexts();
@@ -67,6 +71,12 @@ public class TestCleanupUtility {
 
         // Step 3: Clear all service data FIRST (tasks/contacts/appointments reference users)
         clearAllServiceData();
+
+        // Step 3.5: FORCE deletion to happen NOW before touching users
+        // Without this flush, Hibernate might reorder SQL and delete users before tasks (FK violation)
+        if (entityManager != null) {
+            entityManager.flush();
+        }
 
         // Step 4: Clean up test users LAST (FK cascade will handle orphans)
         if (testUserSetup != null) {
@@ -151,7 +161,6 @@ public class TestCleanupUtility {
      * Complete cleanup + setup in one call.
      * Equivalent to: cleanAll() + setupFreshTestUser()
      */
-    @Transactional
     public void resetTestEnvironment() {
         cleanAll();
         setupFreshTestUser();
