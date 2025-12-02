@@ -49,14 +49,15 @@ class SpaCsrfTokenRequestHandlerTest {
     @DisplayName("resolveCsrfTokenValue falls back to request parameter when header is absent")
     void resolveUsesParameterWhenHeaderMissing() {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        CsrfToken token = new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "token-value");
-        request.setParameter(token.getParameterName(), "from-param");
+        CsrfToken token =
+                new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "from-param");
+        request.setParameter(token.getParameterName(), token.getToken());
         // Delegate needs handle() to seed request attributes before resolving
         handler.handle(request, new MockHttpServletResponse(), () -> token);
 
         String resolved = handler.resolveCsrfTokenValue(request, token);
 
-        // Delegate XOR-masks the param value; assert it is present and not blank
-        assertThat(resolved).isNotBlank();
+        // When the param is present and the header is absent, the delegate returns that value
+        assertThat(resolved).isEqualTo("from-param");
     }
 }
