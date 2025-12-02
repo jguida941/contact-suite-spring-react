@@ -46,6 +46,7 @@ public class ProjectServiceTest {
     void clearBeforeTest() {
         testUserSetup.setupTestUser();
         service.clearAllProjects();
+        contactService.clearAllContacts();
     }
 
     /**
@@ -489,5 +490,168 @@ public class ProjectServiceTest {
     private void runAs(final String username, final Role role, final Runnable action) {
         testUserSetup.setupTestUser(username, username + "@example.com", role);
         action.run();
+    }
+
+    // ==================== Contact Linking Tests ====================
+
+    @Test
+    void addContactToProject_createsLink() {
+        Project project = new Project("proj1", "Test Project", "Description", ProjectStatus.ACTIVE);
+        Contact contact = new Contact("c1", "John", "Doe", "1234567890", "123 Main St");
+
+        service.addProject(project);
+        contactService.addContact(contact);
+
+        boolean added = service.addContactToProject("proj1", "c1", "CLIENT");
+
+        assertThat(added).isTrue();
+        List<Contact> contacts = service.getProjectContacts("proj1");
+        assertThat(contacts).hasSize(1);
+        assertThat(contacts.get(0).getContactId()).isEqualTo("c1");
+    }
+
+    @Test
+    void addContactToProject_idempotent() {
+        Project project = new Project("proj2", "Test Project", "Description", ProjectStatus.ACTIVE);
+        Contact contact = new Contact("c2", "Jane", "Doe", "9876543210", "456 Oak St");
+
+        service.addProject(project);
+        contactService.addContact(contact);
+
+        service.addContactToProject("proj2", "c2", "STAKEHOLDER");
+        boolean secondAdd = service.addContactToProject("proj2", "c2", "STAKEHOLDER");
+
+        assertThat(secondAdd).isFalse();
+    }
+
+    @Test
+    void addContactToProject_throwsWhenProjectNotFound() {
+        Contact contact = new Contact("c3", "Bob", "Smith", "5555555555", "789 Elm St");
+        contactService.addContact(contact);
+
+        assertThatThrownBy(() -> service.addContactToProject("nonexistent", "c3", "CLIENT"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Project not found");
+    }
+
+    @Test
+    void addContactToProject_throwsWhenContactNotFound() {
+        Project project = new Project("proj3", "Test Project", "Description", ProjectStatus.ACTIVE);
+        service.addProject(project);
+
+        assertThatThrownBy(() -> service.addContactToProject("proj3", "nonexistent", "CLIENT"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Contact not found");
+    }
+
+    @Test
+    void addContactToProject_enforcesUserIsolation() {
+        runAs("owner", Role.USER, () -> {
+            service.addProject(new Project("proj4", "Owner Project", "Description", ProjectStatus.ACTIVE));
+            contactService.addContact(new Contact("c4", "Alice", "Brown", "1111111111", "111 First St"));
+        });
+
+        runAs("other", Role.USER, () ->
+                assertThatThrownBy(() -> service.addContactToProject("proj4", "c4", "CLIENT"))
+                        .isInstanceOf(ResourceNotFoundException.class)
+        );
+    }
+
+    @Test
+    void removeContactFromProject_removesLink() {
+        Project project = new Project("proj5", "Test Project", "Description", ProjectStatus.ACTIVE);
+        Contact contact = new Contact("c5", "Charlie", "Davis", "2222222222", "222 Second St");
+
+        service.addProject(project);
+        contactService.addContact(contact);
+        service.addContactToProject("proj5", "c5", "VENDOR");
+
+        boolean removed = service.removeContactFromProject("proj5", "c5");
+
+        assertThat(removed).isTrue();
+        assertThat(service.getProjectContacts("proj5")).isEmpty();
+    }
+
+    @Test
+    void removeContactFromProject_returnsFalseWhenLinkNotExists() {
+        Project project = new Project("proj6", "Test Project", "Description", ProjectStatus.ACTIVE);
+        Contact contact = new Contact("c6", "Diana", "Evans", "3333333333", "333 Third St");
+
+        service.addProject(project);
+        contactService.addContact(contact);
+
+        boolean removed = service.removeContactFromProject("proj6", "c6");
+
+        assertThat(removed).isFalse();
+    }
+
+    @Test
+    void getProjectContacts_returnsLinkedContacts() {
+        Project project = new Project("proj7", "Test Project", "Description", ProjectStatus.ACTIVE);
+        Contact contact1 = new Contact("c7", "Eve", "Foster", "4444444444", "444 Fourth St");
+        Contact contact2 = new Contact("c8", "Frank", "Green", "5555555555", "555 Fifth St");
+
+        service.addProject(project);
+        contactService.addContact(contact1);
+        contactService.addContact(contact2);
+        service.addContactToProject("proj7", "c7", "CLIENT");
+        service.addContactToProject("proj7", "c8", "STAKEHOLDER");
+
+        List<Contact> contacts = service.getProjectContacts("proj7");
+
+        assertThat(contacts).hasSize(2);
+        assertThat(contacts).extracting(Contact::getContactId).containsExactlyInAnyOrder("c7", "c8");
+    }
+
+    @Test
+    void getProjectContacts_returnsEmptyWhenNoContacts() {
+        Project project = new Project("proj8", "Test Project", "Description", ProjectStatus.ACTIVE);
+        service.addProject(project);
+
+        List<Contact> contacts = service.getProjectContacts("proj8");
+
+        assertThat(contacts).isEmpty();
+    }
+
+    @Test
+    void getProjectContacts_throwsWhenProjectNotFound() {
+        assertThatThrownBy(() -> service.getProjectContacts("nonexistent"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Project not found");
+    }
+
+    @Test
+    void getContactProjects_returnsLinkedProjects() {
+        Project project1 = new Project("proj9", "Project 1", "Description 1", ProjectStatus.ACTIVE);
+        Project project2 = new Project("proj10", "Project 2", "Description 2", ProjectStatus.ON_HOLD);
+        Contact contact = new Contact("c9", "Grace", "Hill", "6666666666", "666 Sixth St");
+
+        service.addProject(project1);
+        service.addProject(project2);
+        contactService.addContact(contact);
+        service.addContactToProject("proj9", "c9", "CLIENT");
+        service.addContactToProject("proj10", "c9", "VENDOR");
+
+        List<Project> projects = service.getContactProjects("c9");
+
+        assertThat(projects).hasSize(2);
+        assertThat(projects).extracting(Project::getProjectId).containsExactlyInAnyOrder("proj9", "proj10");
+    }
+
+    @Test
+    void getContactProjects_returnsEmptyWhenNoProjects() {
+        Contact contact = new Contact("c10", "Henry", "Jones", "7777777777", "777 Seventh St");
+        contactService.addContact(contact);
+
+        List<Project> projects = service.getContactProjects("c10");
+
+        assertThat(projects).isEmpty();
+    }
+
+    @Test
+    void getContactProjects_throwsWhenContactNotFound() {
+        assertThatThrownBy(() -> service.getContactProjects("nonexistent"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Contact not found");
     }
 }

@@ -1,11 +1,13 @@
 package contactapp;
 
 import contactapp.config.RateLimitingFilter;
+import contactapp.domain.Contact;
 import contactapp.domain.Project;
 import contactapp.domain.ProjectStatus;
 import contactapp.security.Role;
 import contactapp.security.TestUserSetup;
 import contactapp.security.WithMockAppUser;
+import contactapp.service.ContactService;
 import contactapp.service.ProjectService;
 import contactapp.support.SecuredMockMvcTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +50,9 @@ class ProjectControllerTest extends SecuredMockMvcTest {
     private ProjectService projectService;
 
     @Autowired
+    private ContactService contactService;
+
+    @Autowired
     private TestUserSetup testUserSetup;
 
     @Autowired
@@ -62,9 +67,13 @@ class ProjectControllerTest extends SecuredMockMvcTest {
 
         // Clear data before each test for isolation using reflection
         // (clearAllProjects is package-private in contactapp.service)
-        final Method clearMethod = ProjectService.class.getDeclaredMethod("clearAllProjects");
-        clearMethod.setAccessible(true);
-        clearMethod.invoke(projectService);
+        final Method clearProjectsMethod = ProjectService.class.getDeclaredMethod("clearAllProjects");
+        clearProjectsMethod.setAccessible(true);
+        clearProjectsMethod.invoke(projectService);
+
+        final Method clearContactsMethod = ContactService.class.getDeclaredMethod("clearAllContacts");
+        clearContactsMethod.setAccessible(true);
+        clearContactsMethod.invoke(contactService);
     }
 
     // ==================== Happy Path Tests ====================
@@ -491,5 +500,148 @@ class ProjectControllerTest extends SecuredMockMvcTest {
     private void addProjectForUser(final String username, final Role role, final String id, final ProjectStatus status) {
         testUserSetup.setupTestUser(username, username + "@example.com", role);
         projectService.addProject(new Project(id, "Project-" + id, "Description-" + id, status));
+    }
+
+    // ==================== Contact Linking Tests ====================
+
+    @Test
+    void addContactToProject_validRequest_returns204() throws Exception {
+        projectService.addProject(new Project("proj1", "Test Project", "Description", ProjectStatus.ACTIVE));
+        contactService.addContact(new Contact("c1", "John", "Doe", "1234567890", "123 Main St"));
+
+        mockMvc.perform(post("/api/v1/projects/proj1/contacts")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "contactId": "c1",
+                                "role": "CLIENT"
+                            }
+                            """))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void addContactToProject_withoutRole_returns204() throws Exception {
+        projectService.addProject(new Project("proj2", "Test Project", "Description", ProjectStatus.ACTIVE));
+        contactService.addContact(new Contact("c2", "Jane", "Doe", "9876543210", "456 Oak St"));
+
+        mockMvc.perform(post("/api/v1/projects/proj2/contacts")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "contactId": "c2"
+                            }
+                            """))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void addContactToProject_missingContactId_returns400() throws Exception {
+        projectService.addProject(new Project("proj3", "Test Project", "Description", ProjectStatus.ACTIVE));
+
+        mockMvc.perform(post("/api/v1/projects/proj3/contacts")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "role": "CLIENT"
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addContactToProject_projectNotFound_returns404() throws Exception {
+        contactService.addContact(new Contact("c3", "Bob", "Smith", "5555555555", "789 Elm St"));
+
+        mockMvc.perform(post("/api/v1/projects/notfound/contacts")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "contactId": "c3",
+                                "role": "CLIENT"
+                            }
+                            """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addContactToProject_contactNotFound_returns404() throws Exception {
+        projectService.addProject(new Project("proj4", "Test Project", "Description", ProjectStatus.ACTIVE));
+
+        mockMvc.perform(post("/api/v1/projects/proj4/contacts")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "contactId": "notfound",
+                                "role": "CLIENT"
+                            }
+                            """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void removeContactFromProject_validRequest_returns204() throws Exception {
+        projectService.addProject(new Project("proj5", "Test Project", "Description", ProjectStatus.ACTIVE));
+        contactService.addContact(new Contact("c5", "Charlie", "Davis", "2222222222", "222 Second St"));
+        projectService.addContactToProject("proj5", "c5", "VENDOR");
+
+        mockMvc.perform(delete("/api/v1/projects/proj5/contacts/c5")
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void removeContactFromProject_linkNotExists_returns404() throws Exception {
+        projectService.addProject(new Project("proj6", "Test Project", "Description", ProjectStatus.ACTIVE));
+        contactService.addContact(new Contact("c6", "Diana", "Evans", "3333333333", "333 Third St"));
+
+        mockMvc.perform(delete("/api/v1/projects/proj6/contacts/c6")
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void removeContactFromProject_projectNotFound_returns404() throws Exception {
+        mockMvc.perform(delete("/api/v1/projects/notfound/contacts/c7")
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getProjectContacts_returnsLinkedContacts() throws Exception {
+        projectService.addProject(new Project("proj7", "Test Project", "Description", ProjectStatus.ACTIVE));
+        contactService.addContact(new Contact("c7", "Eve", "Foster", "4444444444", "444 Fourth St"));
+        contactService.addContact(new Contact("c8", "Frank", "Green", "5555555555", "555 Fifth St"));
+        projectService.addContactToProject("proj7", "c7", "CLIENT");
+        projectService.addContactToProject("proj7", "c8", "STAKEHOLDER");
+
+        mockMvc.perform(get("/api/v1/projects/proj7/contacts")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.id=='c7')].firstName").value("Eve"))
+                .andExpect(jsonPath("$[?(@.id=='c8')].firstName").value("Frank"));
+    }
+
+    @Test
+    void getProjectContacts_emptyWhenNoContacts() throws Exception {
+        projectService.addProject(new Project("proj8", "Test Project", "Description", ProjectStatus.ACTIVE));
+
+        mockMvc.perform(get("/api/v1/projects/proj8/contacts")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getProjectContacts_projectNotFound_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/projects/notfound/contacts")
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
     }
 }

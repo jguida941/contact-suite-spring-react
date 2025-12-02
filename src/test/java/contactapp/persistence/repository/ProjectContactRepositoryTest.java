@@ -122,12 +122,15 @@ class ProjectContactRepositoryTest {
         ContactEntity contact = createAndSaveContact("C-7", owner);
 
         ProjectContactEntity first = new ProjectContactEntity(project, contact, "CLIENT");
-        ProjectContactEntity second = new ProjectContactEntity(project, contact, "STAKEHOLDER");
-
         projectContactRepository.saveAndFlush(first);
 
-        assertThatThrownBy(() -> projectContactRepository.saveAndFlush(second))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        // Attempting to save with the same composite key should fail
+        ProjectContactEntity second = new ProjectContactEntity(project, contact, "STAKEHOLDER");
+
+        assertThatThrownBy(() -> {
+            projectContactRepository.save(second);
+            projectContactRepository.flush();
+        }).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -153,14 +156,16 @@ class ProjectContactRepositoryTest {
         ProjectEntity project = createAndSaveProject("P-9", owner);
         ContactEntity contact = createAndSaveContact("C-9", owner);
 
-        projectContactRepository.save(new ProjectContactEntity(project, contact, "CLIENT"));
-        projectContactRepository.flush();
+        ProjectContactEntity link = new ProjectContactEntity(project, contact, "CLIENT");
+        projectContactRepository.saveAndFlush(link);
+
+        Long projectId = project.getId();
+        Long contactId = contact.getId();
 
         projectRepository.delete(project);
         projectRepository.flush();
 
-        assertThat(projectContactRepository.existsByProjectIdAndContactId(
-                project.getId(), contact.getId())).isFalse();
+        assertThat(projectContactRepository.existsByProjectIdAndContactId(projectId, contactId)).isFalse();
     }
 
     @Test
@@ -169,14 +174,16 @@ class ProjectContactRepositoryTest {
         ProjectEntity project = createAndSaveProject("P-10", owner);
         ContactEntity contact = createAndSaveContact("C-10", owner);
 
-        projectContactRepository.save(new ProjectContactEntity(project, contact, "CLIENT"));
-        projectContactRepository.flush();
+        ProjectContactEntity link = new ProjectContactEntity(project, contact, "CLIENT");
+        projectContactRepository.saveAndFlush(link);
+
+        Long projectId = project.getId();
+        Long contactId = contact.getId();
 
         contactRepository.delete(contact);
         contactRepository.flush();
 
-        assertThat(projectContactRepository.existsByProjectIdAndContactId(
-                project.getId(), contact.getId())).isFalse();
+        assertThat(projectContactRepository.existsByProjectIdAndContactId(projectId, contactId)).isFalse();
     }
 
     // Helper methods

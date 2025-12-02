@@ -73,6 +73,7 @@ public class ProjectService {
     private ProjectContactRepository projectContactRepository;
     private ContactRepository contactRepository;
     private ProjectRepository projectRepository;
+    private ContactMapper contactMapper;
 
     /**
      * Primary constructor used by Spring to wire the JPA-backed store.
@@ -83,17 +84,19 @@ public class ProjectService {
     }
 
     /**
-     * Sets repositories for contact linking functionality.
+     * Sets repositories and mappers for contact linking functionality.
      * Called by Spring after construction.
      */
     @Autowired(required = false)
     public void setRepositories(
             final ProjectContactRepository projectContactRepository,
             final ContactRepository contactRepository,
-            final ProjectRepository projectRepository) {
+            final ProjectRepository projectRepository,
+            final ContactMapper contactMapper) {
         this.projectContactRepository = projectContactRepository;
         this.contactRepository = contactRepository;
         this.projectRepository = projectRepository;
+        this.contactMapper = contactMapper;
     }
 
     private ProjectService(final ProjectStore store, final boolean legacyStore) {
@@ -529,7 +532,7 @@ public class ProjectService {
         // Fetch all contact relationships
         return projectContactRepository.findByProjectId(projectEntity.getId()).stream()
                 .map(ProjectContactEntity::getContact)
-                .map(ContactMapper::toDomain)
+                .map(contactMapper::toDomain)
                 .toList();
     }
 
@@ -570,14 +573,15 @@ public class ProjectService {
     }
 
     /**
-     * Ensures that required repositories are available for contact linking operations.
+     * Ensures that required repositories and mappers are available for contact linking operations.
      *
-     * @throws IllegalStateException if any required repository is null
+     * @throws IllegalStateException if any required dependency is null
      */
     private void ensureRepositoriesAvailable() {
-        if (projectContactRepository == null || contactRepository == null || projectRepository == null) {
+        if (projectContactRepository == null || contactRepository == null
+                || projectRepository == null || contactMapper == null) {
             throw new IllegalStateException(
-                    "Contact linking operations require JPA repositories; "
+                    "Contact linking operations require JPA repositories and mappers; "
                             + "ensure Spring context is initialized");
         }
     }

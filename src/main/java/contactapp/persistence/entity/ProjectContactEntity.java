@@ -43,12 +43,12 @@ public class ProjectContactEntity {
     @Column(name = "contact_id", nullable = false)
     private Long contactId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "project_id", insertable = false, updatable = false, nullable = false)
     private ProjectEntity project;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contact_id", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "contact_id", insertable = false, updatable = false, nullable = false)
     private ContactEntity contact;
 
     @Column(name = "role", length = 50)

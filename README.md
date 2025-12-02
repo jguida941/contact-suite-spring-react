@@ -218,6 +218,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/test/java/contactapp/service/ContactServiceTest.java`](src/test/java/contactapp/service/ContactServiceTest.java)               | SpringBootTest exercising ContactService against H2 + Flyway schema.                                                              |
 | [`src/test/java/contactapp/service/TaskServiceTest.java`](src/test/java/contactapp/service/TaskServiceTest.java)                     | SpringBootTest coverage for TaskService persistence flows.                                                                        |
 | [`src/test/java/contactapp/service/AppointmentServiceTest.java`](src/test/java/contactapp/service/AppointmentServiceTest.java)       | SpringBootTest coverage for AppointmentService persistence flows.                                                                 |
+| [`src/test/java/contactapp/service/ProjectServiceTest.java`](src/test/java/contactapp/service/ProjectServiceTest.java)               | SpringBootTest coverage for ProjectService (28 tests: CRUD, status filtering, contact linking, per-user isolation).              |
 | [`src/test/java/contactapp/service/*LegacyTest.java`](src/test/java/contactapp/service)                                              | Verifies the legacy `getInstance()` singletons still work outside Spring.                                                         |
 | [`src/test/java/contactapp/persistence/entity`](src/test/java/contactapp/persistence/entity)                                         | JPA entity tests (protected constructor/setter coverage for Hibernate proxies).                                                   |
 | [`src/test/java/contactapp/persistence/mapper`](src/test/java/contactapp/persistence/mapper)                                         | Mapper unit tests (Contact/Task/Appointment conversions + validation).                                                            |
@@ -226,11 +227,14 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/test/java/contactapp/persistence/store/JpaContactStoreTest.java`](src/test/java/contactapp/persistence/store/JpaContactStoreTest.java) | Tests JpaContactStore repository delegations (existsById, findById, deleteById branches).                                   |
 | [`src/test/java/contactapp/persistence/store/JpaTaskStoreTest.java`](src/test/java/contactapp/persistence/store/JpaTaskStoreTest.java) | Tests JpaTaskStore repository delegations for mutation testing coverage.                                                        |
 | [`src/test/java/contactapp/persistence/store/JpaAppointmentStoreTest.java`](src/test/java/contactapp/persistence/store/JpaAppointmentStoreTest.java) | Tests JpaAppointmentStore repository delegations and return code handling.                                              |
+| [`src/test/java/contactapp/persistence/store/JpaProjectStoreTest.java`](src/test/java/contactapp/persistence/store/JpaProjectStoreTest.java) | Tests JpaProjectStore repository delegations (24 tests: CRUD, status filtering, per-user isolation).                             |
 | [`src/test/java/contactapp/persistence/store/InMemoryContactStoreTest.java`](src/test/java/contactapp/persistence/store/InMemoryContactStoreTest.java) | Tests legacy InMemoryContactStore defensive copy semantics.                                                             |
+| [`src/test/java/contactapp/persistence/store/InMemoryProjectStoreTest.java`](src/test/java/contactapp/persistence/store/InMemoryProjectStoreTest.java) | Tests legacy InMemoryProjectStore for non-Spring fallback.                                                              |
 | [`src/test/java/contactapp/persistence/store/InMemoryTaskStoreTest.java`](src/test/java/contactapp/persistence/store/InMemoryTaskStoreTest.java) | Tests legacy InMemoryTaskStore defensive copy semantics.                                                                    |
 | [`src/test/java/contactapp/persistence/store/InMemoryAppointmentStoreTest.java`](src/test/java/contactapp/persistence/store/InMemoryAppointmentStoreTest.java) | Tests legacy InMemoryAppointmentStore defensive copy semantics.                                                     |
 | [`src/main/java/contactapp/api/ContactController.java`](src/main/java/contactapp/api/ContactController.java)                         | REST controller for Contact CRUD operations at `/api/v1/contacts`.                                                                |
 | [`src/main/java/contactapp/api/TaskController.java`](src/main/java/contactapp/api/TaskController.java)                               | REST controller for Task CRUD operations at `/api/v1/tasks`.                                                                      |
+| [`src/main/java/contactapp/api/ProjectController.java`](src/main/java/contactapp/api/ProjectController.java)                         | REST controller for Project CRUD + contact linking at `/api/v1/projects`.                                                         |
 | [`src/main/java/contactapp/api/AppointmentController.java`](src/main/java/contactapp/api/AppointmentController.java)                 | REST controller for Appointment CRUD operations at `/api/v1/appointments`.                                                        |
 | [`src/main/java/contactapp/api/AuthController.java`](src/main/java/contactapp/api/AuthController.java)                               | REST controller for authentication (login/register) at `/api/auth` (see ADR-0038).                                                |
 | [`src/main/java/contactapp/api/GlobalExceptionHandler.java`](src/main/java/contactapp/api/GlobalExceptionHandler.java)               | Maps exceptions to HTTP responses (400, 401, 403, 404, 409 including optimistic locking conflicts). The Contact/Task/Appointment entities each use a JPA `@Version` column, so stale PUT/DELETE requests surface `ObjectOptimisticLockingFailureException` errors that the handler converts to HTTP 409 responses with “refresh and retry” guidance. |
@@ -261,6 +265,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/test/java/contactapp/ContactControllerTest.java`](src/test/java/contactapp/ContactControllerTest.java)                         | MockMvc integration tests for Contact API (32 tests).                                                                             |
 | [`src/test/java/contactapp/TaskControllerTest.java`](src/test/java/contactapp/TaskControllerTest.java)                               | MockMvc integration tests for Task API (41 tests).                                                                                |
 | [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java)                 | MockMvc integration tests for Appointment API (22 tests).                                                                         |
+| [`src/test/java/contactapp/ProjectControllerTest.java`](src/test/java/contactapp/ProjectControllerTest.java)                         | MockMvc integration tests for Project API (30 tests).                                                                             |
 | [`src/test/java/contactapp/AuthControllerTest.java`](src/test/java/contactapp/AuthControllerTest.java)                               | MockMvc integration tests for Auth API (login, register, validation errors).                                                      |
 | [`src/test/java/contactapp/ContactControllerUnitTest.java`](src/test/java/contactapp/ContactControllerUnitTest.java)                 | Unit tests for Contact controller getAll() branch coverage (mutation testing).                                                    |
 | [`src/test/java/contactapp/TaskControllerUnitTest.java`](src/test/java/contactapp/TaskControllerUnitTest.java)                       | Unit tests for Task controller getAll() branch coverage (mutation testing).                                                       |
@@ -595,10 +600,17 @@ See [ADR-0046](docs/adrs/ADR-0046-test-coverage-improvements.md) for the full ra
 #### Service Snapshot
 - Task IDs are required, trimmed, and immutable after construction (length 1-10).
 - Name (≤20 chars) and description (≤50 chars) share one helper so constructor, setters, and `update(...)` all enforce identical rules.
-- Optional `dueDate` now flows through `Validation.validateOptionalDateNotPast`, so null values remain allowed but past dates throw immediately (matching the upcoming “due date” feature).
-- `Task#update` validates both values first, then swaps them in one shot; invalid inputs leave the object untouched.
-- `copy()` creates a defensive copy by validating the source state and reusing the public constructor, keeping defensive copies aligned with validation rules.
-- Tests mirror Contact coverage: constructor trimming, happy-path setters/update, and every invalid-path exception message.
+- `status` is a required `TaskStatus` enum (TODO, IN_PROGRESS, DONE) that defaults to TODO if null; validated via `Validation.validateNotNull`.
+- Optional `dueDate` flows through `Validation.validateOptionalDateNotPast`, so null values remain allowed but past dates throw immediately.
+- Optional `projectId` links tasks to projects (nullable, max 10 chars); setting it updates `updatedAt` timestamp.
+- `createdAt` and `updatedAt` timestamps (Instant) are set automatically on construction and update.
+- Three `update(...)` overloads support different update scenarios:
+  1. `update(name, description)` - backward-compatible, preserves existing status/dueDate
+  2. `update(name, description, status, dueDate)` - full mutable field update
+  3. `update(name, description, status, dueDate, projectId)` - includes project linking
+- All update methods validate atomically; invalid inputs leave the object untouched.
+- `copy()` creates a defensive copy preserving timestamps and projectId.
+- Tests mirror Contact coverage: constructor trimming, happy-path setters/update, status/dueDate validation, and every invalid-path exception message.
 
 #### Validation & Error Handling
 
@@ -789,6 +801,99 @@ graph TD
 - `getAppointmentById_onlyReturnsCurrentUsersAppointments` proves users cannot see appointments owned by other users.
 - `deleteAppointment_doesNotAllowCrossUserDeletion` proves users cannot delete appointments owned by other users.
 - `updateAppointment_doesNotAllowCrossUserModification` proves users cannot update appointments owned by other users.
+
+<br>
+
+### [Project.java](src/main/java/contactapp/domain/Project.java) / [ProjectTest.java](src/test/java/contactapp/domain/ProjectTest.java)
+
+#### Service Snapshot
+- Project IDs are required, trimmed, and immutable after construction (length 1-10).
+- Name (≤50 chars) is required and trimmed via `Validation.validateTrimmedLength`.
+- Description (0-100 chars) allows blank values via `Validation.validateTrimmedLengthAllowBlank`.
+- `status` is a required `ProjectStatus` enum (ACTIVE, ON_HOLD, COMPLETED, ARCHIVED); validated via `Validation.validateNotNull`.
+- `update(name, description, status)` validates all fields atomically before mutation; invalid inputs leave the object untouched.
+- `copy()` creates a defensive copy by validating source state and reusing the public constructor.
+
+#### Validation & Error Handling
+
+##### Validation Pipeline
+```mermaid
+graph TD
+    A[Constructor input] --> B["validateTrimmedLength(projectId, 1-10)"]
+    B -->|ok| C[store projectId]
+    B -->|fail| X[IllegalArgumentException]
+    C --> D["validateTrimmedLength(name, 1-50)"]
+    D -->|ok| E[store name]
+    D -->|fail| X
+    E --> F["validateTrimmedLengthAllowBlank(description, 0-100)"]
+    F -->|ok| G[store description]
+    F -->|fail| X
+    G --> H["validateNotNull(status)"]
+    H -->|ok| I[store status enum]
+    H -->|fail| X
+```
+- Constructor validates projectId, then delegates to setters for name/description/status.
+- `validateTrimmedLength` trims input before length check, returning the trimmed value.
+- `validateTrimmedLengthAllowBlank` permits empty strings when minLength=0 (description only).
+- `validateNotNull` ensures enum status is never null.
+
+#### Testing Strategy
+- `ProjectTest` (51 tests) covers constructor trimming, setter/update happy paths, invalid constructor/setter/update cases (null/blank/over-length), atomic update rejection, and defensive copy verification.
+- `ProjectStatusTest` (12 tests) validates all enum values and their string representations.
+
+##### Scenario Coverage
+- Constructor stores trimmed values and rejects null/blank/too-long IDs and names.
+- Description allows empty strings but rejects over-length values.
+- Status rejects null with `IllegalArgumentException`.
+- `update(...)` replaces all mutable fields atomically and never mutates on invalid input.
+- `testCopyRejectsNullInternalState` uses reflection to corrupt each internal field, proving `validateCopySource()` guard triggers.
+
+<br>
+
+### [ProjectService.java](src/main/java/contactapp/service/ProjectService.java) / [ProjectServiceTest.java](src/test/java/contactapp/service/ProjectServiceTest.java)
+
+#### Service Snapshot
+- Depends on `ProjectStore`, which is implemented by `JpaProjectStore` (Spring Data repository + mapper) for normal operation and `InMemoryProjectStore` for legacy `getInstance()` callers.
+- Transactions wrap add/delete/update operations; read-only queries use `@Transactional(readOnly = true)`.
+- Per-user data isolation enforces that users only see their own projects.
+- CRUD methods: `addProject()`, `deleteProject()`, `updateProject(id, name, description, status)`.
+- Query methods: `getAllProjects()`, `getAllProjectsAllUsers()` (ADMIN only), `getProjectById()`, `getProjectsByStatus()`.
+- Contact linking: `addContactToProject()`, `removeContactFromProject()`, `getProjectContacts()`, `getContactProjects()`.
+- `getDatabase()` and `getAllProjects()` return defensive copies; `clearAllProjects()` stays package-private for test resets.
+
+#### Persistence Flow
+```mermaid
+graph TD
+    A[ProjectService call] --> B{Operation}
+    B -->|add| C["project != null?"]
+    C -->|no| X[IllegalArgumentException]
+    C -->|yes| D["store.existsById(projectId)?"]
+    D -->|true| Y[DuplicateResourceException]
+    D -->|false| E["store.insert(project, user)"]
+    B -->|delete| F["validateNotBlank(projectId)"]
+    F --> G["store.deleteById(trimmedId, user)"]
+    B -->|update| H["validateNotBlank(projectId)"]
+    H --> I["store.findById(trimmedId, user)"]
+    I -->|empty| Y2[return false]
+    I -->|present| J["Project.update(name, description, status)"]
+    J --> K["store.save(updated project, user)"]
+    B -->|getByStatus| L["store.findByStatus(user, status)"]
+```
+- Duplicate IDs throw `DuplicateResourceException` for 409 Conflict responses.
+- Missing rows return `false` so controllers can produce 404 responses.
+- All operations scope to the authenticated user via `getCurrentUser()`.
+
+#### Testing Strategy
+- `ProjectServiceTest` (28 tests) is a Spring Boot test running on the `test` profile (H2 + Flyway).
+- `InMemoryProjectStoreTest` validates the non-Spring fallback store.
+- Mapper/repository tests sit alongside for faster feedback on schema or conversion issues.
+
+##### Security Tests (Per-User Isolation)
+- `getAllProjectsAllUsers_requiresAdminRole` proves non-ADMIN users get `AccessDeniedException`.
+- `getAllProjectsAllUsers_returnsDataForAdmins` proves ADMIN users can fetch projects from all users.
+- `getProjectById_onlyReturnsCurrentUsersProjects` proves users cannot see projects owned by others.
+- `deleteProject_doesNotAllowCrossUserDeletion` proves users cannot delete projects owned by others.
+- `updateProject_doesNotAllowCrossUserModification` proves users cannot update projects owned by others.
 
 <br>
 
