@@ -5,6 +5,12 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 
+### Changed
+- **Test profile split for legacy/singleton coverage (2025-12-02)**:
+  - Main CI (Linux) continues to run the full suite with Testcontainers/Postgres and JaCoCo gates.
+  - Windows/`skip-testcontainers` profile now runs service/controller suites on H2 (no Docker) to keep coverage meaningful on that runner; only `**/*IT.java` remain excluded.
+  - Legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton` to avoid interfering with the main pipeline.
+
 ### Fixed
 - **RateLimitingFilter log sanitizer helper restored (2025-12-02)**:
   - Reintroduced `getSafeLogValue` with whitelist/length guards and shared it across log helpers
