@@ -569,4 +569,43 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+            Profile to skip Testcontainers-based tests on platforms without Docker support.
+            Activated by passing -DskipTestcontainersTests=true (used on Windows CI runners).
+        -->
+        <profile>
+            <id>skip-testcontainers</id>
+            <activation>
+                <property>
+                    <name>skipTestcontainersTests</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludes>
+                                <!-- Exclude all tests that extend PostgresContainerSupport -->
+                                <exclude>**/ApplicationTest.java</exclude>
+                                <exclude>**/ActuatorEndpointsTest.java</exclude>
+                                <exclude>**/SecurityConfigIntegrationTest.java</exclude>
+                                <exclude>**/ServiceBeanTest.java</exclude>
+                                <exclude>**/*ControllerTest.java</exclude>
+                                <exclude>**/ContactServiceTest.java</exclude>
+                                <exclude>**/TaskServiceTest.java</exclude>
+                                <exclude>**/AppointmentServiceTest.java</exclude>
+                                <exclude>**/ProjectServiceTest.java</exclude>
+                                <exclude>**/*ServiceLegacyTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

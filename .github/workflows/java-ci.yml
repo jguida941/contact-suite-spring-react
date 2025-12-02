@@ -98,25 +98,27 @@ jobs:
           MAVEN_OPTS: "--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"
         run: |
           # Windows runners can't run Linux containers (Testcontainers/Postgres)
-          # Skip integration tests on Windows, run full suite on Linux
+          # Skip integration tests and Testcontainers tests on Windows, run full suite on Linux
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "::notice::Windows runner - skipping Testcontainers integration tests (no Linux container support)"
+            echo "::notice::Windows runner - skipping Testcontainers tests (no Docker support for Linux containers)"
             SKIP_ITS="-DskipITs=true"
+            SKIP_TESTCONTAINERS="-DskipTestcontainersTests=true"
           else
             SKIP_ITS="-DskipITs=false"
+            SKIP_TESTCONTAINERS=""
           fi
 
           if [ -z "${NVD_API_KEY:-}" ]; then
             echo "::warning::NVD_API_KEY not set; skipping Dependency-Check"
-            CMD="mvn -B -Ddependency.check.skip=true -Dpit.skip=false $SKIP_ITS verify"
+            CMD="mvn -B -Ddependency.check.skip=true -Dpit.skip=false $SKIP_ITS $SKIP_TESTCONTAINERS verify"
           else
             echo "::notice::Running with NVD API Key (with increased delay for CI environment)"
-            CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=3500 -Ddependency.check.skip=false -Dpit.skip=false $SKIP_ITS verify"
+            CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=3500 -Ddependency.check.skip=false -Dpit.skip=false $SKIP_ITS $SKIP_TESTCONTAINERS verify"
           fi
 
           if ! eval "$CMD"; then
             echo "::warning::Quality gates failed (likely Dependency-Check or PITest). Retrying with skips enabled."
-            mvn -B -Ddependency.check.skip=true -Dpit.skip=true $SKIP_ITS verify
+            mvn -B -Ddependency.check.skip=true -Dpit.skip=true $SKIP_ITS $SKIP_TESTCONTAINERS verify
           fi
 
       - name: Build QA dashboard UI
