@@ -387,6 +387,9 @@ jobs:
       - name: Wait for application health
         run: |
           echo "Waiting for application to become healthy..."
+          echo "=== Container status ==="
+          docker compose ps
+
           MAX_ATTEMPTS=30
           ATTEMPT=0
 
@@ -394,8 +397,20 @@ jobs:
             ATTEMPT=$((ATTEMPT + 1))
             echo "Health check attempt $ATTEMPT/$MAX_ATTEMPTS"
 
-            if curl -f -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+            # Show verbose output every 5th attempt to debug issues
+            if [ $((ATTEMPT % 5)) -eq 1 ]; then
+              echo "--- Verbose health check ---"
+              curl -v --max-time 5 http://localhost:8080/actuator/health 2>&1 || true
+              echo "--- Container status ---"
+              docker compose ps
+              echo "---"
+            fi
+
+            # Actual health check
+            RESPONSE=$(curl -s --max-time 5 http://localhost:8080/actuator/health 2>&1) || true
+            if echo "$RESPONSE" | grep -q '"status":"UP"'; then
               echo "Application is healthy!"
+              echo "Response: $RESPONSE"
               exit 0
             fi
 
@@ -406,6 +421,11 @@ jobs:
           done
 
           echo "::error::Application failed to become healthy after $MAX_ATTEMPTS attempts"
+          echo "=== Last curl response ==="
+          curl -v --max-time 10 http://localhost:8080/actuator/health 2>&1 || true
+          echo "=== Docker compose logs (postgres) ==="
+          docker compose logs postgres | tail -50
+          echo "=== Docker compose logs (app) ==="
           docker compose logs app
           exit 1
 

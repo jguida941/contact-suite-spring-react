@@ -74,6 +74,12 @@ RUN mkdir -p target/extracted && \
 # -----------------------------------------------------------------------------
 FROM eclipse-temurin:17-jre-jammy
 
+# Install curl for health checks - minimal base image doesn't include it
+# Clean up apt cache to keep image size small
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create a non-root user to run the application.
 # Security best practice: Never run containers as root.
 # - UID 1001: Arbitrary non-privileged user ID
@@ -117,11 +123,11 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport \
 # Container orchestrators (Docker Compose, Kubernetes) use this to
 # determine if the container is healthy and ready to receive traffic.
 # - interval: Check every 30 seconds
-# - timeout: Wait up to 3 seconds for response
+# - timeout: Wait up to 5 seconds for response
 # - start-period: Wait 60 seconds before first check (app startup time)
 # - retries: Mark unhealthy after 3 consecutive failures
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f -s http://localhost:8080/actuator/health || exit 1
 
 # Run the application using Spring Boot's JarLauncher.
 # This is more efficient than 'java -jar' because layers are already extracted.

@@ -68,6 +68,7 @@ COPY --from=builder /build/target/extracted/application/ ./
 | Minimal runtime | JRE image (no compiler, no build tools) |
 | No shell access | User created with `/bin/false` shell |
 | File ownership | `--chown=appuser:appuser` on COPY |
+| Health check tool | `curl` installed via apt (minimal footprint, apt cache cleaned) |
 
 ### 4. JVM Configuration
 
@@ -84,16 +85,21 @@ COPY --from=builder /build/target/extracted/application/ ./
 ### 5. Health Check
 
 ```dockerfile
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f -s http://localhost:8080/actuator/health || exit 1
 ```
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
 | `interval` | 30s | Balance between responsiveness and overhead |
-| `timeout` | 3s | Fast detection of unresponsive services |
+| `timeout` | 5s | Allow time for actuator response under load |
 | `start-period` | 60s | Allow Spring Boot startup (JIT, bean init) |
 | `retries` | 3 | Avoid false positives from transient issues |
+
+**Tool Choice**: Uses `curl` instead of `wget` because:
+- `curl -f` returns exit code 22 on HTTP 4xx/5xx (proper failure detection)
+- `curl` is installed in runtime image for minimal footprint
+- Consistent with CI workflow health checks
 
 ### 6. Docker Compose Stack
 
@@ -114,6 +120,17 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 | `POSTGRES_DB` | No | `contactapp` |
 | `POSTGRES_USER` | No | `contactapp` |
 | `ENVIRONMENT` | No | `docker` |
+| `REQUIRE_SSL` | No | `true` (prod) |
+| `COOKIE_SECURE` | No | `true` (prod) |
+| `APP_AUTH_COOKIE_SECURE` | No | `true` (prod) |
+
+**CI/CD Environment** (GitHub Actions `docker-build` job):
+| GitHub Secret | Maps To | Purpose |
+|---------------|---------|---------|
+| `CI_POSTGRES_PASSWORD` | `POSTGRES_PASSWORD` | Database credentials |
+| `CI_JWT_SECRET` | `JWT_SECRET` | JWT signing key |
+
+**Important**: CI sets `REQUIRE_SSL=false`, `COOKIE_SECURE=false`, and `APP_AUTH_COOKIE_SECURE=false` because there's no TLS terminator in the test environment.
 
 **Resource Limits**:
 ```yaml

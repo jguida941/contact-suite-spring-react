@@ -119,7 +119,7 @@ services:
     # Health check using Spring Boot Actuator endpoint.
     # Kubernetes-style liveness probe to detect if app is running.
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/actuator/health/liveness || exit 1"]
+      test: ["CMD-SHELL", "curl -f -s http://localhost:8080/actuator/health/liveness || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
