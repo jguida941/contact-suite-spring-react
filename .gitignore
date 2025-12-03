@@ -62,3 +62,11 @@ agents.md
 .env.local
 .env.*.local
 
+# Local documentation drafts
+docs/DEMO.md
+docs/PROJECT_SHOWCASE.md
+docs/IMPLEMENTATION_PLAN_OPTION_C.md
+
+# Security review reports (may contain sensitive vulnerability details)
+docs/security-reviews/
+
