@@ -1,7 +1,28 @@
 # Documentation Audit Findings
 **Date**: 2025-12-02
+**Updated**: 2025-12-02 (Resolution status added)
 **Auditor**: Claude Code
 **Purpose**: Identify stale, outdated, or missing documentation following recent architectural changes
+**Status**: ✅ **ALL CRITICAL ISSUES RESOLVED** (see resolution notes below)
+
+---
+
+## RESOLUTION STATUS (2025-12-02)
+
+**Critical Issues RESOLVED**:
+- ✅ **Issue #1 (Test Counts)**: Corrected to 904 in README.md (lines 17, 135, 189, 595, 1807), REQUIREMENTS.md (lines 47, 52), ROADMAP.md (line 37)
+- ✅ **Issue #3 (Missing SpaCsrfTokenRequestHandler)**: Added to Security Infrastructure file table (README.md line 273) with test file (line 279)
+- ✅ **Issue #5 (forkCount=1)**: Documented in new "Testing Philosophy & Strategy" section (README.md line 1638-1642)
+- ✅ **Issue #6 (Singleton test status)**: Clarified in Testing Philosophy section (README.md line 1642)
+
+**Major Documentation ADDED**:
+- ✅ **Frontend Architecture** (README.md line 202-210): ADR-0025/0026 - shadcn/ui copy-paste model, theme system, build integration
+- ✅ **Security Architecture** (README.md line 939-945): ADR-0018/0043 - BCrypt rationale, HttpOnly migration timeline, CSRF protection
+- ✅ **Testing Philosophy & Strategy** (README.md line 1612-1642): ADR-0031/0048 - Testcontainers singleton pattern (48x speedup), mutation testing value, test execution strategy
+
+**Lower Priority** (functional but could be more prominent):
+- Issue #4: Frontend form fixes (noValidate, SelectItem) - functionality works, not explicitly called out in docs
+- Issue #7: TestCleanupUtility - has brief mention (README.md line 1811) but could be more prominent
 
 ---
 

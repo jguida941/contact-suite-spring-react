@@ -12,9 +12,9 @@
 ## Executive Summary
 
 - **Overview**: Full-stack contact, task, appointment, and project tracker built with Spring Boot 4.0.0 and React 19.
-- **Architecture highlights**: PostgreSQL + JPA with 13 Flyway migrations, JWT authentication with RBAC, per-user data isolation, token-bucket rate limiting, structured logging with PII masking, Prometheus metrics, Docker packaging, Kubernetes-ready health probes, and 6 GitHub Actions workflows (CI/CD, CodeQL, ZAP DAST, API fuzzing, Dependabot).
-- **My role**: Designed the schema (13 migrations), built 6 domain aggregates with services and controllers, wired the JWT security and observability stack, created a React 19 SPA using TanStack Query, packaged everything with Docker + Compose, and automated the stack via a Makefile (30+ targets) and CI/CD pipelines.
-- **Quality bar**: 920 test executions on the full Linux matrix run, ~89.9% line coverage (JaCoCo), ~83.1% mutation score (PITest), and 5 CI quality gates (JaCoCo, PITest, SpotBugs, Checkstyle, OWASP Dependency-Check).
+- **Architecture highlights**: PostgreSQL + JPA with 11 Flyway migrations (V1-V4, V7-V13), JWT authentication with RBAC, per-user data isolation, token-bucket rate limiting, structured logging with PII masking, Prometheus metrics, Docker packaging, Kubernetes-ready health probes, and 6 GitHub Actions workflows (CI/CD, CodeQL, ZAP DAST, API fuzzing, Dependabot).
+- **My role**: Designed the schema (11 migrations), built 6 domain aggregates with services and controllers, wired the JWT security and observability stack, created a React 19 SPA using TanStack Query, packaged everything with Docker + Compose, and automated the stack via a Makefile (55 targets) and CI/CD pipelines.
+- **Quality bar**: 930 test executions on the full Linux matrix run, ~89.9% line coverage (JaCoCo), ~83.1% mutation score (PITest), and 5 CI quality gates (JaCoCo, PITest, SpotBugs, Checkstyle, OWASP Dependency-Check).
   - Linux CI runs the full suite with Testcontainers/Postgres and enforces coverage/mutation gates; Windows CI uses the `skip-testcontainers` profile on H2 with a **reduced JaCoCo gate** that excludes container-only code paths while still running PITest. Legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton` without touching the main pipeline.
 
 ---
@@ -132,7 +132,7 @@ Flyway automatically creates the schema on first run. Stop the database with `do
    - Windows/`-DskipTestcontainersTests=true`: runs the same service/controller suites against in-memory H2 (no Docker) while still reporting JaCoCo.
    - Legacy singleton coverage: `mvn test -Plegacy-singleton` runs only the legacy `getInstance()` suites tagged `legacy-singleton` against H2 to avoid interfering with the main pipeline.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-7. Planning note: Phases 0-7 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST, packaging/CI, UX polish). **901 tests** (Linux full suite) cover the JPA path, legacy singleton fallbacks, JWT auth components, User entity validation, Project CRUD, and the validation helpers including the new `validateNotNull` enum helper (PIT mutation coverage ~83.1% with ~89.9% line coverage on the full suite). +84 mutation-focused tests added targeting boundary conditions, comparison operators, copy semantics, and helper adapters. ADR-0014..0046 capture the selected stack plus validation/Project evolution decisions. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list.
+7. Planning note: Phases 0-7 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST, packaging/CI, UX polish). **904 tests** (Linux full suite) cover the JPA path, legacy singleton fallbacks, JWT auth components, User entity validation, Project CRUD, and the validation helpers including the new `validateNotNull` enum helper (PIT mutation coverage ~83.1% with ~89.9% line coverage on the full suite). +84 mutation-focused tests added targeting boundary conditions, comparison operators, copy semantics, and helper adapters. ADR-0014..0046 capture the selected stack plus validation/Project evolution decisions. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list.
 
 ## Phase Roadmap & Highlights
 
@@ -142,7 +142,7 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 |-------|--------|-------|------------|
 | 0 | Complete | Domain guardrails | Defensive copies in Contact/Task services; appointment date-not-past fix |
 | 1 | Complete | Spring Boot foundation | Services promoted to `@Service` beans; actuator health/info endpoints |
-| 2 | Complete | REST API + DTOs | CRUD controllers at `/api/v1/**`; Bean Validation DTOs; 71 controller tests |
+| 2 | Complete | REST API + DTOs | CRUD controllers at `/api/v1/**`; Bean Validation DTOs; 137 controller tests |
 | 2.5 | Complete | OpenAPI fuzzing | Schemathesis workflows with spec validation/hardening |
 | 3 | Complete | Persistence & storage | Spring Data JPA + Flyway; Postgres dev/prod; H2 slices + Testcontainers-backed SpringBootTests |
 | 4 | Complete | React SPA | CRUD UI with TanStack Query + Vite/Tailwind stack; Vitest + Playwright suites |
@@ -186,7 +186,7 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 
 **Database Schema**: 7 new migrations (V7-V13) add optimistic locking (V7), projects table (V8), task status/due dates (V9), task-project relationships (V10), appointment-task/project relationships (V11), task assignment (V12), and project-contact junction table (V13) with proper foreign keys and indexes.
 
-**Test Coverage**: 901 total test executions on the full Linux run with comprehensive coverage across domain validation, persistence layers, service operations, and REST API endpoints for all implemented phases (700 execute on the Windows H2 lane via `-DskipTestcontainersTests=true`).
+**Test Coverage**: 904 total test executions on the full Linux run with comprehensive coverage across domain validation, persistence layers, service operations, and REST API endpoints for all implemented phases (700 execute on the Windows H2 lane via `-DskipTestcontainersTests=true`).
 
 **Phase 6 Implementation**: Contact-Project Linking is fully implemented via V13 junction table with API endpoints for adding/removing contacts to projects (`POST /api/v1/projects/{id}/contacts`, `DELETE /api/v1/projects/{id}/contacts/{contactId}`) and retrieving project contacts (`GET /api/v1/projects/{id}/contacts`). See ADR-0045 for details.
 
@@ -198,6 +198,16 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 - TanStack Query handles caching/revalidation, so edits in one tab immediately flow through the rest of the UI.
 - Authentication-aware routing (`/login`, `RequireAuth`, `PublicOnlyRoute`) forces users through the JWT login screen before any `/api/v1/**` call runs; the auth helpers sync profile data with the backend and clear cached queries on logout.
 - Build artifacts are bundled into the Spring Boot JAR (via `frontend-maven-plugin`), so `java -jar target/*.jar` serves the API and SPA from the same origin.
+
+### Frontend Architecture (ADR-0025, ADR-0026)
+
+**Component Library**: shadcn/ui with copy-paste architecture (not npm dependencies). Components are copied into `ui/contact-app/src/components/ui/` for full source control, preventing upstream breaking changes and eliminating vendor lock-in. Built on Radix UI primitives for WCAG 2.1 AA accessibility (4.5:1 contrast ratios verified).
+
+**Theme System**: CSS variable-based with 5 professional themes (Slate, Ocean, Forest, Violet, Zinc), each with light/dark variants via `.dark` class toggle. Runtime theme switching without page reload. All theme variables defined in `app.css` with fallback chains.
+
+**State Management**: TanStack Query v5 for server state (caching, revalidation, optimistic updates); React Hook Form + Zod for form state (mirrors backend Bean Validation rules). No Redux/Context needed for this scale.
+
+**Build Integration**: `frontend-maven-plugin` installs Node.js 22.11.0 + npm 10.9.0, runs `npm ci`, executes Vitest tests (22 passing), builds production bundle via `npm run build`, and copies `dist/` into `target/classes/static/` for JAR packaging. Single-command deployment: `mvn clean package && java -jar target/*.jar`.
 
 ## Branches & History
 - `master` (this branch) - the Spring Boot + React suite with persistence, CI, and the full UI.
@@ -270,18 +280,20 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/main/java/contactapp/security/UserRepository.java`](src/main/java/contactapp/security/UserRepository.java)                     | Spring Data repository for User persistence with lookup methods.                                                                  |
 | [`src/main/java/contactapp/security/JwtService.java`](src/main/java/contactapp/security/JwtService.java)                             | JWT token generation and validation service (HMAC-SHA256).                                                                        |
 | [`src/main/java/contactapp/security/JwtAuthenticationFilter.java`](src/main/java/contactapp/security/JwtAuthenticationFilter.java)   | Filter that validates JWT tokens from HttpOnly cookies first, then Authorization header fallback (see ADR-0043).                  |
+| [`src/main/java/contactapp/security/SpaCsrfTokenRequestHandler.java`](src/main/java/contactapp/security/SpaCsrfTokenRequestHandler.java) | CSRF token handler for SPA double-submit cookie pattern (sets XSRF-TOKEN cookie with SameSite=Lax).                              |
 | [`src/main/java/contactapp/security/SecurityConfig.java`](src/main/java/contactapp/security/SecurityConfig.java)                     | Spring Security configuration (JWT auth, CSRF protection, CORS, security headers, endpoint protection).                          |
 | [`src/main/java/contactapp/security/CustomUserDetailsService.java`](src/main/java/contactapp/security/CustomUserDetailsService.java) | UserDetailsService implementation loading users from repository.                                                                  |
 | [`src/test/java/contactapp/security/UserTest.java`](src/test/java/contactapp/security/UserTest.java)                                 | Unit tests for User entity validation (boundary, null/blank, role tests).                                                         |
 | [`src/test/java/contactapp/security/JwtServiceTest.java`](src/test/java/contactapp/security/JwtServiceTest.java)                     | Unit tests for JWT token lifecycle (+9 mutation tests: expiration boundaries, refresh window, case-sensitive username).           |
 | [`src/test/java/contactapp/security/JwtAuthenticationFilterTest.java`](src/test/java/contactapp/security/JwtAuthenticationFilterTest.java) | Unit tests for JWT filter (missing cookie/header, invalid token, valid token scenarios).                                       |
+| [`src/test/java/contactapp/security/SpaCsrfTokenRequestHandlerTest.java`](src/test/java/contactapp/security/SpaCsrfTokenRequestHandlerTest.java) | Unit tests for SPA CSRF handler (cookie persistence, SameSite attribute, parameter resolution).                            |
 | [`src/test/java/contactapp/security/CustomUserDetailsServiceTest.java`](src/test/java/contactapp/security/CustomUserDetailsServiceTest.java) | Unit tests for user lookup and UsernameNotFoundException handling.                                                        |
 | [`src/main/java/contactapp/api/dto/`](src/main/java/contactapp/api/dto/)                                                             | Request/Response DTOs with Bean Validation (Contact/Task/Appointment + LoginRequest, RegisterRequest, AuthResponse).              |
 | [`src/main/java/contactapp/api/exception/`](src/main/java/contactapp/api/exception/)                                                 | Custom exceptions (`ResourceNotFoundException`, `DuplicateResourceException`).                                                    |
 | [`src/test/java/contactapp/ContactControllerTest.java`](src/test/java/contactapp/ContactControllerTest.java)                         | MockMvc integration tests for Contact API (32 tests).                                                                             |
 | [`src/test/java/contactapp/TaskControllerTest.java`](src/test/java/contactapp/TaskControllerTest.java)                               | MockMvc integration tests for Task API (41 tests).                                                                                |
-| [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java)                 | MockMvc integration tests for Appointment API (22 tests).                                                                         |
-| [`src/test/java/contactapp/ProjectControllerTest.java`](src/test/java/contactapp/ProjectControllerTest.java)                         | MockMvc integration tests for Project API (30 tests).                                                                             |
+| [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java)                 | MockMvc integration tests for Appointment API (23 tests).                                                                         |
+| [`src/test/java/contactapp/ProjectControllerTest.java`](src/test/java/contactapp/ProjectControllerTest.java)                         | MockMvc integration tests for Project API (41 tests).                                                                             |
 | [`src/test/java/contactapp/AuthControllerTest.java`](src/test/java/contactapp/AuthControllerTest.java)                               | MockMvc integration tests for Auth API (login, register, validation errors).                                                      |
 | [`src/test/java/contactapp/ContactControllerUnitTest.java`](src/test/java/contactapp/ContactControllerUnitTest.java)                 | Unit tests for Contact controller getAll() branch coverage (mutation testing).                                                    |
 | [`src/test/java/contactapp/TaskControllerUnitTest.java`](src/test/java/contactapp/TaskControllerUnitTest.java)                       | Unit tests for Task controller getAll() branch coverage (mutation testing).                                                       |
@@ -592,19 +604,19 @@ graph TD
 - Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
 - New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
-- Combined with the existing controller/service suites and the security additions above, this brings the repo to **901 tests** on the full suite with **~83.1% mutation kills** and **~89.9% line coverage** (higher on stores/mappers; container-dependent coverage enforced on Linux only).
+- Combined with the existing controller/service suites and the security additions above, this brings the repo to **904 tests** on the full suite with **~83.1% mutation kills** and **~89.9% line coverage** (higher on stores/mappers; container-dependent coverage enforced on Linux only).
 
 #### Mutation-Focused Test Additions (+71 Tests)
 
 The following tests were added specifically to catch surviving mutants by targeting boundary conditions, comparison operators, and edge cases. Each test includes Javadoc explaining why it exists and what mutation it prevents:
 
-| Test File | +Tests | Focus Areas |
-|-----------|--------|-------------|
-| `ValidationTest.java` | +14 | Length boundaries (`<` vs `<=`), digit validation (`!=` operator), date millisecond precision, email max length (100 vs 101 chars), blank vs empty string handling |
-| `ContactTest.java` | +16 | ID max length (10 vs 11), name/address boundaries, phone digit count (9/10/11), copy independence verification, atomic update semantics |
-| `TaskTest.java` | +13 | ID/name/description boundary values, min/max length validation, copy-doesn't-affect-original assertions |
-| `ProjectTest.java` | +19 | Special `minLength=0` for description, empty string after trimming, all `ProjectStatus` enum values, whitespace trimming edge cases |
-| `JwtServiceTest.java` | +9 | Token expiration at exact boundary (1ms), refresh window `<=` operator, case-sensitive username comparison, `equals()` vs `==` verification |
+| Test File             | +Tests | Focus Areas                                                                                                                                                        |
+|-----------------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ValidationTest.java` | +14    | Length boundaries (`<` vs `<=`), digit validation (`!=` operator), date millisecond precision, email max length (100 vs 101 chars), blank vs empty string handling |
+| `ContactTest.java`    | +16    | ID max length (10 vs 11), name/address boundaries, phone digit count (9/10/11), copy independence verification, atomic update semantics                            |
+| `TaskTest.java`       | +13    | ID/name/description boundary values, min/max length validation, copy-doesn't-affect-original assertions                                                            |
+| `ProjectTest.java`    | +19    | Special `minLength=0` for description, empty string after trimming, all `ProjectStatus` enum values, whitespace trimming edge cases                                |
+| `JwtServiceTest.java` | +9     | Token expiration at exact boundary (1ms), refresh window `<=` operator, case-sensitive username comparison, `equals()` vs `==` verification                        |
 
 **Mutation patterns targeted:**
 - Comparison operators: `<` ↔ `<=`, `>` ↔ `>=`, `==` ↔ `!=`
@@ -924,6 +936,12 @@ graph TD
 
 Phase 5 delivered the following foundational pieces and they remain the backbone of the security stack:
 
+**Password Hashing (ADR-0018)**: BCrypt (Spring Security's `BCryptPasswordEncoder`) selected for portability across CI/dev/prod environments and existing FIPS-validated implementations. Argon2 remains the long-term goal for memory-hard hashing; migration strategy includes `algorithm` column for dual-algorithm support with transparent rehashing on login.
+
+**Authentication Evolution (ADR-0043)**: Migrated from localStorage (XSS vulnerability FRONTEND-SEC-01) to HttpOnly `auth_token` cookies. Migration timeline: dual support opened 2025-12-05, enforcement date 2026-01-05 when Authorization header will be rejected. Rollback available via `LEGACY_TOKEN_ALLOWED=true` feature flag.
+
+**CSRF Protection**: Double-submit cookie pattern via `SpaCsrfTokenRequestHandler` sets `XSRF-TOKEN` cookie with `SameSite=Lax` attribute. Frontend reads cookie value and sends it in `X-XSRF-TOKEN` header for state-changing requests.
+
 ### [User.java](src/main/java/contactapp/security/User.java) / [UserTest.java](src/test/java/contactapp/security/UserTest.java)
 
 #### Entity Snapshot
@@ -1012,14 +1030,14 @@ graph TD
 | `/api/auth/logout` | POST | Invalidate session | 204 No Content | - |
 
 ### Auth HTTP Status Codes
-| Status | Meaning | When Used |
-|--------|---------|-----------|
-| 200 | OK | Login successful |
-| 201 | Created | Registration successful |
-| 204 | No Content | Logout successful |
-| 400 | Bad Request | Validation error (blank/invalid fields) |
-| 401 | Unauthorized | Invalid credentials (login only) |
-| 409 | Conflict | Username or email already exists (register only) |
+| Status | Meaning      | When Used                                        |
+|--------|--------------|--------------------------------------------------|
+| 200    | OK           | Login successful                                 |
+| 201    | Created      | Registration successful                          |
+| 204    | No Content   | Logout successful                                |
+| 400    | Bad Request  | Validation error (blank/invalid fields)          |
+| 401    | Unauthorized | Invalid credentials (login only)                 |
+| 409    | Conflict     | Username or email already exists (register only) |
 
 ### Role-Based Access Control
 - Controllers annotated with `@PreAuthorize("hasAnyRole('USER', 'ADMIN')")` require authenticated users.
@@ -1225,15 +1243,15 @@ Request → CorrelationIdFilter(1) → RateLimitingFilter(5) → RequestLoggingF
 | Projects     | `/api/v1/projects`     | `/api/v1/projects`, `/api/v1/projects/{id}`         | `/api/v1/projects/{id}`     | `/api/v1/projects/{id}`     |
 
 ### Query Parameters (Filtering)
-| Endpoint | Parameter | Description | Example |
-|----------|-----------|-------------|---------|
-| `GET /api/v1/tasks` | `?projectId={id}` | Filter tasks by project | `/api/v1/tasks?projectId=PROJ001` |
-| `GET /api/v1/tasks` | `?projectId=none` | Get unassigned tasks | `/api/v1/tasks?projectId=none` |
-| `GET /api/v1/tasks` | `?assigneeId={userId}` | Filter tasks by assignee | `/api/v1/tasks?assigneeId=123` |
-| `GET /api/v1/tasks` | `?status={status}` | Filter tasks by status | `/api/v1/tasks?status=TODO` |
-| `GET /api/v1/appointments` | `?taskId={id}` | Filter appointments by task | `/api/v1/appointments?taskId=TASK001` |
-| `GET /api/v1/appointments` | `?projectId={id}` | Filter appointments by project | `/api/v1/appointments?projectId=PROJ001` |
-| `GET /api/v1/projects` | `?status={status}` | Filter projects by status | `/api/v1/projects?status=ACTIVE` |
+| Endpoint                   | Parameter              | Description                    | Example                                  |
+|----------------------------|------------------------|--------------------------------|------------------------------------------|
+| `GET /api/v1/tasks`        | `?projectId={id}`      | Filter tasks by project        | `/api/v1/tasks?projectId=PROJ001`        |
+| `GET /api/v1/tasks`        | `?projectId=none`      | Get unassigned tasks           | `/api/v1/tasks?projectId=none`           |
+| `GET /api/v1/tasks`        | `?assigneeId={userId}` | Filter tasks by assignee       | `/api/v1/tasks?assigneeId=123`           |
+| `GET /api/v1/tasks`        | `?status={status}`     | Filter tasks by status         | `/api/v1/tasks?status=TODO`              |
+| `GET /api/v1/appointments` | `?taskId={id}`         | Filter appointments by task    | `/api/v1/appointments?taskId=TASK001`    |
+| `GET /api/v1/appointments` | `?projectId={id}`      | Filter appointments by project | `/api/v1/appointments?projectId=PROJ001` |
+| `GET /api/v1/projects`     | `?status={status}`     | Filter projects by status      | `/api/v1/projects?status=ACTIVE`         |
 
 ### HTTP Status Codes
 | Status | Meaning      | When Used                                                                                                                      |
@@ -1267,7 +1285,7 @@ flowchart TD
 ### Controller Tests (MockMvc)
 - **ContactControllerTest** (32 tests): 21 @Test + 11-case @ParameterizedTest covering CRUD, validation errors, boundary tests, 404/409 scenarios.
 - **TaskControllerTest** (41 tests): 35 @Test + 6-case @ParameterizedTest covering CRUD, validation errors, status/dueDate/projectId fields, boundary tests, 404/409 scenarios.
-- **AppointmentControllerTest** (22 tests): 18 @Test + 4-case @ParameterizedTest covering date validation, past-date rejection, ISO 8601 format handling.
+- **AppointmentControllerTest** (23 tests): 19 @Test + 4-case @ParameterizedTest covering date validation, past-date rejection, ISO 8601 format handling.
 - **GlobalExceptionHandlerTest** (6 tests): Direct unit tests for exception handler methods (`handleIllegalArgument`, `handleNotFound`, `handleDuplicate`, `handleConstraintViolation`, `handleAccessDenied`).
 - **CustomErrorControllerTest** (17 tests): 12 @Test + 5-row CSV @ParameterizedTest for container-level error handling (status codes, JSON content type, message mapping).
 - **JsonErrorReportValveTest** (17 tests): Unit tests for Tomcat valve JSON error handling (Content-Length, buffer reset, committed response guards).
@@ -1350,11 +1368,11 @@ flowchart TD
 - **Sheet**: Right-hand drawer for viewing/editing entity details without losing list context.
 
 ### Responsive Breakpoints
-| Breakpoint | Sidebar | Navigation | Drawer |
-|------------|---------|------------|--------|
-| Desktop (≥1024px) | Full width with labels | Left sidebar | Right sheet |
-| Tablet (768-1023px) | Icons only | Left sidebar (narrow) | Right sheet |
-| Mobile (<768px) | Hidden | Bottom nav (future) | Full-screen sheet |
+| Breakpoint          | Sidebar                | Navigation            | Drawer            |
+|---------------------|------------------------|-----------------------|-------------------|
+| Desktop (≥1024px)   | Full width with labels | Left sidebar          | Right sheet       |
+| Tablet (768-1023px) | Icons only             | Left sidebar (narrow) | Right sheet       |
+| Mobile (<768px)     | Hidden                 | Bottom nav (future)   | Full-screen sheet |
 
 ### Theme System
 - **5 professional themes**: Slate (default), Ocean (fintech), Forest (productivity), Violet (startup), Zinc (developer tools).
@@ -1589,6 +1607,24 @@ management:
 
 <br>
 
+## Testing Philosophy & Strategy (ADR-0031, ADR-0048)
+
+### Testcontainers Singleton Pattern (ADR-0048)
+
+Tests use a **single static PostgreSQL container** for the entire test suite (not per-class containers). Avoids the "48x slowdown" bug where `@Testcontainers/@Container` annotations create NEW containers for EACH test class, but Spring Boot's test context caching REUSES the same ApplicationContext (and HikariCP connection pool) across test classes, causing port mismatches between containers and cached connection pools.
+
+**Pattern** (`PostgresContainerSupport.java`):
+```java
+@ServiceConnection
+protected static final PostgreSQLContainer<?> postgres;
+static {
+    postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    postgres.start();
+}
+```
+
+**Result**: Tests complete in ~15 seconds instead of 12+ minutes (48x speedup). Aligns with Spring Boot test context caching for consistent performance.
+
 ## Static Analysis & Quality Gates
 
 | Layer               | Tool                       | Focus                                                                                |
@@ -1603,7 +1639,30 @@ management:
 Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pipelines.
 - Dependabot runs every Monday at 15:30 ET against the Maven ecosystem and automatically opens PRs for available dependency upgrades.
 
+### Testcontainers Strategy (ADR-0048)
+
+Tests use a **single static PostgreSQL container** for the entire test suite. Spring Boot caches the ApplicationContext (and its HikariCP connection pool) across test classes with identical `@SpringBootTest` configuration. Per-class containers would create new containers on different ports, but the cached connection pool would still point to the first container's port, causing connection timeouts. Static singleton container uses the same port throughout the test suite.
+
+**Pattern** (`PostgresContainerSupport.java`):
+```java
+@ServiceConnection
+protected static final PostgreSQLContainer<?> postgres;
+static {
+    postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    postgres.start();
+}
+```
+
+**Result**: Aligns container lifecycle with Spring Boot test context caching to prevent connection pool port mismatches.
+
 ## Mutation Testing & Quality Gates
+
+**Why mutation testing matters**: Line coverage (JaCoCo) shows what code executes, not whether tests catch bugs. A test that runs code but never asserts anything still counts as "covered". Mutation testing proves tests actually work by injecting faults and verifying tests fail.
+
+**Value for AI-assisted development**: When using AI tools to generate tests, mutation testing validates the AI didn't just write tests that execute code without meaningful assertions. ~83% mutation score means tests catch 83% of injected bugs.
+
+**Enforcement**: PITest runs in `mvn verify` with 70% threshold. Mutations that survive indicate missing or weak assertions.
+
 - PITest runs inside `mvn verify`, so the new service tests contribute directly to the enforced mutation score.
 - The GitHub Actions matrix uses the same suite, ensuring duplicate/add/delete/update scenarios stay green across OS/JDK combinations.
 - GitHub Actions still executes `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` with `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`, so mutation coverage is enforced everywhere.
@@ -1678,13 +1737,13 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ## CI/CD Pipeline
 
 ### Jobs at a Glance
-| Job                 | Trigger                                                                             | What it does                                                                                                                                                                                                 | Notes                                                                                                      |
-|---------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| Job                 | Trigger                                                                             | What it does                                                                                                                                                                                                                                                                                                                                                                                                             | Notes                                                                                                      |
+|---------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | `build-test`        | Push/PR to main/master, release, manual dispatch                                    | Matrix `{ubuntu, windows} × {JDK 17, 21}` running `mvn verify` (tests + Checkstyle + SpotBugs + JaCoCo + PITest + Dependency-Check), builds QA dashboard, posts QA summary, uploads reports, Codecov upload. **Note:** Ubuntu runners explicitly run `-DskipITs=false` while Windows runners skip Testcontainers integration tests (`-DskipITs=true`) because GitHub-hosted Windows runners cannot run Linux containers. | Retries `mvn verify` with Dependency-Check/PITest skipped if the first attempt fails due to feed/timeouts. |
-| `api-fuzz`          | Push/PR to main/master, manual dispatch                                             | Starts Spring Boot app, runs Schemathesis against `/v3/api-docs`, exports OpenAPI spec, publishes JUnit XML results. Fails on 5xx errors or schema violations.                                               | 20-minute timeout; exports spec as artifact for ZAP.                                                       |
-| `container-test`    | Always (needs `build-test`)                                                         | Re-runs `mvn verify` inside `maven:3.9.9-eclipse-temurin-17` using the H2/`-DskipTestcontainersTests=true` profile (no Docker socket available); retries with Dependency-Check/PITest skipped on failure.     | Uses same MAVEN_OPTS for PIT attach; skips Testcontainers suites by design.                                |
-| `mutation-test`     | Only when repo var `RUN_SELF_HOSTED == 'true'` and a `self-hosted` runner is online | Runs `mvn verify` on the self-hosted runner with PITest enabled; retries with Dependency-Check/PITest skipped on failure.                                                                                    | Optional lane; skipped otherwise.                                                                          |
-| `release-artifacts` | Release event (`published`)                                                         | Packages the JAR and uploads it as an artifact; generates release notes.                                                                                                                                     | Not run on normal pushes/PRs.                                                                              |
+| `api-fuzz`          | Push/PR to main/master, manual dispatch                                             | Starts Spring Boot app, runs Schemathesis against `/v3/api-docs`, exports OpenAPI spec, publishes JUnit XML results. Fails on 5xx errors or schema violations.                                                                                                                                                                                                                                                           | 20-minute timeout; exports spec as artifact for ZAP.                                                       |
+| `container-test`    | Always (needs `build-test`)                                                         | Re-runs `mvn verify` inside `maven:3.9.9-eclipse-temurin-17` using the H2/`-DskipTestcontainersTests=true` profile (no Docker socket available); retries with Dependency-Check/PITest skipped on failure.                                                                                                                                                                                                                | Uses same MAVEN_OPTS for PIT attach; skips Testcontainers suites by design.                                |
+| `mutation-test`     | Only when repo var `RUN_SELF_HOSTED == 'true'` and a `self-hosted` runner is online | Runs `mvn verify` on the self-hosted runner with PITest enabled; retries with Dependency-Check/PITest skipped on failure.                                                                                                                                                                                                                                                                                                | Optional lane; skipped otherwise.                                                                          |
+| `release-artifacts` | Release event (`published`)                                                         | Packages the JAR and uploads it as an artifact; generates release notes.                                                                                                                                                                                                                                                                                                                                                 | Not run on normal pushes/PRs.                                                                              |
 
 ### Local Command Cheat Sheet
 | Command                                                                 | Purpose                                                                                  |
@@ -1704,6 +1763,11 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - `container-test` reruns `mvn verify` inside `maven:3.9.9-eclipse-temurin-17` **with `-DskipTestcontainersTests=true -Pskip-testcontainers`** (H2 only; no Docker socket); if quality gates fail, it retries with Dependency-Check and PITest skipped.
 
 ### Quality Gate Behavior
+
+**Sequential execution** (`forkCount=1` in pom.xml): Required because singleton services share state across test classes. Spring Boot test context caching reuses ApplicationContext instances, and `@Isolated` tests need sequential execution to avoid collisions when clearing shared state (SecurityContext, seed users, singleton instances).
+
+**Profile strategy**: Linux CI runs full suite with Testcontainers/Postgres; Windows CI uses `skip-testcontainers` profile on H2 (no Docker) with reduced JaCoCo threshold (75% vs 80%); legacy `getInstance()` suites tagged `legacy-singleton` run separately via `mvn test -Plegacy-singleton`.
+
 - Each matrix job executes the quality gate suite (unit tests, JaCoCo, Checkstyle, SpotBugs, Dependency-Check, PITest). Integration tests run only on Ubuntu (see Matrix Verification above).
 - Checkstyle enforces formatting/import/indentation rules while SpotBugs scans bytecode for bug patterns and fails the build on findings.
 - SpotBugs runs as part of every `mvn verify` run on the supported JDKs (currently 17 and 21 in CI) and fails the build on findings.
@@ -1804,7 +1868,7 @@ graph TD
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow's "Summary" tab and look for the "QA Metrics" section for the latest numbers.
 
 **Current Test Metrics (full Linux matrix):**
-- 901 test executions (parameterized) with +44 TaskService tests covering query methods, user isolation, and defensive copies
+- 904 test executions (parameterized) with +44 TaskService tests covering query methods, user isolation, and defensive copies
 - +71 mutation-focused tests targeting boundary conditions and comparison operators
 - ~83.1% mutation kill rate (PIT) and ~89.9% line coverage overall (higher on stores/mappers)
 - All domain entities have comprehensive boundary testing

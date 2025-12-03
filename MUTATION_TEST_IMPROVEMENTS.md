@@ -2,28 +2,34 @@
 
 **Date**: 2025-12-02
 **Purpose**: Document targeted tests added to kill surviving PITest mutations
-**Baseline**: 71% mutation coverage, 783 killed out of 1109 mutations, 76 SURVIVED
+**Baseline**: 71% mutation coverage (H2/Windows), 783 killed out of 1109 mutations, 76 SURVIVED
+**After Fix**: 72% mutation coverage, 793 killed, 67 survived (+10 kills, -9 survived)
 
 ---
 
 ## Summary of Changes
 
-Added **19 new mutation-killing tests** across service layer test files, specifically targeting VoidMethodCallMutator and validation-related mutations that were surviving.
+Added **17 new mutation-killing tests** in dedicated test files that run in the main CI pipeline (not tagged with `@Tag("legacy-singleton")`), specifically targeting VoidMethodCallMutator and validation-related mutations that were surviving in the H2/in-memory code path.
+
+### Root Cause of Initial Failure
+
+The first attempt added 19 tests to `TaskServiceTest.java` and `ProjectServiceTest.java`, but these files are tagged with `@Tag("legacy-singleton")` which Maven excludes from the default test run via `<excludedGroups>legacy-singleton</excludedGroups>` in pom.xml. PITest only runs tests that execute during `mvn test`, so these tests were invisible to mutation testing.
+
+**Solution**: Created new test files WITHOUT the legacy-singleton tag that use `InMemoryTaskStore` and `InMemoryProjectStore` directly.
 
 ### Tests Added by File
 
-#### 1. TaskServiceTest.java (+9 tests)
-**File**: `src/test/java/contactapp/service/TaskServiceTest.java`
-**Lines**: 1050-1165
+#### 1. TaskServiceValidationTest.java (+8 tests) ✅
+**File**: `src/test/java/contactapp/service/TaskServiceValidationTest.java`
+**Status**: ✅ Runs in main pipeline, NOT tagged with `@Tag("legacy-singleton")`
 
-**Mutations Targeted**:
-- Line 191: `deleteTask()` validation (VoidMethodCallMutator)
-- Line 216: `updateTask()` validation (VoidMethodCallMutator)
-- Line 419: `getTaskById()` validation (VoidMethodCallMutator)
-- Line 574: `clearAllTasks()` store interaction (VoidMethodCallMutator)
-- Line 168: `addTask()` boolean return (BooleanTrueReturnValsMutator)
+**Mutations Targeted and KILLED**:
+- ✅ Line 191: `deleteTask()` validation (VoidMethodCallMutator) - KILLED by `testDeleteTaskEmptyStringAfterTrimThrows()`
+- ✅ Line 216: `updateTask()` validation (VoidMethodCallMutator) - KILLED by `testUpdateTaskNullIdThrowsIllegalArgumentException()`
+- ✅ Line 419: `getTaskById()` validation (VoidMethodCallMutator) - KILLED by `testGetTaskByIdBlankAfterTrimThrows()`
+- ✅ Line 574: `clearAllTasks()` store interaction (VoidMethodCallMutator) - KILLED by `testClearAllTasksActuallyDeletesData()`
 
-**New Tests**:
+**Tests**:
 1. `testDeleteTaskNullIdThrowsIllegalArgumentException()` - Ensures deleteTask throws IAE for null, not NPE
 2. `testUpdateTaskNullIdThrowsIllegalArgumentException()` - Ensures updateTask validation runs
 3. `testGetTaskByIdNullIdThrowsIllegalArgumentException()` - Ensures getTaskById validation runs
@@ -33,22 +39,20 @@ Added **19 new mutation-killing tests** across service layer test files, specifi
 7. `testUpdateTaskWhitespaceOnlyIdThrows()` - Boundary test for whitespace
 8. `testGetTaskByIdBlankAfterTrimThrows()` - Boundary test for trim edge cases
 
-**Key Strategy**: Use `.isExactlyInstanceOf(IllegalArgumentException.class)` instead of `.isInstanceOf()` to ensure the exact exception type is thrown, not a subclass or different exception.
-
 ---
 
-#### 2. ProjectServiceTest.java (+10 tests)
-**File**: `src/test/java/contactapp/service/ProjectServiceTest.java`
-**Lines**: 728-852
+#### 2. ProjectServiceValidationTest.java (+9 tests) ✅
+**File**: `src/test/java/contactapp/service/ProjectServiceValidationTest.java`
+**Status**: ✅ Runs in main pipeline, NOT tagged with `@Tag("legacy-singleton")`
 
-**Mutations Targeted**:
-- Line 373: `getProjectById()` validation (VoidMethodCallMutator)
-- Line 435, 436: `addContactToProject()` dual validation (VoidMethodCallMutator)
-- Line 524: `getProjectContacts()` validation (VoidMethodCallMutator)
-- Line 556: `getContactProjects()` validation (VoidMethodCallMutator)
-- Line 414: `clearAllProjects()` store interaction (VoidMethodCallMutator)
+**Mutations Targeted and KILLED**:
+- ✅ Line 373: `getProjectById()` validation (VoidMethodCallMutator) - KILLED by `testGetProjectByIdNullIdThrowsIllegalArgumentException()`
+- ✅ Line 435: `addContactToProject()` projectId validation (VoidMethodCallMutator) - KILLED by `testAddContactToProjectWhitespaceProjectIdThrows()`
+- ✅ Line 436: `addContactToProject()` contactId validation (VoidMethodCallMutator) - KILLED by `testAddContactToProjectWhitespaceContactIdThrows()`
+- ✅ Line 524: `getProjectContacts()` validation (VoidMethodCallMutator) - KILLED by `testGetProjectContactsNullIdThrows()`
+- ✅ Line 556: `getContactProjects()` validation (VoidMethodCallMutator) - KILLED by `testGetContactProjectsNullIdThrows()`
 
-**New Tests**:
+**Tests**:
 1. `testGetProjectByIdNullIdThrowsIllegalArgumentException()` - Null validation
 2. `testGetProjectByIdWhitespaceOnlyIdThrows()` - Whitespace boundary test
 3. `testAddContactToProjectNullProjectIdThrows()` - First parameter validation
@@ -58,8 +62,6 @@ Added **19 new mutation-killing tests** across service layer test files, specifi
 7. `testClearAllProjectsActuallyDeletesData()` - Verifies store.deleteAll() called
 8. `testAddContactToProjectWhitespaceProjectIdThrows()` - Boundary test
 9. `testAddContactToProjectWhitespaceContactIdThrows()` - Boundary test
-
-**Key Strategy**: Test validation for BOTH parameters in methods like `addContactToProject(projectId, contactId)` to kill both VoidMethodCallMutator mutations.
 
 ---
 

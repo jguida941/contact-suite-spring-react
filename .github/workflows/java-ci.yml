@@ -305,6 +305,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+      JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -341,9 +344,6 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Start application with docker compose
-        env:
-          POSTGRES_PASSWORD: test_password_123
-          JWT_SECRET: test_jwt_secret_minimum_32_characters_long_for_hs512
         run: |
           # Create a minimal docker-compose override for testing
           cat > docker-compose.test.yml << 'EOF'
