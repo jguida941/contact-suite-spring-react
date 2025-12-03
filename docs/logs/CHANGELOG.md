@@ -6,6 +6,25 @@ All notable changes to this project will be documented here. Follow the
 ## [Unreleased]
 
 ### Changed
+- **README Cleanup and Reorganization (2025-12-03)**:
+  - Fixed stale metrics: 904→930 tests, ~83→84% mutation coverage, ~89.9→90% line coverage
+  - Removed duplicate sections: React UI Highlights merged into React UI Layer Phase 4, duplicate Testcontainers Strategy removed
+  - Condensed verbose Phase 5 Security and ADR-0045 summaries into brief "Key Capabilities" section with links
+  - Fixed broken ToC entry for removed React UI Highlights section
+  - Added PROJECT_SUMMARY.md with comprehensive project metrics and quick reference
+
+### Fixed
+- **docs/CI-CD Link Case Sensitivity (2025-12-03)**:
+  - Fixed `docs/ci-cd` → `docs/CI-CD` in README, REQUIREMENTS.md, ADR-0043, docs-structure-notes.md
+  - Git tracks directory as `CI-CD` (uppercase) but macOS shows `ci-cd` due to case-insensitive filesystem
+
+### Added
+- **Design Notes Reference Documentation (2025-12-03)**:
+  - Added 7 design notes extracted from README to `docs/design-notes/notes/`
+  - Includes: ci-cd-operations-notes, testing-strategy-notes, and others
+  - Keeps README focused while preserving detailed operational knowledge
+
+### Changed
 - **Test profile split for legacy/singleton coverage (2025-12-02)**:
   - Main CI (Linux) continues to run the full suite with Testcontainers/Postgres and JaCoCo gates.
   - Windows/`skip-testcontainers` profile now runs service/controller suites on H2 (no Docker) to keep coverage meaningful on that runner; only `**/*IT.java` remain excluded.
