@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.Optional;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
@@ -218,13 +219,10 @@ public class TokenFingerprintService {
 
     /**
      * Converts a byte array to a lowercase hex string.
+     * Uses Java 17+ HexFormat to avoid potential integer overflow (CodeQL CWE-190).
      */
     private String bytesToHex(final byte[] bytes) {
-        final StringBuilder hex = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            hex.append(String.format("%02x", b));
-        }
-        return hex.toString();
+        return HexFormat.of().formatHex(bytes);
     }
 
     /**
