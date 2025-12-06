@@ -324,23 +324,40 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     /**
      * Logs rate limit exceeded warning with fully sanitized key and path.
      *
-     * <p>Full validation is inlined so CodeQL can trace the data flow while
-     * maintaining security: CR/LF stripping, whitelist pattern, length limit.
+     * <p>Sanitization is inlined so CodeQL can trace the data flow (CWE-117):
+     * CR/LF stripping, whitelist pattern validation, and length limit.
      *
      * @param key the rate limit key (IP or username)
      * @param path the request path
      */
     private void logRateLimitExceeded(final String key, final String path) {
-        final String safeKey = sanitizeForWarningLog(key);
-        final String safePath = sanitizeForWarningLog(path);
+        // Inline sanitization for CodeQL CWE-117 traceability
+        final String safeKey = sanitizeForLog(key);
+        final String safePath = sanitizeForLog(path);
         logger.warn("Rate limit exceeded for key: {} on path: {}", safeKey, safePath);
     }
 
     /**
-     * Sanitizes a value for warning-level logging using the shared validator.
+     * Sanitizes a value for logging with explicit newline removal.
+     * Inlined logic ensures CodeQL can trace data flow (CWE-117).
      */
-    private String sanitizeForWarningLog(final String value) {
-        return getSafeLogValue(value);
+    private String sanitizeForLog(final String value) {
+        if (value == null) {
+            return "[null]";
+        }
+        // Explicit CR/LF removal for CodeQL CWE-117 compliance
+        final String noNewlines = value.replace("\r", "").replace("\n", "");
+        final String trimmed = noNewlines.trim();
+        if (trimmed.isEmpty()) {
+            return "[empty]";
+        }
+        if (!SAFE_LOG_PATTERN.matcher(trimmed).matches()) {
+            return "[unsafe-value]";
+        }
+        if (trimmed.length() > MAX_LOG_LENGTH) {
+            return trimmed.substring(0, MAX_LOG_LENGTH) + "...";
+        }
+        return trimmed;
     }
 
 }
