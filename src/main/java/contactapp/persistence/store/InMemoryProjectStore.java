@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.dao.DataIntegrityViolationException;
 
 /**
  * Simple in-memory store used when {@link contactapp.service.ProjectService#getInstance()}
@@ -35,10 +34,8 @@ public class InMemoryProjectStore implements ProjectStore {
         }
         final Project copy = Optional.ofNullable(aggregate.copy())
                 .orElseThrow(() -> new IllegalStateException("project copy must not be null"));
-        final Project existing = database.putIfAbsent(projectId, copy);
-        if (existing != null) {
-            throw new DataIntegrityViolationException("Project with id '" + projectId + "' already exists");
-        }
+        // Use put() for upsert semantics - uniqueness enforced at service layer via existsById()
+        database.put(projectId, copy);
     }
 
     @Override

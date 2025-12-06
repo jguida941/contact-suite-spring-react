@@ -14,9 +14,9 @@ File: docs/design-notes/notes/contact-service-storage-notes.md
 - `ContactService` is a singleton accessed via `getInstance()` or Spring DI.
 - Uses a static `ConcurrentHashMap<String, Contact>` so both access paths share the same data.
 - Service API:
-    - `addContact(Contact)` uses `putIfAbsent` to enforce unique IDs and returns `boolean`.
+    - `addContact(Contact)` checks `existsById()` then calls `save()` (upsert via `put`), returning `boolean`.
     - `deleteContact(String id)` validates the id then calls `remove`, returning `boolean`.
-    - `updateContact(String id, ...)` uses `computeIfPresent` for thread-safe atomic lookup + update, then delegates to `Contact.update(...)` so validation stays centralized.
+    - `updateContact(String id, ...)` retrieves the contact, delegates to `Contact.update(...)` for validation, then calls `save()` to persist.
     - `getDatabase()` returns defensive copies of each Contact (via `copy()`) in an unmodifiable map, preventing external mutation of internal state.
     - `clearAllContacts()` wipes the store so tests can reset between runs.
 
@@ -25,15 +25,15 @@ File: docs/design-notes/notes/contact-service-storage-notes.md
 - Acts like a normal `HashMap` but allows concurrent access without explicit locking for get/put/remove.
 - O(1) average time for add/update/delete operations.
 
-### Why `putIfAbsent`
-- Combines the uniqueness check and insert into one atomic call.
-- If the id is new, it inserts and returns `null`, so we know the add succeeded.
-- If the id exists, it leaves the map untouched and we return `false`.
+### Why `put()` with service-level uniqueness check
+- The store's `save()` method uses `put()` for upsert semantics (create or update).
+- Uniqueness for ADD operations is enforced at the service layer via `existsById()` before calling `save()`.
+- This separation allows the same `save()` method to handle both creates and updates, which is required when the service calls `save()` after modifying an existing entity.
 
-### Why `computeIfPresent` for updates
-- Using `get()` followed by `update()` creates a race condition window where another thread could delete the entry between the two calls.
-- `computeIfPresent` performs the lookup and update as a single atomic operation inside the map's internal locking.
-- Matches the pattern used by `AppointmentService` for consistency across all services.
+### Why service-layer orchestration for updates
+- The service retrieves the entity, applies changes via domain methods, then persists via `save()`.
+- This pattern matches the JPA store behavior where `save()` handles both new and existing entities.
+- Keeps validation logic centralized in the domain layer (`Contact.update()`).
 
 ### Why defensive copies and `clearAllContacts`
 - If `getDatabase()` returned the real `database` or just a shallow `Map.copyOf`, a caller could mutate the Contact objects and bypass the service API rules.

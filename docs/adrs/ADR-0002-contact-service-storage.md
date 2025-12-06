@@ -14,7 +14,7 @@
 ## Decision
 - Implement `ContactService` as a lazily constructed singleton exposed through `getInstance()` and Spring DI, guaranteeing a single shared store for the application.
 - Back the store with a static `ConcurrentHashMap<String, Contact>` so all access paths share the same data and put/get/remove operations are thread-safe and O(1) on average.
-- Use `database.putIfAbsent` to enforce uniqueness atomically, `database.remove` for deletes, and direct lookups for updates.
+- Use `database.put` for upsert semantics (uniqueness enforced at service layer via `existsById()`), `database.remove` for deletes, and direct lookups for reads.
 - Expose an unmodifiable snapshot of defensive copies (via `Contact.copy()`) in `getDatabase()` so tests can observe state without mutating internal objects, and provide `clearAllContacts()` for cleanup.
 - Normalize identifiers before any map operation so callers can pass whitespace-only variants (e.g., `" 123 "`) and still target the stored `"123"` entry; blank ids throw `IllegalArgumentException` consistently across add/delete/update.
 

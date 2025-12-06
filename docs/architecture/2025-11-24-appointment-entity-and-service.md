@@ -20,7 +20,7 @@ Key points:
 - Appointment fields enforce the requirements: trimmed, immutable `appointmentId` (1–10 chars); description required, ≤50 chars; `appointmentDate` required, not in the past, validated via `Validation.validateNotBlank` + `validateLength` + `validateDateNotPast`.
 - Dates are stored/returned as defensive copies to prevent external mutation.
 - `Appointment.update(...)` validates both inputs before assigning so invalid inputs leave state unchanged; defensive copies live in one place.
-- `AppointmentService` is a lazy singleton backed by `ConcurrentHashMap`, using `putIfAbsent` for uniqueness and trimming IDs on add/delete/update, and delegating field rules to `Appointment.update(...)` via `computeIfPresent` to avoid get-then-mutate races. `getDatabase()` returns a copy built by `Appointment.copy()` (which reuses the public constructor after validating the source); `clearAllAppointments()` resets state for tests.
+- `AppointmentService` is a lazy singleton backed by `ConcurrentHashMap`, using `existsById()` for uniqueness checks and `save()` (upsert via `put`) for persistence, trimming IDs on add/delete/update, and delegating field rules to `Appointment.update(...)`. `getDatabase()` returns a copy built by `Appointment.copy()` (which reuses the public constructor after validating the source); `clearAllAppointments()` resets state for tests.
 - Tests cover singleton reuse, add/duplicate/null add, delete success/blank/missing, update success/blank/missing/trimmed IDs, clear-all, and domain validation (null/past dates, description limits, defensive date copies). Test dates are relative (no stale hard-coded years).
 
 ## Definition of Done

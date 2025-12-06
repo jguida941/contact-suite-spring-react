@@ -45,7 +45,7 @@ Key points:
 - Design `TaskService` mirroring `ContactService`:
   - Singleton with lazy-loaded `getInstance`.
   - Backing store `ConcurrentHashMap<String, Task>` for add/update/delete.
-  - `addTask(Task)` enforces unique IDs via `putIfAbsent`.
+  - `addTask(Task)` enforces unique IDs via `existsById()` check, then `save()` (upsert via `put`).
   - `deleteTask(String taskId)` validates input then removes entry.
   - `updateTask(String taskId, String name, String description)` delegates to the Task instance and returns success boolean.
   - Provide `getDatabase()` (defensive copies via `Task.copy()`) and `clearAllTasks()` to aid testing and isolation.
