@@ -312,6 +312,8 @@ jobs:
 
   docker-build:
     needs: build-test
+    # Skip for Dependabot PRs - secrets are not available for security reasons
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read

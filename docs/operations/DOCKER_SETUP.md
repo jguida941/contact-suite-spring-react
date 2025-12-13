@@ -368,7 +368,7 @@ scrape_configs:
 ### Grafana Dashboard
 
 Import the Spring Boot dashboard:
-- Dashboard ID: 4701 (Spring Boot 2.x)
+- Dashboard ID: 19004 (Spring Boot 3.x/4.x Statistics)
 - Data source: Prometheus
 
 ### Custom Metrics

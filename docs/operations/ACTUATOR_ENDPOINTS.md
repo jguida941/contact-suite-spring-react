@@ -422,7 +422,7 @@ public class ActuatorSecurityConfig {
 
 ### Recommended Dashboards
 
-1. **Spring Boot 2.x Statistics** (ID: 4701)
+1. **Spring Boot 3.x/4.x Statistics** (ID: 19004)
    - JVM memory, GC, threads
    - HTTP request metrics
    - Database connection pool
@@ -435,7 +435,7 @@ public class ActuatorSecurityConfig {
 ### Import Dashboard
 
 1. Open Grafana → Dashboards → Import
-2. Enter dashboard ID: `4701`
+2. Enter dashboard ID: `19004`
 3. Select Prometheus data source
 4. Import
 

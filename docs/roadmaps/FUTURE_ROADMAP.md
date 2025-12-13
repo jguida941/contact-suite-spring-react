@@ -36,7 +36,7 @@
 
 | Category     | Implementation                                              |
 |--------------|-------------------------------------------------------------|
-| **Backend**  | Spring Boot 3.4, Spring Security 7, JPA/Hibernate           |
+| **Backend**  | Spring Boot 4.0, Spring Security 7, JPA/Hibernate           |
 | **Frontend** | React 19, Vite 7, Tailwind v4, shadcn/ui, TanStack Query    |
 | **Database** | PostgreSQL + Flyway (17 migrations)                         |
 | **Testing**  | 1107 tests, 84% mutation coverage, E2E with Playwright      |
