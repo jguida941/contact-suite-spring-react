@@ -131,7 +131,7 @@ git push origin main
 | Test Executions | 1107 |
 | Line Coverage | 90% (80% enforced) |
 | Mutation Coverage | 84% (70% enforced) |
-| ADRs | 54 |
+| ADRs | 53 |
 | Flyway Migrations | 17 |
 | Quality Gates | 7 enforced |
 
@@ -141,7 +141,7 @@ git push origin main
 
 | What | File |
 |------|------|
-| Architecture Decisions | `docs/adrs/` (54 ADRs) |
+| Architecture Decisions | `docs/adrs/` (53 ADRs) |
 | Security Config | `src/main/java/contactapp/security/SecurityConfig.java` |
 | Rate Limiting | `src/main/java/contactapp/config/RateLimitingFilter.java` |
 | Domain Validation | `src/main/java/contactapp/domain/Validation.java` |
@@ -159,7 +159,7 @@ git push origin main
 2. **Two-Layer Validation** - Bean validation at API, constructor validation in domain
 3. **Mutation Testing** - Proves tests catch bugs, not just execute code
 4. **Multi-tenant Security** - Per-user data isolation, JWT in httpOnly cookies
-5. **54 ADRs** - Every major decision documented with rationale
+5. **53 ADRs** - Every major decision documented with rationale
 6. **7 Quality Gates** - Enforced in CI, no exceptions
 
 ### "What security measures are implemented?"

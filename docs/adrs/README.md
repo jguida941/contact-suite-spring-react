@@ -4,14 +4,14 @@ This directory contains all Architecture Decision Records (ADRs) for the project
 
 ## Organization
 
-- **ADR-0001 to ADR-0054**: CS320 Foundation + Production Auth + Frontend Fixes + Security Audit (Complete)
-- **ADR-0055+**: Jira-like Evolution (Future phases from [FUTURE_ROADMAP.md](../roadmaps/FUTURE_ROADMAP.md))
+- **ADR-0001 to ADR-0053**: CS320 Foundation + Production Auth + Frontend Fixes (Complete)
+- **ADR-0054+**: Jira-like Evolution (Future phases from [FUTURE_ROADMAP.md](../roadmaps/FUTURE_ROADMAP.md))
 
 ---
 
-## CS320 Foundation (ADR-0001 to ADR-0054) ✅
+## CS320 Foundation (ADR-0001 to ADR-0053) ✅
 
-All 54 foundation ADRs are **complete** and document the journey from a simple contact manager to a production-grade full-stack application with temporal data handling, production security, timezone-safe frontend, and comprehensive security hardening.
+All 53 foundation ADRs are **complete** and document the journey from a simple contact manager to a production-grade full-stack application with temporal data handling, production security, and timezone-safe frontend.
 
 ### Domain & Validation (ADR-0001 to ADR-0003)
 
@@ -130,17 +130,9 @@ All 54 foundation ADRs are **complete** and document the journey from a simple c
 
 > **Bug Fix (2025-12-06):** Fixed critical date display bug where dates shifted backwards by one day in negative UTC offset timezones. Added `dateUtils.ts` with `parseISO()` for consistent timezone handling.
 
-### Security Audit (ADR-0054)
-
-| ADR | Title | Status |
-|-----|-------|--------|
-| [ADR-0054](ADR-0054-security-audit-december-2025.md) | Security Audit Findings - December 2025 | Accepted |
-
-> **Security Hardening (2025-12-06):** Comprehensive security audit implementing JWT token IDs (JTI), fingerprint enforcement config, rate limit key prefixing, and deprecation of user-isolation-bypassing methods. ADR-0054 includes detailed CSRF configuration documentation with trade-off analysis between explicit configuration, `.spa()`, and per-cookie SameSite approaches (all equally valid).
-
 ---
 
-## Jira-like Evolution (ADR-0055+) 📋
+## Jira-like Evolution (ADR-0054+) 📋
 
 Future ADRs for evolving the application into a full project management platform. See [FUTURE_ROADMAP.md](../roadmaps/FUTURE_ROADMAP.md) for the complete roadmap.
 
@@ -148,26 +140,26 @@ Future ADRs for evolving the application into a full project management platform
 
 | ADR | Title | Phase | Status |
 |-----|-------|-------|--------|
-| ADR-0055 | Task Types (Bug, Story, Epic, Subtask) | 8 | Planned |
-| ADR-0056 | Priority Levels (P0-P4) | 8 | Planned |
-| ADR-0057 | Story Points Implementation | 8 | Planned |
-| ADR-0058 | Labels and Tags System | 8 | Planned |
+| ADR-0054 | Task Types (Bug, Story, Epic, Subtask) | 8 | Planned |
+| ADR-0055 | Priority Levels (P0-P4) | 8 | Planned |
+| ADR-0056 | Story Points Implementation | 8 | Planned |
+| ADR-0057 | Labels and Tags System | 8 | Planned |
 
 ### Phase 9: Sprint Management (Planned)
 
 | ADR | Title | Phase | Status |
 |-----|-------|-------|--------|
-| ADR-0059 | Sprint Entity Design | 9 | Planned |
-| ADR-0060 | Sprint Board UI | 9 | Planned |
-| ADR-0061 | Velocity Tracking | 9 | Planned |
+| ADR-0058 | Sprint Entity Design | 9 | Planned |
+| ADR-0059 | Sprint Board UI | 9 | Planned |
+| ADR-0060 | Velocity Tracking | 9 | Planned |
 
 ### Phase 10: Activity & Comments (Planned)
 
 | ADR | Title | Phase | Status |
 |-----|-------|-------|--------|
-| ADR-0062 | Comment System Design | 10 | Planned |
-| ADR-0063 | Activity Feed Implementation | 10 | Planned |
-| ADR-0064 | @Mentions and Notifications | 10 | Planned |
+| ADR-0061 | Comment System Design | 10 | Planned |
+| ADR-0062 | Activity Feed Implementation | 10 | Planned |
+| ADR-0063 | @Mentions and Notifications | 10 | Planned |
 
 ### Future Phases (11-17)
 

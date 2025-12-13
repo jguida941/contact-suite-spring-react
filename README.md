@@ -448,7 +448,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`docs/showcase/`](docs/showcase/)                                                                                                   | Project showcase materials for recruiters and portfolio.                                                                          |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md)                 | Task entity/service design plan with Definition of Done and phased approach.                                                      |
 | [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md)   | Appointment entity/service implementation record.                                                                                 |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                                         | Architecture Decision Record index: CS320 Foundation + Production Auth + Frontend fixes + Security Audit (ADR-0001-0054). |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                                         | Architecture Decision Record index: CS320 Foundation + Production Auth + Frontend fixes (ADR-0001-0053). |
 | [`Dockerfile`](Dockerfile)                                                                                                           | Multi-stage production Docker image (Eclipse Temurin 17, non-root user, layered JAR).                                             |
 | [`docker-compose.yml`](docker-compose.yml)                                                                                           | Production-like stack (Postgres + App + optional pgAdmin) with health checks.                                                     |
 | [`docs/operations/`](docs/operations/)                                                                                               | Operations docs: Docker setup guide, Actuator endpoints reference, deployment guides.                                             |
@@ -1114,14 +1114,12 @@ Phase 5 delivered the following foundational pieces and they remain the backbone
 - `session`: Browser flow. Fingerprinted (`fph` claim) and bound to HttpOnly fingerprint cookie. Issued by `/api/auth/login` and `/api/auth/register`; refresh rotates fingerprint via `/api/auth/refresh`.
 - `api`: Programmatic flow. No fingerprint claim or cookie requirement; intended for `Authorization: Bearer` only. Issued by `/api/auth/api-token` and rejected by the filter if a fingerprint claim is present.
 
-**Security Audit (ADR-0054)**: December 2025 comprehensive security audit with the following hardening:
+**Security Hardening** (December 2025):
 - **JWT Token IDs**: All tokens now include unique `jti` claim (UUID) for future revocation support
 - **Fingerprint Enforcement**: Set `jwt.require-fingerprint=true` in production to reject legacy tokens without fingerprint binding
 - **Rate Limit Namespacing**: User-based rate limit keys now prefixed with `API:` to prevent potential key collisions
 - **Data Isolation**: `findAll()` methods deprecated with `@Deprecated(since="1.0", forRemoval=true)` - use user-scoped alternatives
 - **Proxy Security**: Document `X-Forwarded-For` handling requirements for production reverse proxy configurations
-
-See [ADR-0054](docs/adrs/ADR-0054-security-audit-december-2025.md) for the complete security audit report and future recommendations.
 
 ### [User.java](src/main/java/contactapp/security/User.java) / [UserTest.java](src/test/java/contactapp/security/UserTest.java)
 

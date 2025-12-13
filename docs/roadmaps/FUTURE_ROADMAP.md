@@ -42,7 +42,7 @@
 | **Testing**  | 1107 tests, 84% mutation coverage, E2E with Playwright      |
 | **CI/CD**    | GitHub Actions, CodeQL, ZAP, API fuzzing, Docker            |
 | **Security** | JWT HttpOnly cookies, CSRF, rate limiting, refresh tokens   |
-| **Docs**     | 54 ADRs, threat model, design notes                         |
+| **Docs**     | 53 ADRs, threat model, design notes                         |
 | **Theming**  | 5 color themes, dark/light mode, CSS variables              |
 
 ---
@@ -2247,4 +2247,4 @@ Week 7-8:   Phase 11 (Kanban Board) + UI-3 (Advanced Frontend)
 
 ---
 
-*This roadmap builds on the solid foundation of 54 ADRs, 1107 tests, production-grade auth (ADR-0052), and enterprise CI/CD. UI phases (UI-1 through UI-3) were added 2025-12-03 based on screenshot analysis and best practices research.*
+*This roadmap builds on the solid foundation of 53 ADRs, 1107 tests, production-grade auth (ADR-0052), and enterprise CI/CD. UI phases (UI-1 through UI-3) were added 2025-12-03 based on screenshot analysis and best practices research.*

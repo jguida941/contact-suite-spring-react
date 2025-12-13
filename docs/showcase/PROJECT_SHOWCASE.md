@@ -9,7 +9,7 @@
 This project is a **full-stack contact management application** built with enterprise-grade architecture patterns. It demonstrates professional software engineering practices including layered architecture, comprehensive testing (90% coverage, 84% mutation score), security hardening, and automated CI/CD pipelines.
 
 **Key Metrics:**
-- **54 Architecture Decision Records** documenting engineering choices
+- **53 Architecture Decision Records** documenting engineering choices
 - **1107 test executions** across the current unit and integration suites
 - **90% code coverage** (JaCoCo) with **84% mutation coverage** (PITest)
 - **7 enforced quality gates** in CI/CD pipeline
@@ -25,7 +25,7 @@ This project is a **full-stack contact management application** built with enter
 ### Quick Wins to Discuss
 | What | Proof | Why It Matters |
 |------|-------|----------------|
-| **Architecture** | 54 ADRs, layered design | Shows system thinking, not just coding |
+| **Architecture** | 53 ADRs, layered design | Shows system thinking, not just coding |
 | **Testing** | 90% coverage, 84% mutation score | Tests that actually catch bugs |
 | **Security** | Rate limiting, JWT, CSRF, PII masking | Production-ready security mindset |
 | **DevOps** | 7 CI gates, 4-way build matrix | Automation and quality enforcement |
@@ -39,7 +39,7 @@ The result:
 2. **Week 3-4**: JWT auth with HttpOnly cookies after researching XSS prevention
 3. **Week 5-6**: Rate limiting when I realized auth endpoints could be brute-forced
 4. **Week 7-8**: Mutation testing to prove my tests actually work, not just execute
-5. **Ongoing**: 54 ADRs documenting every major decision with rationale
+5. **Ongoing**: 53 ADRs documenting every major decision with rationale
 
 **Key decision that shows engineering maturity**: When adding JWT authentication, I chose HttpOnly cookies over localStorage tokens. Why? ADR-0043 explains: localStorage is accessible to any JavaScript, making it vulnerable to XSS. HttpOnly cookies can't be read by scripts, adding defense-in-depth.
 
@@ -292,7 +292,7 @@ npm run dev
 
 ## Architecture Decision Records (ADRs)
 
-The project documents **54 ADRs** covering all major engineering decisions:
+The project documents **53 ADRs** covering all major engineering decisions:
 
 ### Categories
 
@@ -847,7 +847,7 @@ API: http://localhost:8080/v3/api-docs
 | Domain Validation | `src/main/java/contactapp/domain/Validation.java`         |
 | CI Pipeline       | `.github/workflows/java-ci.yml`                           |
 | API Fuzzing       | `.github/workflows/api-fuzzing.yml`                       |
-| All 54 ADRs       | `docs/adrs/`                                              |
+| All 53 ADRs       | `docs/adrs/`                                              |
 
 ---
 
@@ -860,7 +860,7 @@ API: http://localhost:8080/v3/api-docs
 3. **Mutation Testing** - Proves tests catch bugs, not just execute code (84% kill rate)
 4. **Multi-tenant Security** - Per-user data isolation with JWT in httpOnly cookies
 5. **Temporal Data Handling** - Reconstitution pattern manages past appointments/tasks gracefully
-6. **54 ADRs** - Every major decision documented with rationale
+6. **53 ADRs** - Every major decision documented with rationale
 7. **7 Quality Gates** - Enforced in CI, no exceptions allowed
 
 ### "What security measures are implemented?"

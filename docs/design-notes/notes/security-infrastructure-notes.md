@@ -212,4 +212,3 @@ cors:
 - [ADR-0041](../../adrs/ADR-0041-pii-masking-in-logs.md) - PII Masking in Log Output
 - [ADR-0043](../../adrs/ADR-0043-httponly-cookie-authentication.md) - HttpOnly Cookie Authentication
 - [ADR-0052](../../adrs/ADR-0052-production-auth-system.md) - Production-Grade Secure Authentication System
-- [ADR-0054](../../adrs/ADR-0054-security-audit-december-2025.md) - Security Audit December 2025 (CSRF configuration details)
