@@ -33,7 +33,7 @@
         <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
         <spotbugs.maven.plugin.version>4.9.8.1</spotbugs.maven.plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
-        <dependency.check.version>12.1.9</dependency.check.version>
+        <dependency.check.version>12.2.0</dependency.check.version>
         <dependency.check.skip>false</dependency.check.skip>
         <nvdApiDelay>8000</nvdApiDelay>
         <pitest.version>1.22.0</pitest.version>
