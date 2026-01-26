@@ -1,0 +1,48 @@
+version: '1.0'
+repo:
+  owner: jguida941
+  name: contact-suite-spring-react
+  language: java
+  default_branch: audit/cihub-audit-2026-01-26
+  dispatch_workflow: hub-ci.yml
+  hub_workflow_ref: audit/owasp-no-key
+java:
+  version: '21'
+  build_tool: maven
+  tools:
+    jacoco:
+      enabled: true
+      min_coverage: 70
+    checkstyle:
+      enabled: true
+    spotbugs:
+      enabled: true
+    pmd:
+      enabled: true
+    owasp:
+      enabled: true
+      fail_on_cvss: 7
+    pitest:
+      enabled: true
+      min_mutation_score: 70
+    jqwik:
+      enabled: false
+    semgrep:
+      enabled: false
+      max_findings: 0
+    trivy:
+      enabled: false
+    codeql:
+      enabled: false
+    docker:
+      enabled: false
+thresholds:
+  coverage_min: 70
+  mutation_score_min: 70
+  max_critical_vulns: 0
+  max_high_vulns: 0
+reports:
+  retention_days: 30
+language: java
+install:
+  source: git
