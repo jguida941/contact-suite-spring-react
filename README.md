@@ -1887,7 +1887,7 @@ graph TD
 
 
 ## SpotBugs
-<img width="1037" height="767" alt="Screenshot 2025-11-18 at 4 16 06 PM" src="https://github.com/user-attachments/assets/419bd8e1-9974-4db2-ad3a-0f83a9c014db" />
+<img width="1037" height="767" alt="SpotBugs Analysis Report" src="https://github.com/user-attachments/assets/419bd8e1-9974-4db2-ad3a-0f83a9c014db" />
 
 
 ## SpotBugs Commands
@@ -2074,7 +2074,7 @@ Recent PIT survivors in the rate-limiting/logging filters and the TaskService le
 
 ## GitHub Actions QA Metrics Table
 
-<img width="1271" height="970" alt="Screenshot 2025-11-20 at 4 41 19 AM" src="https://github.com/user-attachments/assets/69495c27-8e44-4383-8a41-192543384526" />
+<img width="1271" height="970" alt="GitHub Actions QA Metrics Dashboard" src="https://github.com/user-attachments/assets/69495c27-8e44-4383-8a41-192543384526" />
 
 ## QA Console React Dashboard
 
@@ -2091,7 +2091,7 @@ Modern browsers block ES modules when loaded directly from `file://` URLs <br>
 So the helper launches a tiny HTTP server, opens `http://localhost:<port>/qa-dashboard/index.html`, and serves the React dashboard with the correct `metrics.json`. <br> 
 You’ll see the same KPIs, inline progress bars, and quick links over to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports, all sourced from the exact results of that build.
 
-<img width="1029" height="769" alt="Screenshot 2025-11-19 at 10 07 25 PM" src="https://github.com/user-attachments/assets/d1fc1a3e-844d-4a7a-9e84-d78abcb248f3" />
+<img width="1029" height="769" alt="QA Console React Dashboard" src="https://github.com/user-attachments/assets/d1fc1a3e-844d-4a7a-9e84-d78abcb248f3" />
 
 <br>
 
