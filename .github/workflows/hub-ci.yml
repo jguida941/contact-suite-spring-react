@@ -53,5 +53,5 @@ jobs:
     with:
       hub_correlation_id: ${{ github.event.inputs.hub_correlation_id || '' }}
       hub_repo: ${{ vars.HUB_REPO || 'jguida941/ci-cd-hub' }}
-      hub_ref: ${{ vars.HUB_REF || 'v1' }}
+      hub_ref: ${{ vars.HUB_REF || 'audit/owasp-no-key' }}
     secrets: inherit
